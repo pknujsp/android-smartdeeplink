@@ -1,0 +1,53 @@
+[versions]
+
+gradle_android_plugin_version = "8.0.2"
+gradle_version = "8.1.1"
+kotlin_version = "1.8.21"
+
+androidx_core = "1.10.1"
+androidx_activity = "1.7.1"
+androidx_fragment = "1.5.7"
+androidx_navigation = "2.5.3"
+androidx_lifecycle = "2.6.1"
+androidx_appcompat = "1.6.1"
+material = "1.9.0"
+
+kotlin_poet = "1.13.2"
+google_auto_service = "1.0.1"
+google_auto_service_annotation = "1.0.1"
+google_auto_common = "1.2.1"
+
+compile_sdk = "33"
+target_sdk = "33"
+min_sdk = "26"
+
+[libraries]
+
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "androidx_navigation" }
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "androidx_navigation" }
+
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx_appcompat" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx_core" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidx_fragment" }
+androidx-activity = { group = "androidx.activity", name = "activity-ktx", version.ref = "androidx_activity" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidx_lifecycle" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "androidx_lifecycle" }
+androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-savedstate", version.ref = "androidx_lifecycle" }
+androidx-lifecycle-compilerkapt = { group = "androidx.lifecycle", name = "lifecycle-compiler", version.ref = "androidx_lifecycle" }
+
+material = { module = "com.google.android.material:material", version.ref = "material" }
+kotlin-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlin_poet" }
+kotlin-reflection = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin_version" }
+google-autocommon = { module = "com.google.auto:auto-common", version.ref = "google_auto_common" }
+google-autoservice-core = { module = "com.google.auto.service:auto-service", version.ref = "google_auto_service" }
+google-autoservice-annotation = { module = "com.google.auto.service:auto-service-annotations", version.ref = "google_auto_service_annotation" }
+
+android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle_android_plugin_version" }
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin_version" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "gradle_android_plugin_version" }
+android-library = { id = "com.android.library", version.ref = "gradle_android_plugin_version" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin_version" }
+nav-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidx_navigation" }
+kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin_version" }
