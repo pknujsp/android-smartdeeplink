@@ -9,7 +9,7 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.starProjectedType
 
 @Suppress("UNCHECKED_CAST")
-open class DeepNavArgs : NavArgs {
+abstract class DeepNavArgs : NavArgs {
     companion object {
         @JvmStatic
         fun fromBundle(bundle: Bundle): DeepNavArgs {

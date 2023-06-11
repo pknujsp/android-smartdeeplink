@@ -34,6 +34,5 @@ dependencies {
     kapt(project(":annotationprocessor"))
     implementation("androidx.navigation:navigation-common-ktx:2.6.0")
     implementation("androidx.navigation:navigation-runtime-ktx:2.6.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("androidx.fragment:fragment-ktx:1.6.0")
 }

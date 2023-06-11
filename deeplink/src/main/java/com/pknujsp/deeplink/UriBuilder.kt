@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
+import androidx.navigation.NavArgs
 import androidx.navigation.NavArgsLazy
 import androidx.navigation.NavArgument
 import androidx.navigation.NavController
@@ -52,10 +53,10 @@ internal fun toQueryUri(deepLinkUrl: String, parameter: Map<String, Any>): Pair<
  * @param args mapOf("name" to "yourname", "age" to 5)
  * @param navOptions(optional) NavOptions.Builder().setPopUpTo(R.id.mainFragment, true).build()
  */
-inline fun <reified Args : DeepNavArgs> NavController.deepNavigate(
+inline fun <reified Args : NavArgs> NavController.deepNavigate(
     deepLinkUrl: String, args: Args, navOptions: NavOptions? = null
 ) {
-    val parameters = args.toMap()
+    val parameters = mutableMapOf<String, Any>()
     val (baseUri, finalUri) = toQueryUri(deepLinkUrl, parameters)
 
     graph.matchDeepLink(NavDeepLinkRequest(baseUri, null, null))?.apply {
@@ -75,7 +76,7 @@ inline fun <reified Args : DeepNavArgs> NavController.deepNavigate(
  * Returns an empty object if there are no Arguments passed in the bundle
  * @return NavArgsLazy
  */
-inline fun <reified Args : DeepNavArgs> Fragment.navArguments(): NavArgsLazy<out Args> = NavArgsLazy(Args::class) {
+inline fun <reified Args : NavArgs> Fragment.navArguments(): NavArgsLazy<out Args> = NavArgsLazy(Args::class) {
     (arguments ?: Bundle()).apply {
         remove(DEEP_NAV_ARG_KEY)
         putString(DEEP_NAV_ARGS_CLASS_NAME, Args::class.java.name)

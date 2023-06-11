@@ -13,4 +13,5 @@ dependencies {
     implementation(project(":annotation"))
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
+    implementation("org.reflections:reflections:0.10.2")
 }

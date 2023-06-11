@@ -9,5 +9,6 @@ java {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
+    api("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
+    api("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
 }

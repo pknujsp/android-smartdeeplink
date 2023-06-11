@@ -5,15 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.pknujsp.core.model.PensonInfoArgs
-import com.pknujsp.deeplink.navArguments
 import com.pknujsp.feature.result.databinding.FragmentResultBinding
 
 class ResultFragment : Fragment() {
     private var _binding: FragmentResultBinding? = null
     private val binding get() = _binding!!
 
-    private val args by navArguments<PensonInfoArgs>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentResultBinding.inflate(inflater, container, false)
@@ -23,7 +20,6 @@ class ResultFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
-            arguments.text = args.toString()
         }
     }
 
