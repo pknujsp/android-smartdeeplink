@@ -74,8 +74,9 @@ class DeepLinkNavArgsProcessor : AbstractProcessor() {
             }
 
             // Create binding file
-            if (canMoveToNextStep)
-                createBindingFile(processingEnv.elementUtils.getPackageOf(argsClass), argsClass, fields)
+            if (canMoveToNextStep) {
+                //createBindingFile(processingEnv.elementUtils.getPackageOf(argsClass), argsClass, fields)
+            }
         }
         return true
     }

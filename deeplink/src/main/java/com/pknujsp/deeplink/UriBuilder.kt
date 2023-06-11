@@ -4,7 +4,6 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.navigation.NavArgs
 import androidx.navigation.NavArgument
 import androidx.navigation.NavController
 import androidx.navigation.NavDeepLink
@@ -49,10 +48,10 @@ internal fun toQueryUri(deepLinkUrl: String, parameter: Map<String, Any>): Pair<
  * This is the same as the toQueryUri function, but the parameter is not replaced with a value.
  *
  * @param deepLinkUrl "yourappname://search/result"
- * @param args mapOf("name" to "yourname", "age" to 5)
+ * @param args PersonInfoArgs("yourname", 5, 180.0f, true)
  * @param navOptions(optional) NavOptions.Builder().setPopUpTo(R.id.mainFragment, true).build()
  */
-inline fun <reified Args : NavArgs> NavController.deepNavigate(
+inline fun <reified Args : Any> NavController.deepNavigate(
     deepLinkUrl: String, args: Args, navOptions: NavOptions? = null
 ) {
     val parameters = args.toMap()
@@ -67,8 +66,6 @@ inline fun <reified Args : NavArgs> NavController.deepNavigate(
     }
 
     navigate(finalUri, navOptions)
-
-
 }
 
 /**
@@ -84,13 +81,10 @@ inline fun <reified Args : Any> Fragment.navArguments(): WapNavArgsLazy<Args> = 
 }
 
 // used in DeepNavArgs to get the class name of the NavArgs
-@PublishedApi
-internal const val DEEP_NAV_ARGS_CLASS_NAME = "-*-*-*-*----*-__*-*"
+@PublishedApi internal const val DEEP_NAV_ARGS_CLASS_NAME = "-*-*-*-*----*-__*-*"
 
 // used in DeepNavArgs to get the unique key of the NavArgs for the new deeplink
-@PublishedApi
-internal const val DEEP_NAV_ARG_KEY = "**__****--*-*-*--**__"
+@PublishedApi internal const val DEEP_NAV_ARG_KEY = "**__****--*-*-*--**__"
 
 // used in DeepNavArgs to get the unique value of the NavArgs for the new deeplink
-@PublishedApi
-internal val DEEP_NAV_ARG = NavArgument.Builder().setType(NavType.BoolType).setDefaultValue(true).build()
+@PublishedApi internal val DEEP_NAV_ARG = NavArgument.Builder().setType(NavType.BoolType).setDefaultValue(true).build()

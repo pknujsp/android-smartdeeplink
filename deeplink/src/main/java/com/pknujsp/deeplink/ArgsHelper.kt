@@ -2,8 +2,6 @@ package com.pknujsp.deeplink
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.collection.ArrayMap
-import java.lang.reflect.Method
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties
@@ -13,12 +11,9 @@ import kotlin.reflect.full.starProjectedType
 
 @PublishedApi
 @SuppressLint("BanUncheckedReflection") // needed for method.invoke
-internal inline fun <reified Args : Any> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
+internal fun <Args : Any> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
     property.name to property.getter.call(this)!!
 }
-
-internal val methodSignature = arrayOf(Bundle::class.java)
-internal val methodMap = ArrayMap<KClass<*>, Method>()
 
 class WapNavArgsLazy<Args : Any>(
     private val navArgsClass: KClass<Args>,

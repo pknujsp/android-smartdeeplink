@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.pknujsp.core.model.PersonInfoArgsBindArgs
+import com.pknujsp.core.model.PersonInfoArgs
 import com.pknujsp.deeplink.deepNavigate
 import com.pknujsp.feature.search.databinding.FragmentSearchBinding
 
@@ -23,7 +23,7 @@ class SearchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.btnSearchToResult.setOnClickListener {
             findNavController().deepNavigate("app://result",
-                PersonInfoArgsBindArgs(
+                PersonInfoArgs(
                     name = binding.nameEdit.text.toString(),
                     age = binding.ageEdit.text.toString().toInt(),
                     height = binding.heightEdit.text.toString().toFloat(),
