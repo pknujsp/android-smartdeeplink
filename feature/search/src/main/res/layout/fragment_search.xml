@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/arguments"
+        android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/name_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/name"
+        android:inputType="text"
+        android:minHeight="48dp"
+        android:textColorHint="#8D6E63" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/age_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/age"
+        android:importantForAutofill="no"
+        android:inputType="numberDecimal"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:textColorHint="#8D6E63" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/height_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/height"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:minHeight="48dp"
+        android:textColorHint="#8D6E63" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/country_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/country"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:minHeight="48dp"
+        android:textColorHint="#8D6E63" />
+
+
+    <CheckBox
+        android:id="@+id/male_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/male" />
+
+    <Button
+        android:id="@+id/btn_search_to_result"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/search" />
+
+</LinearLayout>

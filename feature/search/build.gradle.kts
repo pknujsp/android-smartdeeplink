@@ -7,20 +7,24 @@ plugins {
 
 android {
     namespace = "com.pknujsp.feature.search"
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     @Suppress("UnstableApiUsage")
     buildFeatures {
         viewBinding = true
-        dataBinding = true
     }
 
-    java {
+    defaultConfig {
+        minSdk = libs.versions.min.sdk.get().toInt()
+    }
+
+    compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.majorVersion
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
 
@@ -28,9 +32,6 @@ dependencies {
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.android.gradle.plugin)
 
-    implementation(libs.kotlin.poet)
-    implementation(libs.kotlin.reflection)
-    implementation(libs.google.autocommon)
     implementation(libs.material)
 
     implementation(libs.androidx.activity)
@@ -43,4 +44,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+
+    implementation(project(":core:model"))
+    implementation(project(":deeplink"))
 }

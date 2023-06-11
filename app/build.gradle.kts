@@ -19,27 +19,28 @@ android {
     @Suppress("UnstableApiUsage")
     buildFeatures {
         viewBinding = true
-        dataBinding = true
     }
 
-    java {
+    compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.majorVersion
+        jvmTarget = "17"
     }
+
 }
 
 dependencies {
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.android.gradle.plugin)
 
-    implementation(libs.kotlin.poet)
-    implementation(libs.kotlin.reflection)
-    implementation(libs.google.autocommon)
     implementation(libs.material)
+
+    implementation(project(":feature:home"))
+    implementation(project(":feature:result"))
+    implementation(project(":feature:search"))
 
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)

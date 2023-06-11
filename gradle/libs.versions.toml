@@ -7,7 +7,7 @@ kotlin_version = "1.8.21"
 androidx_core = "1.10.1"
 androidx_activity = "1.7.1"
 androidx_fragment = "1.5.7"
-androidx_navigation = "2.5.3"
+androidx_navigation = "2.6.0"
 androidx_lifecycle = "2.6.1"
 androidx_appcompat = "1.6.1"
 material = "1.9.0"
@@ -20,6 +20,9 @@ google_auto_common = "1.2.1"
 compile_sdk = "33"
 target_sdk = "33"
 min_sdk = "26"
+
+lib_compile_sdk = "33"
+lib_min_sdk = "23"
 
 [libraries]
 
@@ -49,5 +52,6 @@ kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-p
 android-application = { id = "com.android.application", version.ref = "gradle_android_plugin_version" }
 android-library = { id = "com.android.library", version.ref = "gradle_android_plugin_version" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin_version" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin_version" }
 nav-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidx_navigation" }
 kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin_version" }

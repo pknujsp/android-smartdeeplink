@@ -4,5 +4,5 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.nav.safeargs.kotlin) apply false
     alias(libs.plugins.kapt) apply false
-    id("org.jetbrains.kotlin.jvm") version "1.8.20" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 }
