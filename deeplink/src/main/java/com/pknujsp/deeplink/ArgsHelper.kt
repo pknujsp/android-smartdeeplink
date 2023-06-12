@@ -8,10 +8,9 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.starProjectedType
 
-
 @PublishedApi
 @SuppressLint("BanUncheckedReflection") // needed for method.invoke
-internal fun <Args : DeepArgs> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
+internal inline fun <reified Args : DeepArgs> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
     property.name to property.getter.call(this)!!
 }
 
@@ -26,8 +25,7 @@ class WapNavArgsLazy<Args : DeepArgs>(
         get() {
             var args = cached
             if (args == null) {
-                val arguments = argumentProducer()
-                args = fromBundle(navArgsClass.qualifiedName!!, arguments)
+                args = fromBundle(navArgsClass, argumentProducer())
                 cached = args
             }
             return args
@@ -35,36 +33,31 @@ class WapNavArgsLazy<Args : DeepArgs>(
 
     override fun isInitialized(): Boolean = cached != null
 
-    @PublishedApi
-    internal fun Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
-        property.name to property.getter.call(this)!!
-    }
 
-    @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal fun fromBundle(className: String, bundle: Bundle): Args {
-        val argsDataClass: KClass<Args> =
-            Class.forName(className).kotlin as KClass<Args>
+    internal fun fromBundle(kclass: KClass<Args>, bundle: Bundle): Args {
+        val argsDataClass: KClass<Args> = kclass
         bundle.classLoader = argsDataClass.java.classLoader
 
-        val constructor = argsDataClass.primaryConstructor!!
-        val bundleKeySet = bundle.keySet()
+        argsDataClass.primaryConstructor?.let { constructor ->
+            val bundleKeySet = bundle.keySet()
+            val properties = constructor.parameters.filter {
+                it.name in bundleKeySet
+            }.map { contructorProperty ->
+                bundle.get(contructorProperty.name)?.let { realValueInBundle ->
+                    val realValueTypeInBundle = realValueInBundle::class.starProjectedType
 
-        val properties = constructor.parameters.filter {
-            it.name in bundleKeySet
-        }.map { contructorProperty ->
-            val realValueInBundle = bundle.get(contructorProperty.name)!!
-            val realValueTypeInBundle = realValueInBundle::class.starProjectedType
+                    if (realValueTypeInBundle == contructorProperty.type) {
+                        realValueInBundle
+                    } else {
+                        // convert type of value in bundle to type of constructor property
+                        convertType(contructorProperty.type, realValueInBundle)
+                    }
+                }
+            }.toTypedArray()
 
-            if (realValueTypeInBundle == contructorProperty.type) {
-                realValueInBundle
-            } else {
-                // convert type of value in bundle to type of constructor property
-                convertType(contructorProperty.type, realValueInBundle)
-            }
-        }.toTypedArray()
-
-        return constructor.call(*properties)
+            return constructor.call(*properties)
+        } ?: throw IllegalArgumentException("No primary constructor found for $kclass")
     }
 
     @Suppress("UNCHECKED_CAST")
