@@ -1,6 +1,4 @@
 package com.pknujsp.annotation
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
-@Repeatable
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class WapNavArgs

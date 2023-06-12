@@ -25,6 +25,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(project(":annotation"))
+    implementation(project(":deeplink"))
+    implementation(project(":annotationprocessor"))
     kapt(project(":annotationprocessor"))
 }

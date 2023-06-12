@@ -2,7 +2,7 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
-    //id("androidx.navigation.safeargs.kotlin")
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -30,9 +30,9 @@ android {
 }
 
 dependencies {
-    api(project(":annotation"))
     kapt(project(":annotationprocessor"))
-    implementation("androidx.navigation:navigation-common-ktx:2.6.0")
+    implementation(project(":annotationprocessor"))
     implementation("androidx.navigation:navigation-runtime-ktx:2.6.0")
     implementation("androidx.fragment:fragment-ktx:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
 }

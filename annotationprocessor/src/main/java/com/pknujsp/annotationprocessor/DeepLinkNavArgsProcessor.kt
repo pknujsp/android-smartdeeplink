@@ -1,6 +1,5 @@
 package com.pknujsp.annotationprocessor
 
-import com.pknujsp.annotation.WapNavArgs
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DelicateKotlinPoetApi
@@ -17,7 +16,6 @@ import org.jetbrains.annotations.Nullable
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.RoundEnvironment
 import javax.annotation.processing.SupportedAnnotationTypes
-import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.PackageElement
@@ -25,12 +23,13 @@ import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.reflect.KType
 
-
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
-@SupportedAnnotationTypes("com.pknujsp.annotation.WapNavArgs")
+@SupportedAnnotationTypes("com.pknujsp.annotationprocessor.WapNavArgs")
 class DeepLinkNavArgsProcessor : AbstractProcessor() {
 
+    override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latestSupported()
+
     private companion object {
+
         // availableTypes is a set of types of nav args that can be used in deeplink
         private val availableTypes = setOf(
             String::class.java.name,
@@ -74,9 +73,10 @@ class DeepLinkNavArgsProcessor : AbstractProcessor() {
             }
 
             // Create binding file
-            if (canMoveToNextStep) {
-                //createBindingFile(processingEnv.elementUtils.getPackageOf(argsClass), argsClass, fields)
-            }
+            /*
+             if (canMoveToNextStep)
+                createBindingFile(processingEnv.elementUtils.getPackageOf(argsClass), argsClass, fields)
+             */
         }
         return true
     }

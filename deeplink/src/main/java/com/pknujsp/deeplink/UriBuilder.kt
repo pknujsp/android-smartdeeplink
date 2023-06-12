@@ -51,7 +51,7 @@ internal fun toQueryUri(deepLinkUrl: String, parameter: Map<String, Any>): Pair<
  * @param args PersonInfoArgs("yourname", 5, 180.0f, true)
  * @param navOptions(optional) NavOptions.Builder().setPopUpTo(R.id.mainFragment, true).build()
  */
-inline fun <reified Args : Any> NavController.deepNavigate(
+fun <Args : DeepArgs> NavController.deepNavigate(
     deepLinkUrl: String, args: Args, navOptions: NavOptions? = null
 ) {
     val parameters = args.toMap()
@@ -74,7 +74,7 @@ inline fun <reified Args : Any> NavController.deepNavigate(
  * Returns an empty object if there are no Arguments passed in the bundle
  * @return NavArgsLazy
  */
-inline fun <reified Args : Any> Fragment.navArguments(): WapNavArgsLazy<Args> = WapNavArgsLazy(Args::class) {
+inline fun <reified Args : DeepArgs> Fragment.navArguments(): WapNavArgsLazy<Args> = WapNavArgsLazy(Args::class) {
     (arguments ?: Bundle()).apply {
         remove(DEEP_NAV_ARG_KEY)
     }

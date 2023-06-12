@@ -11,11 +11,11 @@ import kotlin.reflect.full.starProjectedType
 
 @PublishedApi
 @SuppressLint("BanUncheckedReflection") // needed for method.invoke
-internal fun <Args : Any> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
+internal fun <Args : DeepArgs> Args.toMap(): Map<String, Any> = this::class.memberProperties.associate { property ->
     property.name to property.getter.call(this)!!
 }
 
-class WapNavArgsLazy<Args : Any>(
+class WapNavArgsLazy<Args : DeepArgs>(
     private val navArgsClass: KClass<Args>,
     private val argumentProducer: () -> Bundle
 ) : Lazy<Args> {
@@ -69,7 +69,7 @@ class WapNavArgsLazy<Args : Any>(
 
     @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal inline fun <reified Args : Any> Args.empty(): Args {
+    internal inline fun <reified Args : DeepArgs> Args.empty(): Args {
         val dataClass: KClass<Args> =
             Class.forName(Args::class.java.name).kotlin as KClass<Args>
         val constructor = dataClass.primaryConstructor!!

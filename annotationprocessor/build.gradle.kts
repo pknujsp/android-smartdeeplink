@@ -10,8 +10,8 @@ java {
 
 dependencies {
     implementation("com.squareup:kotlinpoet:1.13.2")
-    implementation(project(":annotation"))
+    kapt("com.squareup:kotlinpoet:1.13.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0")
+    //compileOnly(project(":annotation"))
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
-    implementation("org.reflections:reflections:0.10.2")
 }
