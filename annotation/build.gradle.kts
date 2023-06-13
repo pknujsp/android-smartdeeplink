@@ -1,6 +1,19 @@
 plugins {
-    id("java-library")
     id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.kapt")
+}
+
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
+
+rootProject.extra.apply {
+    set("PUBLISH_ARTIFACT_ID", "smartdeeplink.annotation")
+    set("PUBLISH_DESCRIPTION", "annotation processor of SmartDeepLink Library")
+}
+
+apply {
+    from("${rootProject.projectDir}/scripts/publish-module.gradle")
 }
 
 java {
@@ -9,6 +22,6 @@ java {
 }
 
 dependencies {
-    api("org.jetbrains.kotlin:kotlin-stdlib:1.8.21")
-    api("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    implementation("com.squareup:kotlinpoet:1.13.2")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
 }

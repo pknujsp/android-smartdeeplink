@@ -80,9 +80,6 @@ inline fun <reified Args : DeepArgs> Fragment.navArguments(): WapNavArgsLazy<Arg
     }
 }
 
-// used in DeepNavArgs to get the class name of the NavArgs
-@PublishedApi internal const val DEEP_NAV_ARGS_CLASS_NAME = "__DEEP_WNAV_AARGS_PCLASS_NAME__"
-
 // used in DeepNavArgs to get the unique key of the NavArgs for the new deeplink
 @PublishedApi internal const val DEEP_NAV_ARG_KEY = "__DEEP_WNAV_AARG_PKEY__"
 

@@ -1,19 +1,19 @@
 ext {
     PUBLISH_GROUP_ID = 'io.github.pknujsp'
     PUBLISH_VERSION = '1.0.0-rc01'
-    PUBLISH_ARTIFACT_ID = 'smartdeeplink-android'
+    PUBLISH_ARTIFACT_ID = 'smartdeeplink'
     PUBLISH_DESCRIPTION = 'Smart-DeepLink Library for Android'
     PUBLISH_URL = 'https://github.com/pknujsp/android-smartdeeplink'
-    PUBLISH_LICENSE_NAME = 'Apache License'
+    PUBLISH_LICENSE_NAME = 'Apache License V2'
     PUBLISH_LICENSE_URL =
-            'https://github.com/pknujsp/android-smartdeeplink'
+        'https://www.apache.org/licenses/LICENSE-2.0.txt'
     PUBLISH_DEVELOPER_ID = 'jsp'
     PUBLISH_DEVELOPER_NAME = 'Junsung-Park'
     PUBLISH_DEVELOPER_EMAIL = 'naversovc@gmail.com'
     PUBLISH_SCM_CONNECTION =
-            'scm:git:github.com/pknujsp/android-smartdeeplink.git'
+        'scm:git:github.com/pknujsp/android-smartdeeplink.git'
     PUBLISH_SCM_DEVELOPER_CONNECTION =
-            'scm:git:ssh://github.com/pknujsp/android-smartdeeplink.git'
+        'scm:git:ssh://github.com/pknujsp/android-smartdeeplink.git'
     PUBLISH_SCM_URL =
-            'https://github.com/pknujsp/android-smartdeeplink.git'
+        'https://github.com/pknujsp/android-smartdeeplink.git'
 }

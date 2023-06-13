@@ -3,7 +3,9 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://www.jitpack.io") }
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        }
     }
 }
 
@@ -16,8 +18,9 @@ dependencyResolutionManagement {
         maven { url = uri("https://www.jitpack.io") }
     }
 }
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 rootProject.name = "DeepLinkLibraryTest"
+
 include(":app")
 include(":feature")
 include(":core")
@@ -26,5 +29,4 @@ include(":feature:home")
 include(":feature:search")
 include(":feature:result")
 include(":deeplink")
-include(":annotationprocessor")
-//include(":annotation")
+include(":annotation")

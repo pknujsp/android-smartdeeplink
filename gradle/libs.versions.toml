@@ -24,6 +24,8 @@ min_sdk = "26"
 lib_compile_sdk = "33"
 lib_min_sdk = "23"
 
+nexus_publish_plugin = "1.3.0"
+
 [libraries]
 
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "androidx_navigation" }
@@ -55,3 +57,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin_ve
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin_version" }
 nav-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidx_navigation" }
 kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin_version" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus_publish_plugin" }

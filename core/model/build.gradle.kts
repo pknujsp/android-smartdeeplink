@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kapt)
-    alias(libs.plugins.nav.safeargs.kotlin)
 }
 
 android {
@@ -26,6 +25,6 @@ android {
 dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(project(":deeplink"))
-    implementation(project(":annotationprocessor"))
-    kapt(project(":annotationprocessor"))
+    implementation(project(":annotation"))
+    "kapt"(project(":annotation"))
 }

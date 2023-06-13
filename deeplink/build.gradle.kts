@@ -2,7 +2,23 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
-    id("androidx.navigation.safeargs.kotlin")
+}
+
+rootProject.extra.apply {
+    set("PUBLISH_ARTIFACT_ID", "smartdeeplink.core")
+    set("PUBLISH_DESCRIPTION", "core of SmartDeepLink Library")
+}
+
+apply {
+    from("${rootProject.projectDir}/scripts/publish-module.gradle")
+}
+
+tasks.withType(GenerateModuleMetadata::class) {
+    mustRunAfter(":deeplink:androidSourcesJar")
+}
+
+kapt {
+    includeCompileClasspath = false
 }
 
 android {
@@ -30,8 +46,7 @@ android {
 }
 
 dependencies {
-    kapt(project(":annotationprocessor"))
-    implementation(project(":annotationprocessor"))
+    api(project(":annotation"))
     implementation("androidx.navigation:navigation-runtime-ktx:2.6.0")
     implementation("androidx.fragment:fragment-ktx:1.6.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
