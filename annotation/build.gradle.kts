@@ -1,12 +1,8 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.kapt")
 }
 
-val javadocJar by tasks.registering(Jar::class) {
-    archiveClassifier.set("javadoc")
-}
-
+/*
 rootProject.extra.apply {
     set("PUBLISH_ARTIFACT_ID", "smartdeeplink.annotation")
     set("PUBLISH_DESCRIPTION", "annotation processor of SmartDeepLink Library")
@@ -15,6 +11,8 @@ rootProject.extra.apply {
 apply {
     from("${rootProject.projectDir}/scripts/publish-module.gradle")
 }
+
+ */
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17

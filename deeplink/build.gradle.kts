@@ -1,25 +1,11 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.kapt")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.dokka)
 }
 
-rootProject.extra.apply {
-    set("PUBLISH_ARTIFACT_ID", "smartdeeplink.core")
-    set("PUBLISH_DESCRIPTION", "core of SmartDeepLink Library")
-}
-
-apply {
-    from("${rootProject.projectDir}/scripts/publish-module.gradle")
-}
-
-tasks.withType(GenerateModuleMetadata::class) {
-    mustRunAfter(":deeplink:androidSourcesJar")
-}
-
-kapt {
-    includeCompileClasspath = false
-}
 
 android {
     namespace = "io.github.pknujsp.smartdeeplink.core"
@@ -42,12 +28,33 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+        suppressWarnings = false
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
     }
 }
 
+rootProject.extra.apply {
+    set("PUBLISH_ARTIFACT_ID", "smartdeeplink.core")
+    set("PUBLISH_DESCRIPTION", "Core of SmartDeepLink Library")
+}
+
+tasks.withType(GenerateModuleMetadata::class).configureEach {
+    dependsOn("androidSourcesJar")
+}
+
 dependencies {
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.fragment)
+    implementation(libs.kotlin.reflection)
     api(project(":annotation"))
-    implementation("androidx.navigation:navigation-runtime-ktx:2.6.0")
-    implementation("androidx.fragment:fragment-ktx:1.6.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+}
+
+apply {
+    from("${rootProject.projectDir}/scripts/publish-module.gradle")
 }

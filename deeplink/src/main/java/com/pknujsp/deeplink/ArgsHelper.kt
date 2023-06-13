@@ -35,6 +35,7 @@ class WapNavArgsLazy<Args : DeepArgs>(
 
 
     @PublishedApi
+    @SuppressWarnings("deprecated")
     internal fun fromBundle(kclass: KClass<Args>, bundle: Bundle): Args {
         val argsDataClass: KClass<Args> = kclass
         bundle.classLoader = argsDataClass.java.classLoader

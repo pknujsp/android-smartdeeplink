@@ -51,7 +51,6 @@ class DeepLinkNavArgsProcessor : AbstractProcessor() {
                 it.kind.isField
             }
 
-            var canMoveToNextStep = true
             fields.forEach { property ->
                 if (property.annotationMirrors.any {
                         it.annotationType.asTypeName() == Nullable::class.asTypeName()
@@ -61,14 +60,14 @@ class DeepLinkNavArgsProcessor : AbstractProcessor() {
                         Diagnostic.Kind.ERROR,
                         "Nullable property found in data class: ${argsClass.simpleName}.${property.simpleName}"
                     )
-                    canMoveToNextStep = false
+
                 } else if (property.asType().asTypeName().toString() !in availableTypes) {
                     // Not supported type
                     processingEnv.messager.printMessage(
                         Diagnostic.Kind.ERROR,
                         "Not supported type! -> ${property.asType().asTypeName()}, available types: $availableTypes"
                     )
-                    canMoveToNextStep = false
+
                 }
             }
 
