@@ -45,5 +45,5 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
 
     implementation(project(":core:model"))
-    implementation(project(":deeplink"))
+    //implementation(project(":deeplink"))
 }

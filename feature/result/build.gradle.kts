@@ -46,6 +46,8 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
 
     implementation(project(":core:model"))
-    implementation(project(":deeplink"))
+    //implementation(project(":deeplink"))
+    implementation("io.github.pknujsp:smartdeeplink.core:1.0.0-rc01")
+    //implementation("io.github.pknujsp:smartdeeplink.annotation:1.0.0-rc01")
 
 }

@@ -24,7 +24,7 @@ import javax.tools.Diagnostic
 import kotlin.reflect.KType
 
 @SupportedAnnotationTypes("com.pknujsp.annotationprocessor.WapNavArgs")
-class DeepLinkNavArgsProcessor : AbstractProcessor() {
+private class DeepLinkNavArgsProcessor : AbstractProcessor() {
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latestSupported()
 
