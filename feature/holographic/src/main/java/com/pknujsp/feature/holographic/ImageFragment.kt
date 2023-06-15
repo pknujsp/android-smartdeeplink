@@ -1,15 +1,17 @@
 package com.pknujsp.feature.holographic
 
-import android.graphics.Outline
-import android.graphics.Path
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
-import android.view.animation.RotateAnimation
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.pknujsp.feature.holographic.databinding.FragmentImageBinding
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 
 class ImageFragment : Fragment() {
@@ -25,20 +27,46 @@ class ImageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.imageview.also { imageView ->
-            ShadowManager(requireContext().applicationContext, lifecycle) { x, y, rotX, rotY ->
-                imageView.rotationX = rotX
-                imageView.rotationY = rotY
+        binding.apply {
 
-                imageView.outlineProvider = object : ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: Outline?) {
-                        outline?.apply {
-                            setRoundRect(0, 0, view.width, view.height, 8f)
-                            offset(y.toInt() * 2, x.toInt() * 2)
+            /*
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        binding.root.doOnLayout {
+                            ColorAnalyzer().analyzeColor(statusTextview, imageview,
+                                resources.getColor(com.pknujsp.core.ui.R.color.card_shadow_color, null))
                         }
                     }
                 }
             }
+
+             */
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    val outlineProvider = OutlineProvider(0, 0)
+                    imageview.outlineProvider = outlineProvider
+                    imageview.clipToOutline = true
+                    imageview.invalidate()
+
+                    ShadowManager(requireContext().applicationContext,
+                        viewLifecycleOwner.lifecycle,
+                        SupervisorJob()).gravityChannel.collectLatest { gravity ->
+                        imageview.rotationX = gravity.rotationVerticalDegree
+                        imageview.rotationY = gravity.rotationHorizontalDegree
+
+                        outlineProvider.shiftX = gravity.shiftX
+                        outlineProvider.shiftY = -gravity.shiftY
+
+                        val status = "$gravity  ->  Image : ${imageview.width} x ${imageview.height}  -> " +
+                                " Outline : ${outlineProvider.rect.width()} x " + "${outlineProvider.rect.height()}"
+                        statusTextview.text = status
+                        imageview.invalidateOutline()
+                    }
+                }
+            }
+
         }
     }
 
@@ -46,6 +74,5 @@ class ImageFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
 
 }

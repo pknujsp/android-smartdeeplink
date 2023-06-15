@@ -4,11 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
     android:clipChildren="false"
     android:clipToPadding="false"
-    android:padding="50dp"
     tools:context=".ImageFragment">
+
+    <TextView
+        android:id="@+id/status_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="48dp"
+        android:gravity="center"
+        android:text="@string/looking_for_surfaces"
+        android:textSize="15sp" />
 
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -16,14 +24,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_margin="64dp"
         android:adjustViewBounds="true"
+        android:alpha="1.0"
+        android:clipToOutline="true"
+        android:cropToPadding="false"
+        android:elevation="28dp"
+        android:layerType="hardware"
         android:outlineAmbientShadowColor="@color/card_shadow_color_ambient"
-        android:outlineSpotShadowColor="@color/card_shadow_color"
-        android:src="@drawable/applecard"
-        android:transformPivotX="8dp"
-        android:transformPivotY="8dp"
-        android:translationZ="48dp"
+        android:outlineProvider="background"
+        android:outlineSpotShadowColor="@color/card_shadow_color_ambient"
+        android:src="@drawable/applecard1_anti"
         tools:ignore="PxUsage"
-        tools:targetApi="p" />
+        tools:targetApi="s" />
 
 </FrameLayout>

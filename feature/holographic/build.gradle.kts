@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
+        minSdk =  libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
@@ -49,4 +49,6 @@ dependencies {
     implementation(project(":core:ui"))
     implementation("io.github.pknujsp:smartdeeplink.core:1.0.0-rc02")
     implementation("io.github.pknujsp:smartdeeplink.annotation:1.0.0-rc02")
+    implementation("androidx.palette:palette:1.0.0")
+    implementation(libs.kotlinx.coroutine)
 }
