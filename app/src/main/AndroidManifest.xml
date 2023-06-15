@@ -11,7 +11,6 @@
         <activity
             android:name="com.pknujsp.deeplinklibrarytest.MainActivity"
             android:exported="true"
-            android:label="@string/title_activity_main"
             android:theme="@style/Theme.Material3.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

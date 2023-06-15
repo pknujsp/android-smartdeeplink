@@ -19,7 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DeepLinkLibraryTest"
+rootProject.name = "AndroidLibraryDev"
 
 include(":app")
 include(":feature")
@@ -28,5 +28,8 @@ include(":core:model")
 include(":feature:home")
 include(":feature:search")
 include(":feature:result")
-include(":deeplink")
-include(":annotation")
+
+//include(":deeplink")
+//include(":annotation")
+include(":core:ui")
+include(":feature:holographic")

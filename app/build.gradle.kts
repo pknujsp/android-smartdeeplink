@@ -17,6 +17,7 @@ android {
 
     @Suppress("UnstableApiUsage")
     buildFeatures {
+        dataBinding = true
         viewBinding = true
     }
 
@@ -24,8 +25,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
 }
@@ -40,6 +42,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:result"))
     implementation(project(":feature:search"))
+    implementation(project(":feature:holographic"))
 
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)

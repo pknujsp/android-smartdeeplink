@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.pknujsp.core.model.PersonInfoArgs
+import com.pknujsp.core.ui.showLoadingDialog
 import com.pknujsp.deeplink.deepNavigate
 import com.pknujsp.feature.search.databinding.FragmentSearchBinding
 
@@ -30,8 +31,11 @@ class SearchFragment : Fragment() {
                     isMale = true
                 ))
         }
+    }
 
-
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        context?.showLoadingDialog()
     }
 
     override fun onDestroyView() {

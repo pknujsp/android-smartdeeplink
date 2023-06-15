@@ -10,6 +10,7 @@ android {
 
     @Suppress("UnstableApiUsage")
     buildFeatures {
+        dataBinding = true
         viewBinding = true
     }
 
@@ -45,5 +46,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
 
     implementation(project(":core:model"))
-    //implementation(project(":deeplink"))
+    implementation(project(":core:ui"))
+    implementation("io.github.pknujsp:smartdeeplink.core:1.0.0-rc02")
+    implementation("io.github.pknujsp:smartdeeplink.annotation:1.0.0-rc02")
 }
