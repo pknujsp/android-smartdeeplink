@@ -1,17 +1,23 @@
 [versions]
-
 gradle_android_plugin_version = "8.0.2"
 gradle_version = "8.1.1"
 kotlin_version = "1.8.21"
 
 coroutines = "1.7.1"
+androidx_compose_kotlin_compiler = "1.4.7"
 
+androidx_compose_bom = "2023.05.01"
 androidx_core = "1.10.1"
-androidx_activity = "1.7.1"
+androidx_activity = "1.7.2"
 androidx_fragment = "1.5.7"
 androidx_navigation = "2.6.0"
 androidx_lifecycle = "2.6.1"
 androidx_appcompat = "1.6.1"
+androidx_paging_compose = "3.2.0-beta01"
+androidx_constraint_layout_compose = "1.0.1"
+androidx_hilt = "2.45"
+androidx_hilt_navigation_compose = "1.0.0"
+androidx_hilt_navigation_fragment = "1.0.0"
 material = "1.9.0"
 
 kotlin_poet = "1.13.2"
@@ -31,6 +37,23 @@ dokka = "1.8.20"
 
 [libraries]
 
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidx_compose_bom" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material3-windowSizeClass = { group = "androidx.compose.material3", name = "material3-window-size-class" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-util = { group = "androidx.compose.ui", name = "ui-util" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout" }
+
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx_activity" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "androidx_lifecycle" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidx_navigation" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx_lifecycle" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidx_hilt_navigation_compose" }
+androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "androidx_constraint_layout_compose" }
+
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "androidx_navigation" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "androidx_navigation" }
 
@@ -42,6 +65,11 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "androidx_lifecycle" }
 androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-savedstate", version.ref = "androidx_lifecycle" }
 androidx-lifecycle-compilerkapt = { group = "androidx.lifecycle", name = "lifecycle-compiler", version.ref = "androidx_lifecycle" }
+
+androidx-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "androidx_hilt" }
+androidx-hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "androidx_hilt" }
+androidx-hilt-navigation-fragment = { group = "androidx.hilt", name = "hilt-navigation-fragment", version.ref = "androidx_hilt_navigation_fragment" }
+
 kotlinx-coroutine = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
@@ -54,6 +82,19 @@ google-autoservice-annotation = { module = "com.google.auto.service:auto-service
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle_android_plugin_version" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin_version" }
 
+[bundles]
+hilt = ["androidx-hilt-navigation-compose", "androidx-hilt-android", "androidx-hilt-compiler", "androidx-hilt-navigation-fragment"]
+composes = ["androidx-compose-bom",
+    "androidx-compose-runtime",
+    "androidx-compose-ui-tooling-preview",
+    "androidx-compose-ui-util",
+    "androidx-compose-ui",
+    "androidx-compose-foundation",
+    "androidx-compose-foundation-layout",
+    "androidx-compose-material3-windowSizeClass", "androidx-compose-material3", "androidx-constraintlayout-compose",
+    "androidx-lifecycle-runtime-compose", "androidx-lifecycle-viewmodel-compose", "androidx-activity-compose",
+    "androidx-navigation-compose"]
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "gradle_android_plugin_version" }
 android-library = { id = "com.android.library", version.ref = "gradle_android_plugin_version" }
@@ -63,3 +104,4 @@ nav-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref 
 kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin_version" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus_publish_plugin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "androidx_hilt" }

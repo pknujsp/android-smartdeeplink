@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -53,12 +54,7 @@ class ImageFragment : Fragment() {
                     ShadowManager(requireContext().applicationContext,
                         viewLifecycleOwner.lifecycle,
                         SupervisorJob()).gravityChannel.collectLatest { gravity ->
-                        imageview.rotationX = gravity.rotationVerticalDegree
-                        imageview.rotationY = gravity.rotationHorizontalDegree
-
-                        outlineProvider.shiftX = gravity.shiftX
-                        outlineProvider.shiftY = -gravity.shiftY
-
+                        
                         val status = "$gravity  ->  Image : ${imageview.width} x ${imageview.height}  -> " +
                                 " Outline : ${outlineProvider.rect.width()} x " + "${outlineProvider.rect.height()}"
                         statusTextview.text = status

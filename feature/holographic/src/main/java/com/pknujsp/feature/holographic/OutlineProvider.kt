@@ -12,7 +12,7 @@ internal class OutlineProvider(
     val rect: Rect = Rect()
 
     override fun getOutline(view: View, outline: Outline?) {
-        rect.set(-10, -10, view.width+10, view.height-5)
+        rect.set(-20, -20, view.width + 20, view.height - 5)
         if (shiftX > 0) {
             rect.right += shiftX
         } else {

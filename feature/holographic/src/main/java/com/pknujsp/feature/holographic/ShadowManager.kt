@@ -30,8 +30,8 @@ internal class ShadowManager(
                 val diffX = ((firstGravity.x + gravity.x.times(1000f)) % 3f).floor()
                 val diffY = ((firstGravity.y + gravity.y.times(1000f)) % 3f).floor()
 
-                val shiftX = diffX * displayDensity * 1.4f
-                val shiftY = -diffY * displayDensity * 1.4f
+                val shiftX = diffX * displayDensity * 3f
+                val shiftY = -diffY * displayDensity * 3f
 
                 val newGravity = ChangedGravity(diffY, diffX, shiftX.toInt(), shiftY.toInt())
 
