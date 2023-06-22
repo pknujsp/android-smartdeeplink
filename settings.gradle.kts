@@ -24,13 +24,13 @@ rootProject.name = "testbed"
 include(":app")
 include(":feature")
 include(":core")
+
 include(":core:model")
+include(":core:ui")
+
 include(":feature:home")
 include(":feature:search")
 include(":feature:result")
-
-//include(":deeplink")
-//include(":annotation")
-include(":core:ui")
 include(":feature:holographic")
 include(":feature:compose")
+include(":feature:dialog")

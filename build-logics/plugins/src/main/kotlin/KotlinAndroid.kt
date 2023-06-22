@@ -18,7 +18,7 @@ internal fun Project.configureKotlinAndroid(
 
     @Suppress("UnstableApiUsage")
     buildFeatures {
-      compose = true
+      //compose = true
       buildConfig = true
       resValues = false
       shaders = false
@@ -32,8 +32,8 @@ internal fun Project.configureKotlinAndroid(
     viewBinding.enable = true
 
     composeOptions {
-      useLiveLiterals = true
-      kotlinCompilerExtensionVersion = libs.findVersion("androidx_compose_kotlin_compiler").get().toString()
+      //useLiveLiterals = true
+      //kotlinCompilerExtensionVersion = libs.findVersion("androidx_compose_kotlin_compiler").get().toString()
     }
 
     compileOptions {

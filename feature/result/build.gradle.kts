@@ -3,11 +3,20 @@ plugins {
 }
 
 android {
-    namespace = "com.pknujsp.testbed.feature.result"
+    namespace = "io.github.pknujsp.testbed.feature.result"
+}
+
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
 }
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:ui"))
     //implementation(project(":deeplink"))
     implementation("io.github.pknujsp:smartdeeplink.core:1.0.0-rc02")
     //implementation("io.github.pknujsp:smartdeeplink.annotation:1.0.0-rc02")

@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-group = "io.pknujsp.testbed.buildlogic"
+group = "io.github.pknujsp.testbed.buildlogic"
 
 java {
   sourceCompatibility = JavaVersion.VERSION_17

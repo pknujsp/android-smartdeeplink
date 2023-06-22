@@ -3,7 +3,15 @@ plugins {
 }
 
 android {
-  namespace = "com.pknujsp.testbed.feature.search"
+  namespace = "io.github.pknujsp.testbed.feature.search"
+}
+
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
 }
 
 dependencies {

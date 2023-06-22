@@ -13,8 +13,8 @@ class LibraryPlugin : Plugin<Project> {
       val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
       pluginManager.apply {
-        apply(libs.findPlugin("android.library").get().get().pluginId)
         apply(libs.findPlugin("kotlin.android").get().get().pluginId)
+        apply(libs.findPlugin("android.library").get().get().pluginId)
         apply("plugin.hilt")
       }
 

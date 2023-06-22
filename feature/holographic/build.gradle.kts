@@ -3,7 +3,15 @@ plugins {
 }
 
 android {
-  namespace = "com.pknujsp.testbed.feature.holographic"
+  namespace = "io.github.pknujsp.testbed.feature.holographic"
+}
+
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
 }
 
 dependencies {

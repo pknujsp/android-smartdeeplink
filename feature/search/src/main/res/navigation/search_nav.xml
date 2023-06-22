@@ -9,7 +9,7 @@
         app:uri="app://search" />
     <fragment
         android:id="@+id/searchFragment"
-        android:name="com.pknujsp.feature.search.SearchFragment"
+        android:name="io.github.pknujsp.testbed.feature.search.SearchFragment"
         android:label="SearchFragment" />
 
 </navigation>

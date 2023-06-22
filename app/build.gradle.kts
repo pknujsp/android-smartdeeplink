@@ -3,8 +3,7 @@ plugins {
 }
 
 android {
-  namespace = "io.pknujsp.testbed"
-  compileSdk = libs.versions.compile.sdk.get().toInt()
+  namespace = "io.github.pknujsp.testbed"
 
   defaultConfig {
     minSdk = libs.versions.min.sdk.get().toInt()
@@ -14,6 +13,13 @@ android {
   }
 }
 
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
+}
 
 dependencies {
   implementation("androidx.constraintlayout:constraintlayout:2.1.4")

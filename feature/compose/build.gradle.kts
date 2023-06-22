@@ -1,16 +1,20 @@
-import org.jetbrains.kotlin.kapt3.base.Kapt.kapt
-
 plugins {
   id("plugin.view")
 }
 
 android {
-    namespace = "com.pknujsp.testbed.feature.compose"
+  namespace = "io.github.pknujsp.testbed.feature.compose"
+}
+
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
 }
 
 dependencies {
-
-
-    implementation(project(":core:model"))
-    implementation(project(":core:ui"))
+  implementation(project(":core:model"))
+  implementation(project(":core:ui"))
 }

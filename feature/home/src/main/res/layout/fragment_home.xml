@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".HomeFragment">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:gravity="center"
+  android:orientation="vertical"
+  tools:context=".HomeFragment">
 
-    <Button
-        android:id="@+id/btn_home_to_search"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Search로 이동" />
+  <Button
+    android:id="@+id/btn_home_to_search"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:text="Search로 이동" />
 
-</FrameLayout>
+  <Button
+    android:id="@+id/btn_home_to_normaldialog"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:text="Normal Dialog열기" />
+
+  <Button
+    android:id="@+id/btn_home_to_bottomsheetdialog"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:text="BottomSheet Dialog열기" />
+
+  <Button
+    android:id="@+id/btn_home_to_cardlayout"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:text="Card 열기" />
+</LinearLayout>

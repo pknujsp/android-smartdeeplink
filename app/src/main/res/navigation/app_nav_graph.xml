@@ -2,10 +2,10 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/app_nav_graph"
-    app:startDestination="@id/image_nav">
+    app:startDestination="@id/home_nav">
 
     <include app:graph="@navigation/home_nav" />
     <include app:graph="@navigation/result_nav" />
     <include app:graph="@navigation/search_nav" />
-    <include app:graph="@navigation/image_nav" />
+    <include app:graph="@navigation/holographic_nav" />
 </navigation>

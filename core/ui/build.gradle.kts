@@ -3,8 +3,16 @@ plugins {
 }
 
 android {
-  namespace = "com.pknujsp.testbed.core.ui"
+  namespace = "io.github.pknujsp.testbed.core.ui"
   compileSdk = libs.versions.compile.sdk.get().toInt()
+}
+
+hilt {
+  enableAggregatingTask = true
+}
+
+kapt {
+  correctErrorTypes = true
 }
 
 dependencies {
