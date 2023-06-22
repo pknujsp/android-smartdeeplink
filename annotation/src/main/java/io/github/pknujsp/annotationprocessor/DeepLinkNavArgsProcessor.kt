@@ -90,17 +90,12 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
     val companionObject = createCompanion(baseClassName)
     val methods = createMethods()
 
-    val newFileSpec = FileSpec.builder(newClassName)
-      .addImport("kotlin.reflect", "KClass", "KType")
-      .addImport(
-        "kotlin.reflect.full", "memberProperties",
-        "primaryConstructor", "starProjectedType",
-      ).addType(
-        newClass.addAnnotation(annotation).addType(companionObject)
-          .addFunction
-            (methods).build(),
-      )
-      .build()
+    val newFileSpec = FileSpec.builder(newClassName).addImport("kotlin.reflect", "KClass", "KType").addImport(
+      "kotlin.reflect.full", "memberProperties",
+      "primaryConstructor", "starProjectedType",
+    ).addType(
+      newClass.addAnnotation(annotation).addType(companionObject).addFunction(methods).build(),
+    ).build()
 
     newFileSpec.writeTo(processingEnv.filer)
     processingEnv.messager.printMessage(Diagnostic.Kind.WARNING, "Generated file: ${newFileSpec.name}")
@@ -118,8 +113,7 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
       constructorBuilder.addParameter(
         ParameterSpec.builder(
           field.simpleName.toString(),
-          if (field.asType().asTypeName().toString() == String::class.java.name)
-            String::class.asTypeName() else field.asType().asTypeName(),
+          if (field.asType().asTypeName().toString() == String::class.java.name) String::class.asTypeName() else field.asType().asTypeName(),
         ).build(),
       )
     }
@@ -127,13 +121,11 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
     val properties = fields.map { field ->
       PropertySpec.builder(
         field.simpleName.toString(),
-        if (field.asType().asTypeName().toString() == String::class.java.name)
-          String::class.asTypeName() else field.asType().asTypeName(),
+        if (field.asType().asTypeName().toString() == String::class.java.name) String::class.asTypeName() else field.asType().asTypeName(),
       ).initializer(field.simpleName.toString()).build()
     }
 
-    return TypeSpec.classBuilder(newClassName).addModifiers(KModifier.DATA)
-      .primaryConstructor(constructorBuilder.build()).addProperties(properties)
+    return TypeSpec.classBuilder(newClassName).addModifiers(KModifier.DATA).primaryConstructor(constructorBuilder.build()).addProperties(properties)
       .addSuperinterface(ClassName("androidx.navigation", "NavArgs"))
   }
 
@@ -142,12 +134,10 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
     val returnClassFullName = baseClass.canonicalName
 
     // fromBundle ------------------------------------------------------
-    val fromBundle = FunSpec.builder("fromBundle")
-      .addAnnotation(JvmStatic::class.java)
-      .addParameter("bundle", ClassName("android.os", "Bundle"))
-      .returns(baseClass)
-      .addStatement(
-        """
+    val fromBundle =
+      FunSpec.builder("fromBundle").addAnnotation(JvmStatic::class.java).addParameter("bundle", ClassName("android.os", "Bundle")).returns(baseClass)
+        .addStatement(
+          """
             val argsDataClass: KClass<$returnClassSimpleName> = Class.forName("$returnClassFullName").kotlin as
             KClass<$returnClassSimpleName>
             bundle.classLoader = argsDataClass.java.classLoader
@@ -171,16 +161,12 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
 
             return constructor.call(*properties)
             """.trimIndent(),
-      ).build()
+        ).build()
 
 
     // empty -----------------------------------------------------------
-    val empty = FunSpec.builder("empty")
-      .addAnnotation(JvmStatic::class.java)
-      .addModifiers(KModifier.PRIVATE)
-      .returns(baseClass)
-      .addStatement(
-        """
+    val empty = FunSpec.builder("empty").addAnnotation(JvmStatic::class.java).addModifiers(KModifier.PRIVATE).returns(baseClass).addStatement(
+      """
             val dataClass: KClass<$returnClassSimpleName> = Class.forName("$returnClassFullName").kotlin as KClass<$returnClassSimpleName>
             val constructor = dataClass.primaryConstructor!!
 
@@ -189,16 +175,14 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
             }
             return constructor.call(*args.toTypedArray())
             """.trimIndent(),
-      ).build()
+    ).build()
 
 
     // defaultValues ---------------------------------------------------
-    val defaultValues = FunSpec.builder("defaultValues")
-      .addModifiers(KModifier.PRIVATE).addAnnotation(JvmStatic::class.java)
-      .addParameter("type", KType::class)
-      .returns(Any::class)
-      .addStatement(
-        """
+    val defaultValues =
+      FunSpec.builder("defaultValues").addModifiers(KModifier.PRIVATE).addAnnotation(JvmStatic::class.java).addParameter("type", KType::class)
+        .returns(Any::class).addStatement(
+          """
             return when (type) {
                 is KType -> {
                     when (type.classifier) {
@@ -213,17 +197,14 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
                 else -> throw IllegalArgumentException("Not supported type")
             }
             """.trimIndent(),
-      ).build()
+        ).build()
 
 
     // convertType -----------------------------------------------------
-    val convertType = FunSpec.builder("convertType")
-      .addModifiers(KModifier.PRIVATE).addAnnotation(JvmStatic::class.java)
-      .addParameter("type", KType::class)
-      .addParameter("value", Any::class)
-      .returns(Any::class)
-      .addStatement(
-        """
+    val convertType =
+      FunSpec.builder("convertType").addModifiers(KModifier.PRIVATE).addAnnotation(JvmStatic::class.java).addParameter("type", KType::class)
+        .addParameter("value", Any::class).returns(Any::class).addStatement(
+          """
             return when (type) {
                 is KType -> {
                     when (type.classifier) {
@@ -238,27 +219,19 @@ private class DeepLinkNavArgsProcessor : AbstractProcessor() {
                 else -> throw IllegalArgumentException("Not supported type")
             }
             """.trimIndent(),
-      ).build()
+        ).build()
 
 
     // companion object ------------------------------------------------
-    return TypeSpec.companionObjectBuilder()
-      .addModifiers(KModifier.COMPANION)
-      .addFunction(fromBundle)
-      .addFunction(empty)
-      .addFunction(defaultValues)
-      .addFunction(convertType)
-      .build()
+    return TypeSpec.companionObjectBuilder().addModifiers(KModifier.COMPANION).addFunction(fromBundle).addFunction(empty).addFunction(defaultValues)
+      .addFunction(convertType).build()
   }
 
   @OptIn(DelicateKotlinPoetApi::class)
   private fun createMethods(): FunSpec {
     // toMap -----------------------------------------------------------
-    val toMap = FunSpec.builder("toMap")
-      .returns(Map::class.asClassName().parameterizedBy(String::class.asClassName(), Any::class.asClassName()))
-      .addAnnotation(AnnotationSpec.builder(PublishedApi::class.java).build())
-      .addModifiers(KModifier.INTERNAL)
-      .addStatement(
+    val toMap = FunSpec.builder("toMap").returns(Map::class.asClassName().parameterizedBy(String::class.asClassName(), Any::class.asClassName()))
+      .addAnnotation(AnnotationSpec.builder(PublishedApi::class.java).build()).addModifiers(KModifier.INTERNAL).addStatement(
         """
             return this::class.memberProperties.associate { property ->
             property.name to property.getter.call(this)!!
