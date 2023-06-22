@@ -38,5 +38,9 @@ gradlePlugin {
       id = "plugin.hilt"
       implementationClass = "HiltPlugin"
     }
+    register("ReleaseLibraryPlugin") {
+      id = "plugin.release.android.library"
+      implementationClass = "ReleaseLibraryPlugin"
+    }
   }
 }

@@ -1,11 +1,11 @@
 plugins {
-  id("plugin.view")
+  id("plugin.release.android.library")
   alias(libs.plugins.dokka)
+  alias(libs.plugins.kapt)
 }
 
 android {
   namespace = "io.github.pknujsp.simpledialog"
-  compileSdk = libs.versions.compile.sdk.get().toInt()
 
   buildTypes {
     release {
@@ -30,16 +30,10 @@ tasks.withType(GenerateModuleMetadata::class).configureEach {
   dependsOn("androidSourcesJar")
 }
 
-hilt {
-  enableAggregatingTask = true
-}
-
-kapt {
-  correctErrorTypes = true
-}
-
 dependencies {
-
+  implementation(libs.androidx.annotation)
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.appcompat)
 }
 
 apply {
