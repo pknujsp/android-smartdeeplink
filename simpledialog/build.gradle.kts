@@ -24,6 +24,7 @@ android {
 rootProject.extra.apply {
   set("PUBLISH_ARTIFACT_ID", "simpledialog")
   set("PUBLISH_DESCRIPTION", "Simple dialog library")
+  set("PUBLISH_VERSION", "1.0.0")
 }
 
 tasks.withType(GenerateModuleMetadata::class).configureEach {
