@@ -8,4 +8,5 @@
     <include app:graph="@navigation/result_nav" />
     <include app:graph="@navigation/search_nav" />
     <include app:graph="@navigation/holographic_nav" />
+    <include app:graph="@navigation/main_dialog_nav" />
 </navigation>

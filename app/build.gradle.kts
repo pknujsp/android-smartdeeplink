@@ -29,5 +29,6 @@ dependencies {
   implementation(project(":feature:result"))
   implementation(project(":feature:search"))
   implementation(project(":feature:holographic"))
+  implementation(project(":feature:dialog"))
   implementation(project(":core:ui"))
 }

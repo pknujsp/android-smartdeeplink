@@ -7,10 +7,6 @@ import android.view.ViewGroup
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import io.github.pknujsp.testbed.core.ui.DialogType
-import io.github.pknujsp.testbed.core.ui.SimpleDialogBuilder
-import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
-import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
 import io.github.pknujsp.testbed.feature.home.databinding.FragmentHomeBinding
 
 class HomeFragment : Fragment() {
@@ -28,13 +24,8 @@ class HomeFragment : Fragment() {
       btnHomeToCardlayout.setOnClickListener {
         navigate("app://holographic")
       }
-      btnHomeToBottomsheetdialog.setOnClickListener {
-        SimpleDialogBuilder.builder(BottomsheetTestBinding.inflate(layoutInflater).root, DialogType.BottomSheet).setCancelable(true).setDim(true)
-          .setLayoutSize(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).setBlur(true).buildAndShow()
-      }
-      btnHomeToNormaldialog.setOnClickListener {
-        SimpleDialogBuilder.builder(ViewLoadingBinding.inflate(layoutInflater).root, DialogType.Normal).setCancelable(true).setDim(true).setBlur(true)
-          .setLayoutSize(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).buildAndShow()
+      btnHomeToDialog.setOnClickListener {
+        navigate("app://main_dialog")
       }
       btnHomeToSearch.setOnClickListener {
         navigate("app://search")

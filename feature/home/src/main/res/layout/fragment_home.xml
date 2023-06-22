@@ -15,18 +15,12 @@
     android:text="Search로 이동" />
 
   <Button
-    android:id="@+id/btn_home_to_normaldialog"
+    android:id="@+id/btn_home_to_dialog"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:text="Normal Dialog열기" />
+    android:text="Dialog" />
 
-  <Button
-    android:id="@+id/btn_home_to_bottomsheetdialog"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_gravity="center"
-    android:text="BottomSheet Dialog열기" />
 
   <Button
     android:id="@+id/btn_home_to_cardlayout"

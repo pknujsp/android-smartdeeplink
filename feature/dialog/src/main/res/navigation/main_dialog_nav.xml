@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:id="@+id/main_dialog_nav"
+  app:startDestination="@id/mainDialogFragment">
+
+  <fragment
+    android:id="@+id/mainDialogFragment"
+    android:name="io.github.pknujsp.testbed.feature.dialog.MainDialogFragment"
+    android:label="MainDialogFragment" />
+
+  <deepLink app:uri="app://main_dialog" />
+</navigation>

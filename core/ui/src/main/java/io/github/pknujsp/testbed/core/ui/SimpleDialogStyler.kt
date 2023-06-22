@@ -3,7 +3,6 @@ package io.github.pknujsp.testbed.core.ui
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.res.Resources
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.ViewGroup
@@ -79,20 +78,18 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
   }
 
   private fun background(window: Window) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
-
     window.decorView.allViews.filter {
       it.id == android.R.id.content
     }.firstOrNull()?.also { parent ->
-      parent.elevation = simpleDialogAttributes.elevation * density
+      if (simpleDialogAttributes.dialogType != DialogType.Fullscreen) parent.elevation = simpleDialogAttributes.elevation * density
 
       simpleDialogAttributes.backgroundResourceId?.run {
         parent.setBackgroundResource(this)
       } ?: run {
         parent.background = GradientDrawable().apply {
           shape = GradientDrawable.RECTANGLE
-          setColor(Color.WHITE)
-          cornerRadius = simpleDialogAttributes.cornerRadius * density
+          setColor(simpleDialogAttributes.backgroundColor)
+          if (simpleDialogAttributes.dialogType != DialogType.Fullscreen) cornerRadius = simpleDialogAttributes.cornerRadius * density
         }
       }
     }
@@ -100,7 +97,7 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
 
   private fun spacing(window: Window) {
     if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
-    
+
     window.decorView.allViews.filter {
       it.id == android.R.id.content
     }.firstOrNull()?.also { parent ->
@@ -126,57 +123,3 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
 internal fun Dialog.theme(simpleDialogAttributes: SimpleDialogAttributes) {
   SimpleDialogStyler(simpleDialogAttributes, this).invoke()
 }
-
-
-/*
-<?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-
-  <style name="Dialog.Fullscreen" parent="MaterialAlertDialog.Material3">
-    <item name="android:windowFullscreen">false</item>
-    <item name="android:windowIsFloating">true</item>
-    <item name="android:windowNoTitle">true</item>
-    <item name="android:windowBackground">@android:color/transparent</item>
-  </style>
-
-  <style name="Dialog" parent="Theme.AppCompat.Dialog">
-    <item name="android:windowFullscreen">false</item>
-    <item name="android:windowIsFloating">true</item>
-    <item name="android:windowNoTitle">true</item>
-    <item name="android:windowMinWidthMajor">0%</item>
-    <item name="android:windowBackground">@android:color/transparent</item>
-    <item name="android:windowBlurBehindEnabled" tools:targetApi="S">true</item>
-    <item name="android:windowBlurBehindRadius" tools:targetApi="S">4dp</item>
-    <item name="android:backgroundDimEnabled">true</item>
-    <item name="android:backgroundDimAmount">0.35</item>
-    <item name="android:windowClipToOutline">false</item>
-    <item name="android:clipChildren">false</item>
-    <item name="android:windowCloseOnTouchOutside">false</item>
-    <item name="android:windowElevation">50dp</item>
-  </style>
-
-  <style name="BottomSheet" parent="Theme.AppCompat.Dialog">
-    <item name="android:windowMinWidthMajor">0%</item>
-    <item name="android:windowFullscreen">false</item>
-    <item name="android:windowNoTitle">true</item>
-    <item name="enforceMaterialTheme">false</item>
-    <item name="android:windowClipToOutline">false</item>
-    <item name="android:clipChildren">false</item>
-    <item name="android:windowElevation">10dp</item>
-    <item name="android:layout_gravity">bottom</item>
-    <item name="android:layout_marginBottom">12dp</item>
-    <item name="android:windowBlurBehindEnabled" tools:targetApi="S">true</item>
-    <item name="android:windowBlurBehindRadius" tools:targetApi="S">4dp</item>
-    <item name="android:backgroundDimEnabled">true</item>
-    <item name="android:backgroundDimAmount">0.35</item>
-    <item name="android:layout_marginHorizontal">18dp</item>
-    <item name="android:windowIsFloating">true</item>
-    <item name="android:windowSoftInputMode">adjustResize</item>
-    <item name="android:windowBackground">@android:color/transparent</item>
-    <item name="android:windowEnterAnimation">@anim/bottomsheet_slide_in</item>
-    <item name="android:windowExitAnimation">@anim/bottomsheet_slide_out</item>
-  </style>
-
-</resources>
-
- */

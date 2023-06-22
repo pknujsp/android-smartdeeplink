@@ -1,6 +1,7 @@
 package io.github.pknujsp.testbed.core.ui
 
 import android.view.View
+import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
@@ -16,6 +17,7 @@ data class SimpleDialogAttributes(
   @Dimension(unit = Dimension.DP) val horizontalMargin: Int,
   @Dimension(unit = Dimension.DP) val cornerRadius: Int,
   @IdRes val backgroundResourceId: Int? = null,
+  @ColorInt val backgroundColor: Int,
   @Dimension(unit = Dimension.DP) val elevation: Int,
   @SizeMode val layoutWidth: Int,
   @SizeMode val layoutHeight: Int,
