@@ -22,8 +22,8 @@ local.properties
 .gradle/
 build/
 
-/annotation
-/deeplink
+annotation/
+deeplink/
 
 # Local configuration file (sdk path, etc)
 local.properties
