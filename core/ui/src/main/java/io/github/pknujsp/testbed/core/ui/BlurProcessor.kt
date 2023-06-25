@@ -9,12 +9,14 @@ import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import androidx.annotation.Dimension
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.lang.ref.SoftReference
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
@@ -25,9 +27,10 @@ class BlurProcessor {
 
   private val displayDensity = Resources.getSystem().displayMetrics.density
 
-  private val dispatcher = Dispatchers.Default
-
   private companion object {
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private val dispatchers = newFixedThreadPoolContext(Runtime.getRuntime().availableProcessors(), "BlurThreads")
 
     private val mulTable = intArrayOf(
       512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292,
@@ -94,7 +97,7 @@ class BlurProcessor {
    * StackBlur
    */
   fun blur(view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int) {
-    scope.launch(dispatcher) {
+    scope.launch(dispatchers.limitedParallelism(1)) {
       val width = view.width
       val height = view.height
       val radiusPx = (radius * displayDensity).toInt()
@@ -123,8 +126,9 @@ class BlurProcessor {
         )
       }
 
-      if (copySuccess) blur(blurredBitmap, radius)
+      if (copySuccess) {
 
+      }
     }
   }
 
@@ -133,7 +137,7 @@ class BlurProcessor {
   ) {
     val width = blurredBitmap.width
     val height = blurredBitmap.height
-    val pixels = IntArray(width * height)
+    val pixels = SoftReference(IntArray(width * height)).get()!!
     blurredBitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
     val newWidth = width - 1
@@ -145,33 +149,32 @@ class BlurProcessor {
     val valueStack = Array(div - 1) {
       BlurValues()
     }
-    val endValue = valueStack[newRadius]
 
     val mulSum = mulTable[radius]
     val shgSum = shgTable[radius]
 
     var yw = 0
     var yi = 0
-    val currentValueIndexIn = Index(0, div - 1)
-    val currentValueIndexOut = Index(0, div - 1)
+
+    val currentValueIndexIn = Index(0, valueStack.size)
+    val currentValueIndexOut = Index(newRadius, valueStack.size)
+
+    // height ------------------------------------------------------------------------------
 
     for (y in 0 until height) {
-
       val pa = pixels[yi]
       val pr = pixels[yi + 1]
       val pg = pixels[yi + 2]
       val pb = pixels[yi + 3]
 
-      valueStack.forEachIndexed { i, value ->
-        if (i == newRadius) {
-          currentValueIndexIn.set(i)
-          return@forEachIndexed
-        }
-        value.alpha = pa
-        value.red = pr
-        value.green = pg
-        value.blue = pb
+      for (i in 0 until newRadius) {
+        valueStack[i].alpha = pa
+        valueStack[i].red = pr
+        valueStack[i].green = pg
+        valueStack[i].blue = pb
       }
+
+      currentValueIndexIn.set(newRadius)
 
       var aSumIn = 0
       var rSumIn = 0
@@ -189,7 +192,7 @@ class BlurProcessor {
       var bSum = sumFactor * pb
 
       for (i in 1 until newRadius) {
-        val p = yi + ((if (newWidth < i) newWidth else i) shl 2)
+        val p = yi + (minOf(newWidth, i) shl 2)
 
         val a = pixels[p]
         val r = pixels[p + 1]
@@ -209,14 +212,11 @@ class BlurProcessor {
         rSumIn += r * rbs
         gSumIn += g * rbs
         bSumIn += b * rbs
-
-        aSumOut += a
-        rSumOut += r
-        gSumOut += g
-        bSumOut += b
       }
 
       currentValueIndexIn.set(0)
+
+      // width -----------------------------------------------------
 
       for (x in 0 until width) {
         val paInit = (aSum * mulSum) shr shgSum
@@ -281,116 +281,148 @@ class BlurProcessor {
       yw += width
     }
 
-    // width
+    // width --------------------------------------------------------------
 
     for (x in 0 until width) {
-      var yi = x shl 2
+      yi = x shl 2
+      var pa = pixels[yi]
+      var pr = pixels[yi + 1]
+      var pg = pixels[yi + 2]
+      var pb = pixels[yi + 3]
 
-      var pr = pixels[yi]
-      var pg = pixels[yi + 1]
-      var pb = pixels[yi + 2]
-      var pa = pixels[yi + 3]
-      var rOutSum = radiusPlus1 * pr
-      var gOutSum = radiusPlus1 * pg
-      var bOutSum = radiusPlus1 * pb
-      var aOutSum = radiusPlus1 * pa
+      var aOutSum = newRadius * pa
+      var rOutSum = newRadius * pr
+      var gOutSum = newRadius * pg
+      var bOutSum = newRadius * pb
+
+      var aSum = sumFactor * pa
       var rSum = sumFactor * pr
       var gSum = sumFactor * pg
       var bSum = sumFactor * pb
-      var aSum = sumFactor * pa
 
-      var stack: BlurStack? = stackStart
+      currentValueIndexIn.set(0)
 
-      for (i in 0 until radiusPlus1) {
-        stack?.r = pr
-        stack?.g = pg
-        stack?.b = pb
-        stack?.a = pa
-        stack = stack?.next
+      valueStack.forEachIndexed { i, value ->
+        if (i == newRadius) {
+          currentValueIndexIn.set(i)
+          return@forEachIndexed
+        }
+        value.alpha = pa
+        value.red = pr
+        value.green = pg
+        value.blue = pb
       }
 
       var yp = width
 
-      var gInSum = 0
-      var bInSum = 0
       var aInSum = 0
       var rInSum = 0
+      var gInSum = 0
+      var bInSum = 0
+
       for (i in 1..radius) {
         yi = (yp + x) shl 2
 
-        val rbs = radiusPlus1 - i
-        rSum += (stack?.r ?: 0).also { stack?.r = pixels[yi] } * rbs
-        gSum += (stack?.g ?: 0).also { stack?.g = pixels[yi + 1] } * rbs
-        bSum += (stack?.b ?: 0).also { stack?.b = pixels[yi + 2] } * rbs
-        aSum += (stack?.a ?: 0).also { stack?.a = pixels[yi + 3] } * rbs
+        val rbs = newRadius - i
+
+        aSum += valueStack[currentValueIndexIn.get()].alpha.also { valueStack[currentValueIndexIn.get()].alpha = pixels[yi] } * rbs
+        rSum += valueStack[currentValueIndexIn.get()].red.also { valueStack[currentValueIndexIn.get()].red = pixels[yi + 1] } * rbs
+        gSum += valueStack[currentValueIndexIn.get()].green.also { valueStack[currentValueIndexIn.get()].green = pixels[yi + 2] } * rbs
+        bSum += valueStack[currentValueIndexIn.get()].blue.also { valueStack[currentValueIndexIn.get()].blue = pixels[yi + 3] } * rbs
 
         rInSum += pr
         gInSum += pg
         bInSum += pb
         aInSum += pa
 
-        stack = stack?.next
+        currentValueIndexIn.inc()
 
-        if (i < heightMinus1) {
-          yp += width
-        }
+        if (i < newHeight) yp += width
       }
 
       yi = x
-      var stackIn = stackStart
-      var stackOut = stackEnd
+
+      currentValueIndexIn.set(0)
+      currentValueIndexOut.set(newRadius)
+
+      // height -----------------------------------------------------------------------------------
+
       for (y in 0 until height) {
         var p = yi shl 2
-        pixels[p + 3] = pa.also {
-          aSum = (aSum * mulSum) shr shgSum
-        }
-        if (pa > 0) {
-          pa = 255 / pa
-          pixels[p] = ((rSum * mulSum) shr shgSum) * pa
-          pixels[p + 1] = ((gSum * mulSum) shr shgSum) * pa
-          pixels[p + 2] = ((bSum * mulSum) shr shgSum) * pa
-        } else {
-          pixels[p] = pixels[p + 1].also { pixels[p + 2] = it }
+        pixels[p] = pa.also {
+          pa = (aSum * mulSum) shr shgSum
         }
 
+        if (pa > 0) {
+          pa = 255 / pa
+          pixels[p + 1] = ((rSum * mulSum) shr shgSum) * pa
+          pixels[p + 2] = ((gSum * mulSum) shr shgSum) * pa
+          pixels[p + 3] = ((bSum * mulSum) shr shgSum) * pa
+        } else {
+          pixels[p + 1] = pixels[p + 2].also {
+            pixels[p + 2] = 0
+            pixels[p + 3] = 0
+          }
+        }
+
+        aSum -= aOutSum
         rSum -= rOutSum
         gSum -= gOutSum
         bSum -= bOutSum
-        aSum -= aOutSum
 
-        rOutSum -= stackIn?.r ?: 0
-        gOutSum -= stackIn?.g ?: 0
-        bOutSum -= stackIn?.b ?: 0
-        aOutSum -= stackIn?.a ?: 0
+        aOutSum -= valueStack[currentValueIndexIn.get()].alpha
+        rOutSum -= valueStack[currentValueIndexIn.get()].red
+        gOutSum -= valueStack[currentValueIndexIn.get()].green
+        bOutSum -= valueStack[currentValueIndexIn.get()].blue
 
-        p = x + (minOf(y + radiusPlus1, heightMinus1) * width) shl 2
+        p = x + (minOf(y + newRadius, newHeight) * width) shl 2
 
-        rSum += rInSum.also { rInSum += (stackIn?.r ?: 0).also { stackIn?.r = pixels[p] } }
-        gSum += gInSum.also { gInSum += (stackIn?.g ?: 0).also { stackIn?.g = pixels[p + 1] } }
-        bSum += bInSum.also { bInSum += (stackIn?.b ?: 0).also { stackIn?.b = pixels[p + 2] } }
-        aSum += aInSum.also { aInSum += (stackIn?.a ?: 0).also { stackIn?.a = pixels[p + 3] } }
+        aSum += aInSum.also {
+          aInSum += valueStack[currentValueIndexIn.get()].alpha.also {
+            valueStack[currentValueIndexIn.get()].alpha = pixels[p + 0]
+          }
+        }
+        rSum += rInSum.also {
+          rInSum += valueStack[currentValueIndexIn.get()].red.also {
+            valueStack[currentValueIndexIn.get()].red = pixels[p + 1]
+          }
+        }
+        gSum += gInSum.also {
+          gInSum += valueStack[currentValueIndexIn.get()].green.also {
+            valueStack[currentValueIndexIn.get()].green = pixels[p + 2]
+          }
+        }
+        bSum += bInSum.also {
+          bInSum += valueStack[currentValueIndexIn.get()].blue.also {
+            valueStack[currentValueIndexIn.get()].blue = pixels[p + 3]
+          }
+        }
 
-        stackIn = stackIn?.next
+        currentValueIndexIn.inc()
 
-        rOutSum += stackOut?.r ?: 0
-        gOutSum += stackOut?.g ?: 0
-        bOutSum += stackOut?.b ?: 0
-        aOutSum += stackOut?.a ?: 0
+        aOutSum += valueStack[currentValueIndexOut.get()].alpha.apply {
+          pa = this
+        }
+        rOutSum += valueStack[currentValueIndexOut.get()].red.apply {
+          pr = this
+        }
+        gOutSum += valueStack[currentValueIndexOut.get()].green.apply {
+          pg = this
+        }
+        bOutSum += valueStack[currentValueIndexOut.get()].blue.apply {
+          pb = this
+        }
 
         rInSum -= pr
         gInSum -= pg
         bInSum -= pb
         aInSum -= pa
 
-        stackOut = stackOut?.next
-
+        currentValueIndexOut.inc()
         yi += width
       }
     }
+
+    blurredBitmap.setPixels(pixels, 0, width, 0, 0, width, height)
   }
-
-  private fun correctIndex(index: Int, length: Int): Int = if (index >= length) 0 else index
-
-
-  private fun clamp(x: Int, a: Int, b: Int): Int = if (x < a) a else if (x > b) b else x
 }
