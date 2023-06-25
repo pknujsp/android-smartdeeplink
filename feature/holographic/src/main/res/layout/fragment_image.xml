@@ -28,28 +28,38 @@
     android:outlineAmbientShadowColor="@color/card_shadow_color_ambient"
     android:outlineProvider="background"
     android:outlineSpotShadowColor="@color/card_shadow_color_ambient"
+    android:scaleX="1.02"
+    android:scaleY="0.85"
     app:cardBackgroundColor="@color/card_shadow_color_ambient"
-    app:cardElevation="28dp"
+    app:cardCornerRadius="50dp"
+    app:cardElevation="24dp"
     app:layout_constraintBottom_toBottomOf="@id/imageview"
     app:layout_constraintEnd_toEndOf="@id/imageview"
     app:layout_constraintStart_toStartOf="@id/imageview"
     app:layout_constraintTop_toTopOf="@id/imageview" />
 
-  <com.google.android.material.imageview.ShapeableImageView
+  <FrameLayout
     android:id="@+id/imageview"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:adjustViewBounds="true"
-    android:outlineAmbientShadowColor="@android:color/white"
-    android:outlineSpotShadowColor="@android:color/white"
-    android:src="@drawable/applecard1_anti"
-    android:elevation="28dp"
+    android:elevation="24dp"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent"
-    tools:targetApi="s" />
+    app:layout_constraintTop_toTopOf="parent">
+
+    <Button
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:outlineAmbientShadowColor="@android:color/white"
+      android:outlineSpotShadowColor="@android:color/white"
+      android:text="Hello World!"
+      android:textColor="@android:color/white"
+      android:textSize="20sp"
+      tools:targetApi="s" />
+
+  </FrameLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

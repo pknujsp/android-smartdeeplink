@@ -33,7 +33,7 @@ class MainDialogFragment : Fragment() {
     binding.apply {
       showDialogBtn.setOnClickListener {
         viewModel.dialogBuilder.value?.also { builder ->
-          builder.view = dialogView(builder.dialogType)
+          builder.contentView = dialogView(builder.dialogType)
           builder.buildAndShow()
         }
       }
@@ -88,14 +88,14 @@ class MainDialogFragment : Fragment() {
         viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
           val dialogType = dialogType()
           viewModel.init(
-            SimpleDialogBuilder.builder(dialogView(dialogType), dialogType).setElevation(
+            SimpleDialogBuilder.builder(requireContext(), dialogView(dialogType), dialogType).setElevation(
               elevationSlider.value.toInt(),
             ).setLayoutSize(
               if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
               if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
             ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
               .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(true)
-              .setMarginHorizontal(horizontalMarginSlider.value.toInt()).setMarginBottom(bottomMarginSlider.value.toInt()),
+              .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()),
           )
         }
       }

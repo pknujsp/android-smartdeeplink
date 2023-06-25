@@ -1,6 +1,6 @@
 package io.github.pknujsp.testbed.core.ui
 
-import android.graphics.Color
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
@@ -10,133 +10,38 @@ import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 
-private const val defaultBlurIndensity: Int = 20
-private const val defaultDimIndensity: Int = 40
-private const val defaultMarginBottom: Int = 12
-private const val defaultMarginHorizontal: Int = 16
-private const val defaultCornerRadius: Int = 12
-private const val defaultElevation: Int = 8
-private const val defaultWidth: Int = WRAP_CONTENT
-private const val defaultHeight: Int = WRAP_CONTENT
-private const val defaultBackgroundColor: Int = Color.WHITE
 
 class SimpleDialogBuilder private constructor(
-  var view: View, var dialogType: DialogType,
+  context: Context,
+  var contentView: View?,
+  var dialogType: DialogType,
 ) {
-  companion object {
-    /**
-     * Current attributes.(현재 속성 값들입니다.)
-     */
 
-    /**
-     * The currently set global blur intensity.(현재 설정된 전역 Blur 강도입니다.)
-     *
-     * Default value is 20.(기본 값은 20입니다.)
-     */
-    @IntRange(from = 0, to = 100) var currentBlurIndensity: Int = defaultBlurIndensity
+  private val dialogStyler: SimpleDialogStyler =
+    SimpleDialogStyler(SimpleDialogAttributes(contentView = contentView, dialogType = dialogType), context)
 
-    /**
-     * The currently set global dim intensity.(현재 설정된 전역 Dim 강도입니다.)
-     *
-     * Default value is 40.(기본 값은 40입니다.)
-     */
-    @IntRange(from = 0, to = 100) var currentDimIndensity: Int = defaultDimIndensity
-
-    /**
-     * The currently set global margin bottom.(현재 설정된 전역 하단 여백입니다.)
-     *
-     * Default value is 12.(기본 값은 12입니다.)
-     */
-    @Dimension(unit = Dimension.DP) var currentMarginBottom: Int = defaultMarginBottom
-
-    /**
-     * The currently set global margin horizontal.(현재 설정된 전역 좌우 여백입니다.)
-     *
-     * Default value is 16.(기본 값은 16입니다.)
-     */
-    @Dimension(unit = Dimension.DP) var currentMarginHorizontal: Int = defaultMarginHorizontal
-
-    /**
-     * The currently set global corner radius.(현재 설정된 전역 모서리 반지름입니다.)
-     *
-     * Default value is 12.(기본 값은 12입니다.)
-     */
-    @Dimension(unit = Dimension.DP) var currentCornerRadius: Int = defaultCornerRadius
-
-    /**
-     * The currently set global elevation.(현재 설정된 전역 고도입니다.)
-     *
-     * Default value is 8.(기본 값은 8입니다.)
-     */
-    @Dimension(unit = Dimension.DP) var currentElevation: Int = defaultElevation
-
-    /**
-     * The currently set global width.(현재 설정된 전역 너비입니다.)
-     *
-     * Default value is [WRAP_CONTENT].(기본 값은 [WRAP_CONTENT]입니다.)
-     */
-    @SizeMode var currentWidth: Int = defaultWidth
-
-    /**
-     * The currently set global height.(현재 설정된 전역 높이입니다.)
-     *
-     * Default value is [WRAP_CONTENT].(기본 값은 [WRAP_CONTENT]입니다.)
-     */
-    @SizeMode var currentHeight: Int = defaultHeight
-
-    /**
-     * The currently set global background color.(현재 설정된 전역 배경 색상입니다.)
-     *
-     * Default value is [Color.WHITE].(기본 값은 [Color.WHITE]입니다.)
-     */
-    @ColorInt var currentBackgroundColor: Int = defaultBackgroundColor
-
-    /**
-     * Recover all attributes with defaults.(속성 값을 모두 기본값으로 재설정합니다.)
-     */
-    fun resetCurrentAttributes() {
-      currentBlurIndensity = defaultBlurIndensity
-      currentDimIndensity = defaultDimIndensity
-      currentMarginBottom = defaultMarginBottom
-      currentMarginHorizontal = defaultMarginHorizontal
-      currentCornerRadius = defaultCornerRadius
-      currentElevation = defaultElevation
-      currentWidth = defaultWidth
-      currentHeight = defaultHeight
-      currentBackgroundColor = defaultBackgroundColor
-    }
-
-    /**
-     * Create a new instance of [SimpleDialogBuilder] with [view] and [dialogType].(새로운 [SimpleDialogBuilder] 인스턴스를 [view]와 [dialogType]으로 생성합니다.)
-     */
-    fun builder(view: View, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(view, dialogType)
+  private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType)).apply {
+    if (contentView != null) setView(contentView)
   }
 
-  private var blur: Boolean = true
+  companion object {
+    /**
+     * Create a new instance of [SimpleDialogBuilder] with [contentView] and [dialogType].(새로운 [SimpleDialogBuilder] 인스턴스를 [contentView]와 [dialogType]으로 생성합니다.)
+     */
+    fun builder(@ActivityContext context: Context, contentView: View, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
+      context, contentView,
+      dialogType,
+    )
 
-  @IntRange(from = 0, to = 100) private var blurIndensity: Int = currentBlurIndensity
+    /**
+     * Create a new instance of [SimpleDialogBuilder] with [dialogType].(새로운 [SimpleDialogBuilder] 인스턴스를 [dialogType]으로 생성합니다.)
+     */
+    fun builder(@ActivityContext context: Context, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
+      context, null,
+      dialogType,
+    )
+  }
 
-  private var dim: Boolean = true
-
-  @IntRange(from = 0, to = 100) private var dimIndensity: Int = currentDimIndensity
-
-  private var cancelable: Boolean = true
-
-  @Dimension(unit = Dimension.DP) private var bottomMargin: Int = currentMarginBottom
-
-  @Dimension(unit = Dimension.DP) private var horizontalMargin: Int = currentMarginHorizontal
-
-  @Dimension(unit = Dimension.DP) private var cornerRadius: Int = currentCornerRadius
-
-  @IdRes private var backgroundResourceId: Int? = null
-
-  @Dimension(unit = Dimension.DP) private var elevation: Int = currentElevation
-
-  @SizeMode private var layoutWidth: Int = currentWidth
-
-  @SizeMode private var layoutHeight: Int = currentHeight
-
-  @ColorInt private var backgroundColor: Int = currentBackgroundColor
 
   /**
    * Set blur and blur intensity.(Blue 활성과 Blur 강도를 설정합니다.)
@@ -147,9 +52,9 @@ class SimpleDialogBuilder private constructor(
    *
    * Warning! Performance may be degraded if you set [blurIndensity] to a high value.(경고! [blurIndensity]를 높은 값으로 설정한다면 성능이 저하될 수 있습니다.)
    */
-  fun setBlur(blur: Boolean, @IntRange(from = 0, to = 100) blurIndensity: Int = currentBlurIndensity): SimpleDialogBuilder {
-    this.blur = blur
-    this.blurIndensity = blurIndensity
+  fun setBlur(blur: Boolean, @IntRange(from = 0, to = 100) blurIndensity: Int = SimpleDialogAttributes.currentBlurIndensity): SimpleDialogBuilder {
+    dialogStyler.simpleDialogAttributes.blur = blur
+    dialogStyler.simpleDialogAttributes.blurIndensity = blurIndensity
     return this
   }
 
@@ -160,9 +65,9 @@ class SimpleDialogBuilder private constructor(
    *
    * If DialogType is DialogType.FullScreen, [dim] will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 [dim]은 무시됩니다.)
    */
-  fun setDim(dim: Boolean, @IntRange(from = 0, to = 100) dimIndensity: Int = defaultDimIndensity): SimpleDialogBuilder {
-    this.dim = dim
-    this.dimIndensity = dimIndensity
+  fun setDim(dim: Boolean, @IntRange(from = 0, to = 100) dimIndensity: Int = SimpleDialogAttributes.currentDimIndensity): SimpleDialogBuilder {
+    dialogStyler.simpleDialogAttributes.dim = dim
+    dialogStyler.simpleDialogAttributes.dimIndensity = dimIndensity
     return this
   }
 
@@ -170,7 +75,7 @@ class SimpleDialogBuilder private constructor(
    * Set cancelable.(취소 가능 여부를 설정합니다.)
    */
   fun setCancelable(cancelable: Boolean): SimpleDialogBuilder {
-    this.cancelable = cancelable
+    dialogStyler.simpleDialogAttributes.cancelable = cancelable
     return this
   }
 
@@ -181,8 +86,8 @@ class SimpleDialogBuilder private constructor(
    *
    * If you set [bottomMargin] to 0, the dialog will be full screen.(만약 [bottomMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
    */
-  fun setMarginBottom(@Dimension(unit = Dimension.DP) marginBottom: Int): SimpleDialogBuilder {
-    this.bottomMargin = marginBottom
+  fun setBottomMargin(@Dimension(unit = Dimension.DP) bottomMargin: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogAttributes.bottomMargin = bottomMargin
     return this
   }
 
@@ -193,8 +98,8 @@ class SimpleDialogBuilder private constructor(
    *
    * If you set [horizontalMargin] to 0, the dialog will be full screen.(만약 [horizontalMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
    */
-  fun setMarginHorizontal(@Dimension(unit = Dimension.DP) marginHorizontal: Int): SimpleDialogBuilder {
-    this.horizontalMargin = marginHorizontal
+  fun setHorizontalMargin(@Dimension(unit = Dimension.DP) horizontalMargin: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogAttributes.horizontalMargin = horizontalMargin
     return this
   }
 
@@ -206,7 +111,7 @@ class SimpleDialogBuilder private constructor(
    * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
    */
   fun setCornerRadius(@Dimension(unit = Dimension.DP) cornerRadius: Int): SimpleDialogBuilder {
-    this.cornerRadius = cornerRadius
+    dialogStyler.simpleDialogAttributes.cornerRadius = cornerRadius
     return this
   }
 
@@ -214,7 +119,7 @@ class SimpleDialogBuilder private constructor(
    * Set background resource id.(배경 리소스 아이디를 설정합니다.)
    */
   fun setBackgroundResourceId(@IdRes backgroundResourceId: Int): SimpleDialogBuilder {
-    this.backgroundResourceId = backgroundResourceId
+    dialogStyler.simpleDialogAttributes.backgroundResourceId = backgroundResourceId
     return this
   }
 
@@ -226,7 +131,7 @@ class SimpleDialogBuilder private constructor(
    * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
    */
   fun setElevation(@Dimension(unit = Dimension.DP) elevation: Int): SimpleDialogBuilder {
-    this.elevation = elevation
+    dialogStyler.simpleDialogAttributes.elevation = elevation
     return this
   }
 
@@ -236,36 +141,29 @@ class SimpleDialogBuilder private constructor(
    * If you set [layoutWidth] or [layoutHeight] to [WRAP_CONTENT], the size will be automatically adjusted.(만약 [layoutWidth]나 [layoutHeight]를 [WRAP_CONTENT]로 설정한다면 크기가 자동으로 조절됩니다.)
    */
   fun setLayoutSize(@SizeMode layoutWidth: Int, @SizeMode layoutHeight: Int): SimpleDialogBuilder {
-    this.layoutWidth = layoutWidth
-    this.layoutHeight = layoutHeight
+    dialogStyler.simpleDialogAttributes.layoutWidth = layoutWidth
+    dialogStyler.simpleDialogAttributes.layoutHeight = layoutHeight
     return this
   }
 
   /**
    * Set background color.(배경 색상을 설정합니다.)
    *
-   * If you set [backgroundResourceId], this method will be ignored.(만약 [backgroundResourceId]를 설정했다면 이 메서드는 무시됩니다.)
+   * If you set [setBackgroundResourceId], this method will be ignored.(만약 [setBackgroundResourceId]를 설정했다면 이 메서드는 무시됩니다.)
    *
    */
   fun setBackgroundColor(@ColorInt color: Int): SimpleDialogBuilder {
-    this.backgroundColor = color
+    dialogStyler.simpleDialogAttributes.backgroundColor = color
     return this
   }
 
   /**
    * Build and show dialog.(다이얼로그를 생성하고 보여줍니다.)
    */
-  fun buildAndShow(): AlertDialog =
-    AlertDialog.Builder(view.context, theme(dialogType)).setView(view).create().apply {
-      theme(
-        SimpleDialogAttributes(
-          blur, blurIndensity, dim, dimIndensity, cancelable, view, dialogType,
-          bottomMargin, horizontalMargin, cornerRadius, backgroundResourceId, backgroundColor, elevation,
-          layoutWidth, layoutHeight,
-        ),
-      )
-      show()
-    }
+  fun buildAndShow(): AlertDialog = alertDialogBuilder.create().apply {
+    dialogStyler.applyStyle(this)
+    show()
+  }
 
 
   @StyleRes

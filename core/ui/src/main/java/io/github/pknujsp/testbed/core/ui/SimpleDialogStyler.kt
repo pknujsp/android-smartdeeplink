@@ -1,27 +1,44 @@
 package io.github.pknujsp.testbed.core.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Dialog
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
+import java.lang.ref.WeakReference
 
-private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialogAttributes, private val dialog: Dialog) {
+
+internal class SimpleDialogStyler(
+  val simpleDialogAttributes: SimpleDialogAttributes,
+  @ActivityContext context: Context,
+) {
+
+  private val activityRoot: WeakReference<Pair<View, Window>>? = (context as? Activity)?.let { activity ->
+    val window = activity.window
+    val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+    WeakReference(contentView to activity.window)
+  }
+
   private companion object {
     private val density: Float = Resources.getSystem().displayMetrics.density
 
     @SuppressLint("InternalInsetResource", "DiscouragedApi") private val navigationBarHeight: Int = Resources.getSystem().run {
       getDimensionPixelSize(getIdentifier("navigation_bar_height", "dimen", "android"))
     }
-    val maxBlurRadius: Float = 24 * density
+    private val maxBlurRadius: Float = 24 * density
+
+    private val blurProcessor = BlurProcessor()
   }
 
-  operator fun invoke() {
+  fun applyStyle(dialog: Dialog) {
     dialog.window?.apply {
       position(this)
       spacing(this)
@@ -32,7 +49,7 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
       attributes = attributes.also { attr ->
         attr.copyFrom(attr)
         size(attr)
-        blur(attr)
+        //blur(attr)
         dim(attr)
       }
     }
@@ -43,14 +60,24 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) attributes.blurBehindRadius =
       (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100f)).toInt()
+
   }
 
   private fun blur(window: Window) {
     if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
 
+    /**
     window.apply {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-      else clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+    else clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+    }
+     */
+
+    // new
+    if (simpleDialogAttributes.blur) {
+      activityRoot?.get()?.also {
+        blurProcessor.blur(it.first, it.second, simpleDialogAttributes.blurIndensity)
+      }
     }
   }
 
@@ -118,8 +145,9 @@ private class SimpleDialogStyler(private val simpleDialogAttributes: SimpleDialo
         if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogAttributes.layoutHeight
     }
   }
-}
 
-internal fun Dialog.theme(simpleDialogAttributes: SimpleDialogAttributes) {
-  SimpleDialogStyler(simpleDialogAttributes, this).invoke()
+
+  private fun compatBlur(window: Window) {
+
+  }
 }

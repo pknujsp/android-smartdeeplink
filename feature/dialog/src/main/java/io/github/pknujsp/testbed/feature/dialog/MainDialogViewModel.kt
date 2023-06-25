@@ -39,7 +39,7 @@ class MainDialogViewModel : ViewModel() {
   fun bottomMargin(margin: Int) {
     viewModelScope.launch {
       _dialogBuilder.update {
-        it?.setMarginBottom(margin)
+        it?.setBottomMargin(margin)
       }
     }
   }
@@ -47,7 +47,7 @@ class MainDialogViewModel : ViewModel() {
   fun horizontalMargin(margin: Int) {
     viewModelScope.launch {
       _dialogBuilder.update {
-        it?.setMarginHorizontal(margin)
+        it?.setHorizontalMargin(margin)
       }
     }
   }

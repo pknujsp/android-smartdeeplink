@@ -23,11 +23,11 @@ internal class ShadowManager(
   private var firstSensorValue: SensorHelper.SensorValue? = null
   private var lastValue: ChangedValue? = null
 
-  private val bufferCapacity = 5
+  private val bufferCapacity = 4
   private val buffers = ArrayDeque<SensorHelper.SensorValue>(bufferCapacity)
 
-  private val shadowShiftMinDp = -9.0 * displayDensity
-  private val shadowShiftMaxDp = 9.0 * displayDensity
+  private val shadowShiftMinDp = -10.0 * displayDensity
+  private val shadowShiftMaxDp = 10.0 * displayDensity
 
   private val imageShiftMaxDp = 2.0 * displayDensity
 
@@ -44,8 +44,8 @@ internal class ShadowManager(
 
       buffers.clear()
 
-      val diffRoll = averageSensorValue.roll.floor() / 2.5
-      val diffPitch = averageSensorValue.pitch.floor() / 2.5
+      val diffRoll = averageSensorValue.roll.floor() / 1.5
+      val diffPitch = averageSensorValue.pitch.floor() / 1.5
 
       val shiftX = normalize(-diffRoll)
       val shiftY = normalize(diffPitch)
