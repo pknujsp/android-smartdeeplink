@@ -21,7 +21,7 @@ using namespace std;
 
 void processingRow(const SharedValues *const sharedValues, unsigned char *imagePixels, const int startRow, const int endRow) {
     long sumRed, sumGreen, sumBlue;
-    long sumInRed, sumInGreen, sumInBlue;
+    long sumInputRed, sumInputGreen, sumInputBlue;
     long sumOutputRed, sumOutputGreen, sumOutputBlue;
     int startPixelIndex, inPixelIndex, outputPixelIndex;
     int stackStart, stackPointer, stackIndex;
@@ -30,11 +30,250 @@ void processingRow(const SharedValues *const sharedValues, unsigned char *imageP
     int red, green, blue;
     int multiplier;
 
+    const int widthMax = sharedValues->widthMax;
+    const int heightMax = sharedValues->heightMax;
+    const int blurRadius = sharedValues->blurRadius;
+    const int targetWidth = sharedValues->targetWidth;
+    const int targetHeight = sharedValues->targetHeight;
+    const int divisor = sharedValues->divisor;
+    const int multiplySum = sharedValues->multiplySum;
+    const int shiftSum = sharedValues->shiftSum;
 
+    vector<int> blurStack(divisor);
+
+    for (int row = startRow; row <= endRow; row++) {
+        sumRed = sumGreen = sumBlue = sumInputRed = sumInputGreen = sumInputBlue = sumOutputRed = sumOutputGreen = sumOutputBlue = 0;
+        startPixelIndex = row * targetWidth;
+        inPixelIndex = startPixelIndex;
+        stackIndex = blurRadius;
+
+        for (int rad = 0; rad <= blurRadius; rad++) {
+            stackIndex = rad;
+            auto pixel = imagePixels[startPixelIndex];
+            blurStack[stackIndex] = pixel;
+
+            red = ((pixel >> 16) & 0xff);
+            green = ((pixel >> 8) & 0xff);
+            blue = (pixel & 0xff);
+
+            multiplier = rad - 1;
+            sumRed += red * multiplier;
+            sumGreen += green * multiplier;
+            sumBlue += blue * multiplier;
+
+            sumOutputRed += red;
+            sumOutputGreen += green;
+            sumOutputBlue += blue;
+
+            if (rad >= 1) {
+                if (rad <= widthMax) inPixelIndex++;
+                stackIndex = rad + blurRadius;
+                pixel = imagePixels[inPixelIndex];
+                blurStack[stackIndex] = pixel;
+
+                multiplier = blurRadius + 1 - rad;
+
+                red = ((pixel >> 16) & 0xff);
+                green = ((pixel >> 8) & 0xff);
+                blue = (pixel & 0xff);
+
+                sumRed += red * multiplier;
+                sumGreen += green * multiplier;
+                sumBlue += blue * multiplier;
+
+                sumInputRed += red;
+                sumInputGreen += green;
+                sumInputBlue += blue;
+            }
+        }
+
+        stackStart = blurRadius;
+        stackPointer = blurRadius;
+        colOffset = blurRadius;
+        if (colOffset > widthMax) colOffset = widthMax;
+        inPixelIndex = colOffset + row * targetWidth;
+        outputPixelIndex = startPixelIndex;
+
+        for (int col = 0; col < targetWidth; col++) {
+            imagePixels[outputPixelIndex] = (int) ((imagePixels[outputPixelIndex] bitand 0xff000000) bitor ((((sumRed * multiplySum) >> shiftSum)
+                                                                                                             bitand 0xff) << 16) bitor
+                                                   ((((sumGreen * multiplySum) >> shiftSum) bitand 0xff) << 8) bitor
+                                                   (((sumBlue * multiplySum) >> shiftSum) bitand 0xff));
+
+            outputPixelIndex++;
+            sumRed -= sumOutputRed;
+            sumGreen -= sumOutputGreen;
+            sumBlue -= sumOutputBlue;
+
+            stackStart = stackPointer + divisor - blurRadius;
+            if (stackStart >= divisor) stackStart -= divisor;
+            stackIndex = stackStart;
+
+            sumOutputRed -= ((blurStack[stackIndex] >> 16) bitand 0xff);
+            sumOutputGreen -= ((blurStack[stackIndex] >> 8) bitand 0xff);
+            sumOutputBlue -= (blurStack[stackIndex] bitand 0xff);
+
+            if (colOffset < widthMax) {
+                inPixelIndex++;
+                colOffset++;
+            }
+
+            auto pixel = imagePixels[inPixelIndex];
+            blurStack[stackIndex] = pixel;
+
+            red = ((pixel >> 16) bitand 0xff);
+            green = ((pixel >> 8) bitand 0xff);
+            blue = (pixel bitand 0xff);
+
+            sumInputRed += red;
+            sumInputGreen += green;
+            sumInputBlue += blue;
+
+            sumRed += sumInputRed;
+            sumGreen += sumInputGreen;
+            sumBlue += sumInputBlue;
+
+            if (++stackPointer >= divisor) stackPointer = 0;
+            stackIndex = stackPointer;
+
+            int stackPixel = blurStack[stackIndex];
+
+            red = ((stackPixel >> 16) bitand 0xff);
+            green = ((stackPixel >> 8) bitand 0xff);
+            blue = (stackPixel bitand 0xff);
+
+            sumOutputRed += red;
+            sumOutputGreen += green;
+            sumOutputBlue += blue;
+
+            sumInputRed -= red;
+            sumInputGreen -= green;
+            sumInputBlue -= blue;
+        }
+    }
 }
 
 void processingColumn(const SharedValues *const sharedValues, unsigned char *imagePixels, const int startColumn, const int endColumn) {
+    const int widthMax = sharedValues->widthMax;
+    const int heightMax = sharedValues->heightMax;
+    const int blurRadius = sharedValues->blurRadius;
+    const int targetWidth = sharedValues->targetWidth;
+    const int targetHeight = sharedValues->targetHeight;
+    const int divisor = sharedValues->divisor;
+    const int multiplySum = sharedValues->multiplySum;
+    const int shiftSum = sharedValues->shiftSum;
 
+    int xOffset, yOffset, blurStackIndex, stackStart, stackIndex, stackPointer, sourceIndex, destinationIndex;
+
+    long sumRed, sumGreen, sumBlue, sumInputRed, sumInputGreen, sumInputBlue, sumOutputRed, sumOutputGreen, sumOutputBlue;
+
+    int red, green, blue;
+
+
+    vector<int> blurStack(divisor);
+
+    for (int col = startColumn; col <= endColumn; col++) {
+        sumOutputBlue = sumOutputGreen = sumOutputRed = sumInputBlue = sumInputGreen = sumInputRed = sumBlue = sumGreen = sumRed = 0;
+        sourceIndex = col;
+
+        for (int rad = 0; rad <= blurRadius; rad++) {
+            stackIndex = rad;
+            int pixel = imagePixels[sourceIndex];
+            blurStack[stackIndex] = pixel;
+
+            red = ((pixel >> 16) bitand 0xff);
+            green = ((pixel >> 8) bitand 0xff);
+            blue = (pixel bitand 0xff);
+
+            int multiplier = rad + 1;
+
+            sumRed += red * multiplier;
+            sumGreen += green * multiplier;
+            sumBlue += blue * multiplier;
+
+            sumOutputRed += red;
+            sumOutputGreen += green;
+            sumOutputBlue += blue;
+
+            if (rad >= 1) {
+                if (rad <= heightMax) sourceIndex += targetWidth;
+
+                stackIndex = rad + blurRadius;
+                pixel = imagePixels[sourceIndex];
+                blurStack[stackIndex] = pixel;
+
+                multiplier = blurRadius + 1 - rad;
+
+                red = ((pixel >> 16) bitand 0xff);
+                green = ((pixel >> 8) bitand 0xff);
+                blue = (pixel bitand 0xff);
+
+                sumRed += red * multiplier;
+                sumGreen += green * multiplier;
+                sumBlue += blue * multiplier;
+
+                sumInputRed += red;
+                sumInputGreen += green;
+                sumInputBlue += blue;
+            }
+        }
+
+        stackPointer = blurRadius;
+        yOffset = min(blurRadius, heightMax);
+        sourceIndex = col + yOffset * targetWidth;
+        destinationIndex = col;
+
+        for (int y = 0; y < targetHeight; y++) {
+            imagePixels[destinationIndex] = (int)
+                    ((imagePixels[destinationIndex] bitand 0xff000000) bitor ((((sumRed * multiplySum) >> shiftSum) bitand 0xff) << 16) bitor (
+                            (((sumGreen * multiplySum) >> shiftSum) bitand 0xff) << 8) bitor (((sumBlue * multiplySum) >> shiftSum) bitand 0xff));
+
+            destinationIndex += targetWidth;
+            sumRed -= sumOutputRed;
+            sumGreen -= sumOutputGreen;
+            sumBlue -= sumOutputBlue;
+
+            stackStart = stackPointer + divisor - blurRadius;
+            if (stackStart >= divisor) stackStart -= divisor;
+            stackIndex = stackStart;
+
+            sumOutputRed -= ((blurStack[stackIndex] >> 16) bitand 0xff);
+            sumOutputGreen -= ((blurStack[stackIndex] >> 8) bitand 0xff);
+            sumOutputBlue -= (blurStack[stackIndex] bitand 0xff);
+
+            if (yOffset < heightMax) {
+                sourceIndex += targetWidth;
+                yOffset++;
+            }
+
+            blurStack[stackIndex] = imagePixels[sourceIndex];
+
+            sumInputRed += ((imagePixels[sourceIndex] >> 16) bitand 0xff);
+            sumInputGreen += ((imagePixels[sourceIndex] >> 8) bitand 0xff);
+            sumInputBlue += (imagePixels[sourceIndex] bitand 0xff);
+
+            sumRed += sumInputRed;
+            sumGreen += sumInputGreen;
+            sumBlue += sumInputBlue;
+
+            if (++stackPointer >= divisor) stackPointer = 0;
+            stackIndex = stackPointer;
+
+            int stackPixel = blurStack[stackIndex];
+
+            red = ((stackPixel >> 16) bitand 0xff);
+            green = ((stackPixel >> 8) bitand 0xff);
+            blue = (stackPixel bitand 0xff);
+
+            sumOutputRed += red;
+            sumOutputGreen += green;
+            sumOutputBlue += blue;
+
+            sumInputRed -= red;
+            sumInputGreen -= green;
+            sumInputBlue -= blue;
+        }
+    }
 }
 
 void blur(unsigned char *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
