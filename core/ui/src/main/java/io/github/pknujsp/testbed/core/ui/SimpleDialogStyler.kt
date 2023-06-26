@@ -15,8 +15,8 @@ import android.widget.Toast
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
-import io.github.pknujsp.blur.NativeImageProcessor
-import io.github.pknujsp.blur.ViewBitmapUtils.toBitmap
+import io.github.pknujsp.blur.IBlur
+import io.github.pknujsp.blur.NativeBlurProcessor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -43,7 +43,7 @@ internal class SimpleDialogStyler(
     }
     private val maxBlurRadius: Float = 24 * density
 
-    private val blurProcessor = BlurProcessor()
+    private val blurProcessor: IBlur = NativeBlurProcessor()
   }
 
   fun applyStyle(dialog: Dialog) {
@@ -99,23 +99,20 @@ internal class SimpleDialogStyler(
           val startTime = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
 
-          val srcBitmap = first.toBitmap(second, 2.5)
-          srcBitmap.onSuccess { bitmap ->
-            val nativeImageProcessor = NativeImageProcessor()
-            val pixels = nativeImageProcessor.blur(bitmap, radius, bitmap.width, bitmap.height)
+          blurProcessor.blur(first, second, radius, 2.5).onSuccess {
             withContext(Dispatchers.Main) {
               if (!dialog.isShowing) return@withContext
 
               second.addContentView(
                 View(second.context).apply {
                   id = R.id.dialog_custom_background
-                  background = bitmap.toDrawable(resources)
+                  background = it.toDrawable(resources)
                 },
                 ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
               )
               Toast.makeText(second.context, "${System.currentTimeMillis() - startTime}MS 소요됨", Toast.LENGTH_SHORT).show()
             }
-          }
+          }.onFailure { }
 
           /**
           blurProcessor.blur(first, second, radius).onSuccess {

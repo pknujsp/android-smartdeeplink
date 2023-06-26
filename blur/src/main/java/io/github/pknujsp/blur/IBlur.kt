@@ -11,4 +11,6 @@ interface IBlur {
     view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int,
     @FloatRange(from = 1.0, to = 10.0) resizeRatio: Double = 1.0,
   ): Result<Bitmap>
+
+  fun cancel()
 }

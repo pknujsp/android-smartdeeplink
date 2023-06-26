@@ -1,35 +1,22 @@
 package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
-import android.graphics.Rect
-import android.os.Handler
-import android.os.Looper
 import android.util.Size
-import android.view.PixelCopy
 import android.view.View
 import android.view.Window
-import androidx.annotation.Dimension
-import androidx.annotation.FloatRange
-import kotlinx.coroutines.CancellationException
+import io.github.pknujsp.blur.ViewBitmapUtils.toBitmap
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.plus
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
 
-class JvmBlurProcessor {
+class JvmBlurProcessor : Workers(), IBlur {
 
   private companion object {
-
-    private val scope by lazy { MainScope() + Job() }
 
     private val mulTable by lazy {
       intArrayOf(
@@ -86,92 +73,66 @@ class JvmBlurProcessor {
     val shiftSum: Int,
   )
 
-  suspend fun blur(
-    view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int,
-    @FloatRange(from = 1.0, to = 5.0) resizeRatio: Double = 2.0,
-  ): Result<Bitmap> = suspendCancellableCoroutine {
-    scope.launch(dispatchers) {
+  override suspend fun blur(
+    view: View, window: Window, radius: Int, resizeRatio: Double,
+  ): Result<Bitmap> = suspendCancellableCoroutine { continuation ->
+    launch(dispatchers) {
       try {
-        val originalSize = Size(view.width, view.height)
-        val originalBitmap: Bitmap = WeakReference(Bitmap.createBitmap(originalSize.width, originalSize.height, Bitmap.Config.ARGB_8888)).get()!!
+        view.toBitmap(window, resizeRatio).fold(
+          onSuccess = { reducedBitmap ->
+            val reducedSize = Size(
+              reducedBitmap.width, reducedBitmap.height,
+            )
+            val pixels = WeakReference(IntArray(reducedSize.width * reducedSize.height)).get()!!
+            reducedBitmap.getPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
 
-        val copySuccess: Boolean = suspendCancellableCoroutine {
-          val locationOfViewInWindow = IntArray(2)
-          view.getLocationInWindow(locationOfViewInWindow)
-          val locationRect = WeakReference(
-            Rect(
-              locationOfViewInWindow[0],
-              locationOfViewInWindow[1],
-              locationOfViewInWindow[0] + originalSize.width,
-              locationOfViewInWindow[1] + originalSize.height,
-            ),
-          ).get()!!
+            val r = reducedSize.height / availableThreads
+            val c = reducedSize.width / availableThreads
 
-          PixelCopy.request(
-            window, locationRect, originalBitmap,
-            { result ->
-              it.resume(result == PixelCopy.SUCCESS)
-            },
-            Handler(Looper.getMainLooper()),
-          )
-        }
+            val sharedValues = WeakReference(
+              SharedValues(
+                widthMax = reducedSize.width - 1,
+                heightMax = reducedSize.height - 1,
+                divisor = radius * 2 + 1,
+                multiplySum = mulTable[radius],
+                shiftSum = shrTable[radius],
+              ),
+            ).get()!!
 
-        if (copySuccess) {
-          val reducedSize = Size(
-            (view.width / resizeRatio).toInt().let { if (it % 2 == 0) it else it - 1 },
-            (view.height / resizeRatio).toInt().let { if (it % 2 == 0) it else it - 1 },
-          )
-          val pixels = WeakReference(IntArray(reducedSize.width * reducedSize.height)).get()!!
-          val reducedBitmap = WeakReference(Bitmap.createScaledBitmap(originalBitmap, reducedSize.width, reducedSize.height, false)).get()!!
-          reducedBitmap.getPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
-          originalBitmap.recycle()
-
-          val r = reducedSize.height / availableThreads
-          val c = reducedSize.width / availableThreads
-
-          val sharedValues = WeakReference(
-            SharedValues(
-              widthMax = reducedSize.width - 1,
-              heightMax = reducedSize.height - 1,
-              divisor = radius * 2 + 1,
-              multiplySum = mulTable[radius],
-              shiftSum = shrTable[radius],
-            ),
-          ).get()!!
-
-          val rowWorks = Array(availableThreads) { thread ->
-            ProcessingRow(sharedValues, pixels, reducedSize, thread * r, (thread + 1) * r - 1, radius)
-          }
-          val columnWorks = Array(availableThreads) { thread ->
-            ProcessingColumn(sharedValues, pixels, reducedSize, thread * c, (thread + 1) * c - 1, radius)
-          }
-
-          rowWorks.map { rowWork ->
-            async {
-              rowWork()
+            val rowWorks = Array(availableThreads) { thread ->
+              ProcessingRow(sharedValues, pixels, reducedSize, thread * r, (thread + 1) * r - 1, radius)
             }
-          }.awaitAll()
-
-          columnWorks.map { columnWork ->
-            async {
-              columnWork()
+            val columnWorks = Array(availableThreads) { thread ->
+              ProcessingColumn(sharedValues, pixels, reducedSize, thread * c, (thread + 1) * c - 1, radius)
             }
-          }.awaitAll()
-          reducedBitmap.setPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
-          it.resume(Result.success(reducedBitmap))
-        }
+
+            rowWorks.map { rowWork ->
+              async {
+                rowWork()
+              }
+            }.awaitAll()
+
+            columnWorks.map { columnWork ->
+              async {
+                columnWork()
+              }
+            }.awaitAll()
+            reducedBitmap.setPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
+
+            continuation.resume(Result.success(reducedBitmap))
+          },
+          onFailure = { continuation.resume(Result.failure(it)) },
+        )
+
+
       } catch (e: Exception) {
-        it.resume(Result.failure(e))
+        continuation.resume(Result.failure(e))
       }
     }
   }
 
-  fun cancel() {
-    try {
-      scope.cancel(cause = CancellationException("Cancelled by user or system."))
-    } catch (e: Exception) {
-      e.printStackTrace()
-    }
+  override fun cancel() {
+    cancelWorks()
   }
 
   private class ProcessingRow(
