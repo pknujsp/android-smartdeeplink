@@ -4,7 +4,7 @@
 #include "blur.h"
 
 extern "C"
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz, jobject srcBitmap, jint radius, jint target_width,
                                                       jint target_height) {
     AndroidBitmapInfo info;
@@ -12,22 +12,24 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz,
     int ret;
 
     if ((ret = AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) {
-        return;
+        return false;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        return;
+        return false;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, srcBitmap, &pixels)) < 0) {
-        return;
+        return false;
     }
 
     const auto srcSize = (jsize) (info.width * info.height);
     jintArray result = env->NewIntArray(srcSize);
-    env->SetIntArrayRegion(result, 0, info.height * info.width, (jint *) pixels);
+    env->SetIntArrayRegion(result, 0, srcSize, (jint *) pixels);
 
-    blur((unsigned char *) pixels, radius, target_width, target_height);
+    blur((unsigned int *) pixels, radius, target_width, target_height);
 
     AndroidBitmap_unlockPixels(env, srcBitmap);
+
+    return true;
 }

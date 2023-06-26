@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
@@ -95,28 +96,43 @@ internal class SimpleDialogStyler(
          */
 
         (MainScope()).launch(Dispatchers.Default) {
-
+          val startTime = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
 
-          val srcBitmap = first.toBitmap(second, 2.0)
+          val srcBitmap = first.toBitmap(second, 2.5)
           srcBitmap.onSuccess { bitmap ->
             val nativeImageProcessor = NativeImageProcessor()
             val pixels = nativeImageProcessor.blur(bitmap, radius, bitmap.width, bitmap.height)
-          }
-
-          blurProcessor.blur(first, second, radius).onSuccess {
             withContext(Dispatchers.Main) {
               if (!dialog.isShowing) return@withContext
 
               second.addContentView(
                 View(second.context).apply {
                   id = R.id.dialog_custom_background
-                  background = it.toDrawable(resources)
+                  background = bitmap.toDrawable(resources)
                 },
                 ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
               )
+              Toast.makeText(second.context, "${System.currentTimeMillis() - startTime}MS 소요됨", Toast.LENGTH_SHORT).show()
             }
           }
+
+          /**
+          blurProcessor.blur(first, second, radius).onSuccess {
+          withContext(Dispatchers.Main) {
+          if (!dialog.isShowing) return@withContext
+
+          second.addContentView(
+          View(second.context).apply {
+          id = R.id.dialog_custom_background
+          background = it.toDrawable(resources)
+          },
+          ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+          )
+          }
+          }
+           */
+
         }
       }
     }

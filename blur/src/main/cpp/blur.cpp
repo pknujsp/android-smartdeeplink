@@ -1,6 +1,7 @@
 //
 // Created by jesp on 2023-06-26.
 //
+
 #include "blur.h"
 #include <GLES3/gl31.h>
 #include <GLES3/gl3ext.h>
@@ -11,15 +12,106 @@
 #include <sys/sysinfo.h>
 #include <vector>
 #include <functional>
+#include <queue>
+#include <thread>
+#include <future>
 
-#define LOG_TAG "blur"
+#define LOG_TAG "Native Blur"
 #define ANDROID_LOG_DEBUG 3
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 using namespace std;
 
+namespace ThreadPool {
+    class ThreadPool {
+    public:
+        explicit ThreadPool(size_t num_threads);
 
-void processingRow(const SharedValues *const sharedValues, unsigned char *imagePixels, const int startRow, const int endRow) {
+        ~ThreadPool();
+
+        // job 을 추가한다.
+        template<class F, class... Args>
+        std::future<typename std::result_of<F(Args...)>::type> EnqueueJob(
+                F &&f, Args &&... args);
+
+    private:
+        // 총 Worker 쓰레드의 개수.
+        size_t num_threads_;
+        // Worker 쓰레드를 보관하는 벡터.
+        std::vector<std::thread> worker_threads_;
+        // 할일들을 보관하는 job 큐.
+        std::queue<std::function<void()>> jobs_;
+        // 위의 job 큐를 위한 cv 와 m.
+        std::condition_variable cv_job_q_;
+        std::mutex m_job_q_;
+
+        // 모든 쓰레드 종료
+        bool stop_all;
+
+        // Worker 쓰레드
+        void WorkerThread();
+    };
+
+    ThreadPool::ThreadPool(size_t num_threads)
+            : num_threads_(num_threads), stop_all(false) {
+        worker_threads_.reserve(num_threads_);
+        for (size_t i = 0; i < num_threads_; ++i) {
+            worker_threads_.emplace_back([this]() { this->WorkerThread(); });
+        }
+    }
+
+    void ThreadPool::WorkerThread() {
+        while (true) {
+            std::unique_lock<std::mutex> lock(m_job_q_);
+            cv_job_q_.wait(lock, [this]() { return !this->jobs_.empty() || stop_all; });
+            if (stop_all && this->jobs_.empty()) {
+                return;
+            }
+
+            // 맨 앞의 job 을 뺀다.
+            std::function<void()> job = std::move(jobs_.front());
+            jobs_.pop();
+            lock.unlock();
+
+            // 해당 job 을 수행한다 :)
+            job();
+        }
+    }
+
+    ThreadPool::~ThreadPool() {
+        stop_all = true;
+        cv_job_q_.notify_all();
+
+        for (auto &t: worker_threads_) {
+            t.join();
+        }
+    }
+
+    template<class F, class... Args>
+    std::future<typename std::result_of<F(Args...)>::type> ThreadPool::EnqueueJob(
+            F &&f, Args &&... args) {
+        if (stop_all) {
+            throw std::runtime_error("ThreadPool 사용 중지됨");
+        }
+
+        using return_type = typename std::result_of<F(Args...)>::type;
+        auto job = std::make_shared<std::packaged_task<return_type()>>(
+                [Func = std::forward<F>(f)] { return Func(); });
+        std::future<return_type> job_result_future = job->get_future();
+        {
+            std::lock_guard<std::mutex> lock(m_job_q_);
+            jobs_.push([job]() { (*job)(); });
+        }
+        cv_job_q_.notify_one();
+
+        return job_result_future;
+    }
+
+}
+
+
+void processingRow(const SharedValues *const sharedValues, unsigned int *imagePixels, const int startRow, const int endRow) {
+    LOGD("processingRow startRow: %d, endRow: %d", startRow, endRow);
     long sumRed, sumGreen, sumBlue;
     long sumInputRed, sumInputGreen, sumInputBlue;
     long sumOutputRed, sumOutputGreen, sumOutputBlue;
@@ -31,15 +123,13 @@ void processingRow(const SharedValues *const sharedValues, unsigned char *imageP
     int multiplier;
 
     const int widthMax = sharedValues->widthMax;
-    const int heightMax = sharedValues->heightMax;
     const int blurRadius = sharedValues->blurRadius;
     const int targetWidth = sharedValues->targetWidth;
-    const int targetHeight = sharedValues->targetHeight;
     const int divisor = sharedValues->divisor;
     const int multiplySum = sharedValues->multiplySum;
     const int shiftSum = sharedValues->shiftSum;
 
-    vector<int> blurStack(divisor);
+    int *blurStack = new int[divisor];
 
     for (int row = startRow; row <= endRow; row++) {
         sumRed = sumGreen = sumBlue = sumInputRed = sumInputGreen = sumInputBlue = sumOutputRed = sumOutputGreen = sumOutputBlue = 0;
@@ -95,10 +185,10 @@ void processingRow(const SharedValues *const sharedValues, unsigned char *imageP
         outputPixelIndex = startPixelIndex;
 
         for (int col = 0; col < targetWidth; col++) {
-            imagePixels[outputPixelIndex] = (int) ((imagePixels[outputPixelIndex] bitand 0xff000000) bitor ((((sumRed * multiplySum) >> shiftSum)
-                                                                                                             bitand 0xff) << 16) bitor
-                                                   ((((sumGreen * multiplySum) >> shiftSum) bitand 0xff) << 8) bitor
-                                                   (((sumBlue * multiplySum) >> shiftSum) bitand 0xff));
+            imagePixels[outputPixelIndex] =
+                    ((imagePixels[outputPixelIndex] bitand 0xff000000) bitor ((((sumRed * multiplySum) >> shiftSum) bitand 0xff) << 16) bitor
+                     ((((sumGreen * multiplySum) >> shiftSum) bitand 0xff) << 8) bitor
+                     (((sumBlue * multiplySum) >> shiftSum) bitand 0xff));
 
             outputPixelIndex++;
             sumRed -= sumOutputRed;
@@ -151,10 +241,14 @@ void processingRow(const SharedValues *const sharedValues, unsigned char *imageP
             sumInputBlue -= blue;
         }
     }
+    delete[] blurStack;
+    LOGD("processingRow finished startRow: %d, endRow: %d", startRow, endRow);
+
 }
 
-void processingColumn(const SharedValues *const sharedValues, unsigned char *imagePixels, const int startColumn, const int endColumn) {
-    const int widthMax = sharedValues->widthMax;
+void processingColumn(const SharedValues *const sharedValues, unsigned int *imagePixels, const int startColumn, const int endColumn) {
+    LOGD("processingColumn startColumn: %d, endColumn: %d", startColumn, endColumn);
+
     const int heightMax = sharedValues->heightMax;
     const int blurRadius = sharedValues->blurRadius;
     const int targetWidth = sharedValues->targetWidth;
@@ -169,8 +263,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned char *ima
 
     int red, green, blue;
 
-
-    vector<int> blurStack(divisor);
+    int *blurStack = new int[divisor];
 
     for (int col = startColumn; col <= endColumn; col++) {
         sumOutputBlue = sumOutputGreen = sumOutputRed = sumInputBlue = sumInputGreen = sumInputRed = sumBlue = sumGreen = sumRed = 0;
@@ -224,7 +317,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned char *ima
         destinationIndex = col;
 
         for (int y = 0; y < targetHeight; y++) {
-            imagePixels[destinationIndex] = (int)
+            imagePixels[destinationIndex] =
                     ((imagePixels[destinationIndex] bitand 0xff000000) bitor ((((sumRed * multiplySum) >> shiftSum) bitand 0xff) << 16) bitor (
                             (((sumGreen * multiplySum) >> shiftSum) bitand 0xff) << 8) bitor (((sumBlue * multiplySum) >> shiftSum) bitand 0xff));
 
@@ -274,9 +367,11 @@ void processingColumn(const SharedValues *const sharedValues, unsigned char *ima
             sumInputBlue -= blue;
         }
     }
+    delete[] blurStack;
+    LOGD("processingColumn finished startColumn: %d, endColumn: %d", startColumn, endColumn);
 }
 
-void blur(unsigned char *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
+void blur(unsigned int *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
     const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
     const int r = targetHeight / availableThreads;
@@ -292,22 +387,37 @@ void blur(unsigned char *imagePixels, const int radius, const int targetWidth, c
     for (int i = 0; i < availableThreads; i++) {
         const int startRow = i * r;
         const int endRow = (i + 1) * r - 1;
-        rowWorks.push_back(bind(&processingRow, sharedValues, imagePixels, startRow, endRow));
+        rowWorks.emplace_back([sharedValues, imagePixels, startRow, endRow] { return processingRow(sharedValues, imagePixels, startRow, endRow); });
     }
 
     for (int i = 0; i < availableThreads; i++) {
         const int startColumn = i * c;
         const int endColumn = (i + 1) * c - 1;
-        columnWorks.push_back(bind(&processingColumn, sharedValues, imagePixels, startColumn, endColumn));
+        columnWorks.emplace_back(
+                [sharedValues, imagePixels, startColumn, endColumn] { return processingColumn(sharedValues, imagePixels, startColumn, endColumn); });
     }
 
-    for (const auto &func: rowWorks) {
-        func();
+    ThreadPool::ThreadPool pool(availableThreads);
+    std::vector<std::future<void>> futures;
+
+    for (const auto &row: rowWorks) {
+        futures.emplace_back(pool.EnqueueJob(row));
     }
 
-    for (const auto &func: columnWorks) {
-        func();
+    for (auto &f: futures) {
+        f.wait();
     }
+
+    for (const auto &col: columnWorks) {
+        futures.emplace_back(pool.EnqueueJob(col));
+    }
+
+
+    for (auto &f: futures) {
+        f.wait();
+    }
+
+    delete sharedValues;
 }
 
 
