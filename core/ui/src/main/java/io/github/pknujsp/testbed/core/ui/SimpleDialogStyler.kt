@@ -96,13 +96,15 @@ internal class SimpleDialogStyler(
 
         (MainScope()).launch(Dispatchers.Default) {
 
-          val srcBitmap = first.toBitmap(second)
+          val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
+
+          val srcBitmap = first.toBitmap(second, 2.0)
           srcBitmap.onSuccess { bitmap ->
             val nativeImageProcessor = NativeImageProcessor()
-            val pixels = nativeImageProcessor.blur(bitmap, 24, bitmap.width, bitmap.height)
+            val pixels = nativeImageProcessor.blur(bitmap, radius, bitmap.width, bitmap.height)
           }
 
-          blurProcessor.blur(first, second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()).onSuccess {
+          blurProcessor.blur(first, second, radius).onSuccess {
             withContext(Dispatchers.Main) {
               if (!dialog.isShowing) return@withContext
 

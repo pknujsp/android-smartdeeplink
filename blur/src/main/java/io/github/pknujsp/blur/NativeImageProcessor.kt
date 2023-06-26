@@ -13,5 +13,5 @@ class NativeImageProcessor {
 
   external fun blur(
     srcBitmap: Bitmap, radius: Int, targetWidth: Int, targetHeight: Int,
-  ): IntArray
+  )
 }
