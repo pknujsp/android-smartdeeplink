@@ -11,9 +11,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
-import java.lang.ref.WeakReference
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
+import kotlinx.coroutines.withContext
+import java.lang.ref.SoftReference
 
 
 internal class SimpleDialogStyler(
@@ -21,10 +28,10 @@ internal class SimpleDialogStyler(
   @ActivityContext context: Context,
 ) {
 
-  private val activityRoot: WeakReference<Pair<View, Window>>? = (context as? Activity)?.let { activity ->
+  private val activityRoot: SoftReference<Pair<View, Window>>? = (context as? Activity)?.let { activity ->
     val window = activity.window
     val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
-    WeakReference(contentView to activity.window)
+    SoftReference(contentView to activity.window)
   }
 
   private companion object {
@@ -33,16 +40,17 @@ internal class SimpleDialogStyler(
     @SuppressLint("InternalInsetResource", "DiscouragedApi") private val navigationBarHeight: Int = Resources.getSystem().run {
       getDimensionPixelSize(getIdentifier("navigation_bar_height", "dimen", "android"))
     }
-    private val maxBlurRadius: Float = 33 * density
+    private val maxBlurRadius: Float = 28 * density
 
     private val blurProcessor = BlurProcessor()
   }
 
   fun applyStyle(dialog: Dialog) {
+    setOnDismissDialogListener(dialog)
     dialog.window?.apply {
       position(this)
       spacing(this)
-      blur(this)
+      blur(dialog)
       dim(this)
       background(this)
 
@@ -62,7 +70,7 @@ internal class SimpleDialogStyler(
       (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100f)).toInt()
   }
 
-  private fun blur(window: Window) {
+  private fun blur(dialog: Dialog) {
     if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
 
     /**
@@ -74,8 +82,31 @@ internal class SimpleDialogStyler(
 
     // new
     if (simpleDialogAttributes.blur) {
-      activityRoot?.get()?.also {
-        blurProcessor.blur(it.first, it.second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt())
+      activityRoot?.get()?.run {
+
+        /**
+         * window.addContentView(
+        View(window.context).apply {
+        id = R.id.dialog_custom_background
+        background = reducedBitmap.toDrawable(window.context.resources)
+        },
+        ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
+         */
+
+        (MainScope() + Job()).launch(Dispatchers.Default) {
+          blurProcessor.blur(first, second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()).onSuccess {
+            withContext(Dispatchers.Main) {
+              second.addContentView(
+                View(second.context).apply {
+                  id = R.id.dialog_custom_background
+                  background = it.toDrawable(resources)
+                },
+                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+              )
+            }
+          }
+        }
       }
     }
   }
@@ -146,7 +177,18 @@ internal class SimpleDialogStyler(
   }
 
 
-  private fun compatBlur(window: Window) {
+  private fun setOnDismissDialogListener(dialog: Dialog) {
+    dialog.setOnDismissListener {
+      if (simpleDialogAttributes.blur && simpleDialogAttributes.dialogType != DialogType.Fullscreen) {
+        blurProcessor.cancel()
+        activityRoot?.get()?.run {
+          (second.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup)?.run {
+            removeView(findViewById(R.id.dialog_custom_background))
+          }
+        }
 
+        activityRoot?.clear()
+      }
+    }
   }
 }

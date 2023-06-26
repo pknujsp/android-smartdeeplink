@@ -1,6 +1,5 @@
 package io.github.pknujsp.testbed.core.ui
 
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Handler
@@ -9,19 +8,18 @@ import android.util.Size
 import android.view.PixelCopy
 import android.view.View
 import android.view.Window
-import android.widget.Toast
 import androidx.annotation.Dimension
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import java.lang.ref.SoftReference
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
@@ -30,8 +28,6 @@ import kotlin.coroutines.resume
 class BlurProcessor {
 
   private val scope = MainScope() + Job()
-
-  private val displayDensity = Resources.getSystem().displayMetrics.density
 
   private companion object {
 
@@ -73,7 +69,7 @@ class BlurProcessor {
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     )
 
-    private val availableThreads = Runtime.getRuntime().availableProcessors()
+    private val availableThreads = Runtime.getRuntime().availableProcessors() - 1
 
     @OptIn(DelicateCoroutinesApi::class) private val dispatchers = newFixedThreadPoolContext(availableThreads, "StackBlurThreads")
   }
@@ -89,77 +85,89 @@ class BlurProcessor {
   /**
    * StackBlur
    */
-  fun blur(view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int) {
+  suspend fun blur(view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int): Result<Bitmap> = suspendCancellableCoroutine {
     scope.launch(dispatchers) {
-      val size = Size(view.width, view.height)
-      val blurredBitmap: Bitmap = WeakReference(Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)).get()!!
+      try {
+        val originalSize = Size(view.width, view.height)
+        val originalBitmap: Bitmap = WeakReference(Bitmap.createBitmap(originalSize.width, originalSize.height, Bitmap.Config.ARGB_8888)).get()!!
 
-      val copySuccess: Boolean = suspendCancellableCoroutine {
-        val locationOfViewInWindow = IntArray(2)
-        view.getLocationInWindow(locationOfViewInWindow)
-        val locationRect = WeakReference(
-          Rect(
-            locationOfViewInWindow[0],
-            locationOfViewInWindow[1],
-            locationOfViewInWindow[0] + size.width,
-            locationOfViewInWindow[1] + size.height,
-          ),
-        ).get()!!
+        val copySuccess: Boolean = suspendCancellableCoroutine {
+          val locationOfViewInWindow = IntArray(2)
+          view.getLocationInWindow(locationOfViewInWindow)
+          val locationRect = WeakReference(
+            Rect(
+              locationOfViewInWindow[0],
+              locationOfViewInWindow[1],
+              locationOfViewInWindow[0] + originalSize.width,
+              locationOfViewInWindow[1] + originalSize.height,
+            ),
+          ).get()!!
 
-        PixelCopy.request(
-          window, locationRect, blurredBitmap,
-          { result ->
-            it.resume(result == PixelCopy.SUCCESS)
-          },
-          Handler(Looper.getMainLooper()),
-        )
-      }
-
-      if (copySuccess) {
-        val pixels = SoftReference(IntArray(size.width * size.height)).get()!!
-        blurredBitmap.getPixels(pixels, 0, size.width, 0, 0, size.width, size.height)
-
-        val r = size.height / availableThreads
-        val c = size.width / availableThreads
-
-        val sharedValues = WeakReference(
-          SharedValues(
-            widthMax = size.width - 1,
-            heightMax = size.height - 1,
-            divisor = radius * 2 + 1,
-            multiplySum = mulTable[radius],
-            shiftSum = shrTable[radius],
-          ),
-        ).get()!!
-
-        val rowWorks = Array(availableThreads) { thread ->
-          ProcessingRow(sharedValues, pixels, size, thread * r, (thread + 1) * r - 1, radius)
-        }
-        val columnWorks = Array(availableThreads) { thread ->
-          ProcessingColumn(sharedValues, pixels, size, thread * c, (thread + 1) * c - 1, radius)
+          PixelCopy.request(
+            window, locationRect, originalBitmap,
+            { result ->
+              it.resume(result == PixelCopy.SUCCESS)
+            },
+            Handler(Looper.getMainLooper()),
+          )
         }
 
-        val started = System.currentTimeMillis()
+        if (copySuccess) {
+          val reducedSize = Size(
+            (view.width / 2).let { if (it % 2 == 0) it else it - 1 },
+            (view.height / 2).let { if (it % 2 == 0) it else it - 1 },
+          )
+          val pixels = SoftReference(IntArray(reducedSize.width * reducedSize.height)).get()!!
+          val reducedBitmap = WeakReference(Bitmap.createScaledBitmap(originalBitmap, reducedSize.width, reducedSize.height, false)).get()!!
+          reducedBitmap.getPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
+          originalBitmap.recycle()
 
-        rowWorks.map { rowWork ->
-          async {
-            rowWork()
+          val r = reducedSize.height / availableThreads
+          val c = reducedSize.width / availableThreads
+
+          val sharedValues = WeakReference(
+            SharedValues(
+              widthMax = reducedSize.width - 1,
+              heightMax = reducedSize.height - 1,
+              divisor = radius * 2 + 1,
+              multiplySum = mulTable[radius],
+              shiftSum = shrTable[radius],
+            ),
+          ).get()!!
+
+          val rowWorks = Array(availableThreads) { thread ->
+            ProcessingRow(sharedValues, pixels, reducedSize, thread * r, (thread + 1) * r - 1, radius)
           }
-        }.awaitAll()
-
-        columnWorks.map { columnWork ->
-          async {
-            columnWork()
+          val columnWorks = Array(availableThreads) { thread ->
+            ProcessingColumn(sharedValues, pixels, reducedSize, thread * c, (thread + 1) * c - 1, radius)
           }
-        }.awaitAll()
 
-        withContext(Dispatchers.Main) {
-          Toast.makeText(window.context, "${System.currentTimeMillis() - started}", Toast.LENGTH_SHORT).show()
+          rowWorks.map { rowWork ->
+            async {
+              rowWork()
+            }
+          }.awaitAll()
+
+          columnWorks.map { columnWork ->
+            async {
+              columnWork()
+            }
+          }.awaitAll()
+          reducedBitmap.setPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
+
+          it.resume(Result.success(reducedBitmap))
         }
-        val newBitmap = Bitmap.createBitmap(pixels, size.width, size.height, Bitmap.Config.ARGB_8888)
-        newBitmap
-        blurredBitmap
+      } catch (e: Exception) {
+        it.resume(Result.failure(e))
       }
+    }
+  }
+
+  fun cancel() {
+    try {
+      scope.cancel(cause = CancellationException("Dismissed dialog"))
+    } catch (e: Exception) {
+      e.printStackTrace()
     }
   }
 
@@ -223,9 +231,9 @@ class BlurProcessor {
             var pixel = imagePixels[startPixelIndex]
             blurStack[stackIndex] = pixel
 
-            red = pixel ushr 16 and 0xff
-            green = pixel ushr 8 and 0xff
-            blue = pixel and 0xff
+            red = ((pixel ushr 16) and 0xff)
+            green = ((pixel ushr 8) and 0xff)
+            blue = (pixel and 0xff)
 
             multiplier = rad + 1
 
@@ -245,9 +253,9 @@ class BlurProcessor {
 
               multiplier = blurRadius + 1 - rad
 
-              red = pixel ushr 16 and 0xff
-              green = pixel ushr 8 and 0xff
-              blue = pixel and 0xff
+              red = ((pixel ushr 16) and 0xff)
+              green = ((pixel ushr 8) and 0xff)
+              blue = (pixel and 0xff)
 
               sumRed += red * multiplier
               sumGreen += green * multiplier
@@ -267,8 +275,9 @@ class BlurProcessor {
 
           for (col in 0 until bitmapSize.width) {
             imagePixels[outputPixelIndex] =
-              (imagePixels[outputPixelIndex++] and -0x1000000) or (sumRed.toInt() * multiplySum ushr shiftSum.toInt() and 0xff shl 16) or (sumGreen.toInt() * multiplySum ushr shiftSum.toInt() and 0xff shl 8) or (sumBlue.toInt() * multiplySum ushr shiftSum.toInt() and 0xff)
+              ((imagePixels[outputPixelIndex] and 0xff000000.toInt()) or ((((sumRed.toInt() * multiplySum) ushr shiftSum) and 0xff) shl 16) or ((((sumGreen.toInt() * multiplySum) ushr shiftSum) and 0xff) shl 8) or (((sumBlue.toInt() * multiplySum) ushr shiftSum) and 0xff))
 
+            outputPixelIndex++
             sumRed -= sumOutputRed
             sumGreen -= sumOutputGreen
             sumBlue -= sumOutputBlue
@@ -278,9 +287,9 @@ class BlurProcessor {
               stackStart
             }
 
-            sumOutputRed -= blurStack[stackIndex] ushr 16 and 0xff
-            sumOutputGreen -= blurStack[stackIndex] ushr 8 and 0xff
-            sumOutputBlue -= blurStack[stackIndex] and 0xff
+            sumOutputRed -= ((blurStack[stackIndex] ushr 16) and 0xff)
+            sumOutputGreen -= ((blurStack[stackIndex] ushr 8) and 0xff)
+            sumOutputBlue -= (blurStack[stackIndex] and 0xff)
 
             if (colOffset < widthMax) {
               inPixelIndex++
@@ -290,9 +299,9 @@ class BlurProcessor {
             val pixel = imagePixels[inPixelIndex]
             blurStack[stackIndex] = pixel
 
-            red = pixel ushr 16 and 0xff
-            green = pixel ushr 8 and 0xff
-            blue = pixel and 0xff
+            red = ((pixel ushr 16) and 0xff)
+            green = ((pixel ushr 8) and 0xff)
+            blue = (pixel and 0xff)
 
             sumInputRed += red
             sumInputGreen += green
@@ -306,9 +315,9 @@ class BlurProcessor {
             stackIndex = stackPointer
 
             blurStack[stackIndex].let { stackPixel ->
-              red = stackPixel ushr 16 and 0xff
-              green = stackPixel ushr 8 and 0xff
-              blue = stackPixel and 0xff
+              red = ((stackPixel ushr 16) and 0xff)
+              green = ((stackPixel ushr 8) and 0xff)
+              blue = (stackPixel and 0xff)
 
               sumOutputRed += red
               sumOutputGreen += green
@@ -381,9 +390,9 @@ class BlurProcessor {
             var pixel = imagePixels[sourceIndex]
             blurStack[stackIndex] = pixel
 
-            red = pixel ushr 16 and 0xff
-            green = pixel ushr 8 and 0xff
-            blue = pixel and 0xff
+            red = ((pixel ushr 16) and 0xff)
+            green = ((pixel ushr 8) and 0xff)
+            blue = (pixel and 0xff)
 
             var multiplier = rad + 1
 
@@ -404,9 +413,9 @@ class BlurProcessor {
 
               multiplier = blurRadius + 1 - rad
 
-              red = pixel ushr 16 and 0xff
-              green = pixel ushr 8 and 0xff
-              blue = pixel and 0xff
+              red = ((pixel ushr 16) and 0xff)
+              green = ((pixel ushr 8) and 0xff)
+              blue = (pixel and 0xff)
 
               sumRed += red * multiplier
               sumGreen += green * multiplier
@@ -419,13 +428,13 @@ class BlurProcessor {
           }
 
           stackPointer = blurRadius
-          yOffset = maxOf(blurRadius, heightMax)
+          yOffset = minOf(blurRadius, heightMax)
           sourceIndex = col + yOffset * bitmapSize.width
           destinationIndex = col
 
           for (y in 0 until bitmapSize.height) {
             imagePixels[destinationIndex] =
-              (imagePixels[destinationIndex] and -0x1000000) or (sumRed.toInt() * multiplySum ushr shiftSum.toInt() and 0xff shl 16) or (sumGreen.toInt() * multiplySum ushr shiftSum.toInt() and 0xff shl 8) or (sumBlue.toInt() * multiplySum ushr shiftSum.toInt() and 0xff)
+              ((imagePixels[destinationIndex] and 0xff000000.toInt()) or ((((sumRed.toInt() * multiplySum) ushr shiftSum) and 0xff) shl 16) or ((((sumGreen.toInt() * multiplySum) ushr shiftSum.toInt()) and 0xff) shl 8) or (((sumBlue.toInt() * multiplySum) ushr shiftSum.toInt()) and 0xff))
 
             destinationIndex += bitmapSize.width
             sumRed -= sumOutputRed
@@ -437,17 +446,20 @@ class BlurProcessor {
               stackStart
             }
 
-            sumOutputRed -= blurStack[stackIndex] ushr 16 and 0xff
-            sumOutputGreen -= blurStack[stackIndex] ushr 8 and 0xff
-            sumOutputBlue -= blurStack[stackIndex] and 0xff
+            sumOutputRed -= ((blurStack[stackIndex] ushr 16) and 0xff)
+            sumOutputGreen -= ((blurStack[stackIndex] ushr 8) and 0xff)
+            sumOutputBlue -= (blurStack[stackIndex] and 0xff)
 
-            if (yOffset++ < heightMax) sourceIndex += bitmapSize.width
+            if (yOffset < heightMax) {
+              sourceIndex += bitmapSize.width
+              yOffset++
+            }
 
             blurStack[stackIndex] = imagePixels[sourceIndex]
 
-            sumInputRed += imagePixels[sourceIndex] ushr 16 and 0xff
-            sumInputGreen += imagePixels[sourceIndex] ushr 8 and 0xff
-            sumInputBlue += imagePixels[sourceIndex] and 0xff
+            sumInputRed += ((imagePixels[sourceIndex] ushr 16) and 0xff)
+            sumInputGreen += ((imagePixels[sourceIndex] ushr 8) and 0xff)
+            sumInputBlue += (imagePixels[sourceIndex] and 0xff)
 
             sumRed += sumInputRed
             sumGreen += sumInputGreen
@@ -457,9 +469,9 @@ class BlurProcessor {
             stackIndex = stackPointer
 
             blurStack[stackIndex].let { stackPixel ->
-              red = stackPixel ushr 16 and 0xff
-              green = stackPixel ushr 8 and 0xff
-              blue = stackPixel and 0xff
+              red = ((stackPixel ushr 16) and 0xff)
+              green = ((stackPixel ushr 8) and 0xff)
+              blue = (stackPixel and 0xff)
 
               sumOutputRed += red
               sumOutputGreen += green
