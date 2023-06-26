@@ -20,7 +20,7 @@ private const val defaultBackgroundColor: Int = Color.WHITE
 
 data class SimpleDialogAttributes(
   var blur: Boolean = true,
-  var blurIndensity: Int = currentBlurIndensity,
+  @IntRange(from = 0, to = 100) var blurIndensity: Int = currentBlurIndensity,
   var dim: Boolean = true,
   @IntRange(from = 0, to = 100) var dimIndensity: Int = currentDimIndensity,
   var cancelable: Boolean = true,

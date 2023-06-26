@@ -33,7 +33,7 @@ internal class SimpleDialogStyler(
     @SuppressLint("InternalInsetResource", "DiscouragedApi") private val navigationBarHeight: Int = Resources.getSystem().run {
       getDimensionPixelSize(getIdentifier("navigation_bar_height", "dimen", "android"))
     }
-    private val maxBlurRadius: Float = 24 * density
+    private val maxBlurRadius: Float = 33 * density
 
     private val blurProcessor = BlurProcessor()
   }
@@ -60,7 +60,6 @@ internal class SimpleDialogStyler(
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) attributes.blurBehindRadius =
       (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100f)).toInt()
-
   }
 
   private fun blur(window: Window) {
@@ -76,7 +75,7 @@ internal class SimpleDialogStyler(
     // new
     if (simpleDialogAttributes.blur) {
       activityRoot?.get()?.also {
-        blurProcessor.blur(it.first, it.second, simpleDialogAttributes.blurIndensity)
+        blurProcessor.blur(it.first, it.second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt())
       }
     }
   }
