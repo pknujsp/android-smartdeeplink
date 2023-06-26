@@ -4,12 +4,30 @@ plugins {
   alias(libs.plugins.kapt)
 }
 
+@Suppress("UnstableApiUsage")
 android {
-  namespace = "io.github.pknujsp.simpledialog"
+  namespace = "io.github.pknujsp.blur"
+
+  defaultConfig {
+    externalNativeBuild {
+      cmake {
+        cppFlags("")
+      }
+    }
+  }
 
   buildTypes {
     release {
       isMinifyEnabled = false
+    }
+  }
+
+  ndkVersion = "25.2.9519653"
+
+  externalNativeBuild {
+    cmake {
+      path("src/main/cpp/CMakeLists.txt")
+      version = "3.22.1"
     }
   }
 
