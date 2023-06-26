@@ -15,10 +15,8 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import java.lang.ref.SoftReference
 
@@ -40,7 +38,7 @@ internal class SimpleDialogStyler(
     @SuppressLint("InternalInsetResource", "DiscouragedApi") private val navigationBarHeight: Int = Resources.getSystem().run {
       getDimensionPixelSize(getIdentifier("navigation_bar_height", "dimen", "android"))
     }
-    private val maxBlurRadius: Float = 28 * density
+    private val maxBlurRadius: Float = 24 * density
 
     private val blurProcessor = BlurProcessor()
   }
@@ -84,8 +82,8 @@ internal class SimpleDialogStyler(
     if (simpleDialogAttributes.blur) {
       activityRoot?.get()?.run {
 
-        /**
-         * window.addContentView(
+        /** Only available on Android 12 and above!
+        window.addContentView(
         View(window.context).apply {
         id = R.id.dialog_custom_background
         background = reducedBitmap.toDrawable(window.context.resources)
@@ -94,9 +92,11 @@ internal class SimpleDialogStyler(
         )
          */
 
-        (MainScope() + Job()).launch(Dispatchers.Default) {
+        (MainScope()).launch(Dispatchers.Default) {
           blurProcessor.blur(first, second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()).onSuccess {
             withContext(Dispatchers.Main) {
+              if (!dialog.isShowing) return@withContext
+
               second.addContentView(
                 View(second.context).apply {
                   id = R.id.dialog_custom_background

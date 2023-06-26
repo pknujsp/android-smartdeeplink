@@ -9,6 +9,7 @@ import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import androidx.annotation.Dimension
+import androidx.annotation.FloatRange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
@@ -27,9 +28,9 @@ import kotlin.coroutines.resume
 
 class BlurProcessor {
 
-  private val scope = MainScope() + Job()
-
   private companion object {
+
+    private val scope = MainScope() + Job()
 
     private val mulTable = intArrayOf(
       512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
@@ -85,7 +86,10 @@ class BlurProcessor {
   /**
    * StackBlur
    */
-  suspend fun blur(view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int): Result<Bitmap> = suspendCancellableCoroutine {
+  suspend fun blur(
+    view: View, window: Window, @Dimension(unit = Dimension.DP) radius: Int,
+    @FloatRange(from = 1.0, to = 5.0) resizeRatio: Double = 2.2,
+  ): Result<Bitmap> = suspendCancellableCoroutine {
     scope.launch(dispatchers) {
       try {
         val originalSize = Size(view.width, view.height)
@@ -114,8 +118,8 @@ class BlurProcessor {
 
         if (copySuccess) {
           val reducedSize = Size(
-            (view.width / 2).let { if (it % 2 == 0) it else it - 1 },
-            (view.height / 2).let { if (it % 2 == 0) it else it - 1 },
+            (view.width / resizeRatio).toInt().let { if (it % 2 == 0) it else it - 1 },
+            (view.height / resizeRatio).toInt().let { if (it % 2 == 0) it else it - 1 },
           )
           val pixels = SoftReference(IntArray(reducedSize.width * reducedSize.height)).get()!!
           val reducedBitmap = WeakReference(Bitmap.createScaledBitmap(originalBitmap, reducedSize.width, reducedSize.height, false)).get()!!
@@ -154,7 +158,6 @@ class BlurProcessor {
             }
           }.awaitAll()
           reducedBitmap.setPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
-
           it.resume(Result.success(reducedBitmap))
         }
       } catch (e: Exception) {
