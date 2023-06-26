@@ -8,21 +8,13 @@ plugins {
 android {
   namespace = "io.github.pknujsp.blur"
 
-  defaultConfig {
-    externalNativeBuild {
-      cmake {
-        cppFlags("")
-      }
-    }
-  }
-
   buildTypes {
     release {
       isMinifyEnabled = false
     }
   }
 
-  ndkVersion = "25.2.9519653"
+
 
   externalNativeBuild {
     cmake {

@@ -14,6 +14,8 @@ import android.view.WindowManager
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
+import io.github.pknujsp.blur.NativeImageProcessor
+import io.github.pknujsp.blur.ViewBitmapUtils.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -93,6 +95,13 @@ internal class SimpleDialogStyler(
          */
 
         (MainScope()).launch(Dispatchers.Default) {
+
+          val srcBitmap = first.toBitmap(second)
+          srcBitmap.onSuccess { bitmap ->
+            val nativeImageProcessor = NativeImageProcessor()
+            val pixels = nativeImageProcessor.blur(bitmap, 24, bitmap.width, bitmap.height)
+          }
+
           blurProcessor.blur(first, second, (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()).onSuccess {
             withContext(Dispatchers.Main) {
               if (!dialog.isShowing) return@withContext
