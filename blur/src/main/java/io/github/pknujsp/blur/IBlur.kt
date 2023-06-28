@@ -8,12 +8,12 @@ import androidx.annotation.WorkerThread
 
 interface IBlur {
   @WorkerThread
-  fun nativeBlurOrDim(
-    window: Window, @Dimension(unit = Dimension.DP) radius: Int, @FloatRange(from = 1.0, to = 8.0) resizeRatio: Double = 1.0, dimFactor: Int,
+  fun nativeBlur(
+    window: Window, @Dimension(unit = Dimension.DP) radius: Int, @FloatRange(from = 1.0, to = 8.0) resizeRatio: Double = 1.0,
   ): Result<Bitmap>
 
-  suspend fun kotlinBlurOrDim(
-    window: Window, @Dimension(unit = Dimension.DP) radius: Int, @FloatRange(from = 1.0, to = 8.0) resizeRatio: Double = 1.0, dimFactor: Int,
+  suspend fun kotlinBlur(
+    window: Window, @Dimension(unit = Dimension.DP) radius: Int, @FloatRange(from = 1.0, to = 8.0) resizeRatio: Double = 1.0,
   ): Result<Bitmap>
 
 }

@@ -1,7 +1,6 @@
 package io.github.pknujsp.testbed.core.ui
 
 import android.graphics.Color
-import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
@@ -24,7 +23,7 @@ data class SimpleDialogAttributes(
   var dim: Boolean = true,
   @IntRange(from = 0, to = 100) var dimIndensity: Int = currentDimIndensity,
   var cancelable: Boolean = true,
-  var contentView: View?, var dialogType: DialogType,
+  var dialogType: DialogType,
   @Dimension(unit = Dimension.DP) var bottomMargin: Int = currentMarginBottom,
   @Dimension(unit = Dimension.DP) var horizontalMargin: Int = currentMarginHorizontal,
   @Dimension(unit = Dimension.DP) var cornerRadius: Int = currentCornerRadius,

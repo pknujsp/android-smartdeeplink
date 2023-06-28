@@ -73,8 +73,8 @@ class KotlinBlurProcessor : Workers(), IWorkers {
   )
 
 
-  suspend fun kotlinBlurOrDim(
-    window: Window, radius: Int, resizeRatio: Double, dimFactor: Int,
+  suspend fun kotlinBlur(
+    window: Window, radius: Int, resizeRatio: Double,
   ): Result<Bitmap> = suspendCancellableCoroutine { continuation ->
     launch(dispatchers) {
       try {

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -23,6 +24,8 @@ class MainDialogFragment : Fragment() {
 
   private val viewModel by viewModels<MainDialogViewModel>()
 
+  private var dialog: AlertDialog? = null
+
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     _binding = FragmentMainDialogBinding.inflate(inflater, container, false)
     return binding.root
@@ -32,9 +35,10 @@ class MainDialogFragment : Fragment() {
     super.onViewCreated(view, savedInstanceState)
     binding.apply {
       showDialogBtn.setOnClickListener {
-        viewModel.dialogBuilder.value?.also { builder ->
-          builder.contentView = dialogView(builder.dialogType)
-          builder.buildAndShow()
+        viewModel.dialogBuilder.replayCache.lastOrNull()?.also { builder ->
+          dialog?.dismiss()
+          builder.setContentView(dialogView(dialogType()))
+          dialog = builder.buildAndShow()
         }
       }
 
@@ -63,8 +67,7 @@ class MainDialogFragment : Fragment() {
         viewModel.cornerRadius(value.toInt())
       }
       dialogTypesRadioGroup.setOnCheckedChangeListener { _, checkedId ->
-        val dialogType = dialogType()
-        viewModel.dialogType(dialogType, dialogView(dialogType))
+        initAttrs()
       }
       width.setOnCheckedChangeListener { _, isChecked ->
         viewModel.size(
@@ -86,20 +89,26 @@ class MainDialogFragment : Fragment() {
     binding.apply {
       viewLifecycleOwner.lifecycleScope.launch {
         viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-          val dialogType = dialogType()
-          viewModel.init(
-            SimpleDialogBuilder.builder(requireContext(), dialogView(dialogType), dialogType).setElevation(
-              elevationSlider.value.toInt(),
-            ).setLayoutSize(
-              if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
-              if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
-              .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(true)
-              .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()),
-          )
+          initAttrs()
         }
       }
 
+    }
+  }
+
+  private fun initAttrs() {
+    binding.apply {
+      val dialogType = dialogType()
+      viewModel.init(
+        SimpleDialogBuilder.builder(requireContext(), dialogType).setContentView(dialogView(dialogType)).setElevation(
+          elevationSlider.value.toInt(),
+        ).setLayoutSize(
+          if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
+          if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
+          .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(true)
+          .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()),
+      )
     }
   }
 
@@ -121,22 +130,3 @@ class MainDialogFragment : Fragment() {
     DialogType.BottomSheet -> BottomsheetTestBinding.inflate(layoutInflater).root
   }
 }
-
-/*
-data class SimpleDialogAttributes(
-  val blur: Boolean,
-  @IntRange(from = 0, to = 100) val blurIndensity: Int,
-  val dim: Boolean,
-  @IntRange(from = 0, to = 100) val dimIndensity: Int,
-  val cancelable: Boolean = true,
-  val view: View, val dialogType: DialogType,
-  @Dimension(unit = Dimension.DP) val bottomMargin: Int,
-  @Dimension(unit = Dimension.DP) val horizontalMargin: Int,
-  @Dimension(unit = Dimension.DP) val cornerRadius: Int,
-  @IdRes val backgroundResourceId: Int? = null,
-  @Dimension(unit = Dimension.DP) val elevation: Int,
-  @SizeMode val layoutWidth: Int,
-  @SizeMode val layoutHeight: Int,
-)
-
- */

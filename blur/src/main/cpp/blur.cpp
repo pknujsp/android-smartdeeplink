@@ -109,23 +109,25 @@ namespace ThreadPool {
 
 }
 
-void dim(unsigned short *imagePixels, const int width, const int height, const int dimFactor) {
+void dim(u_short *imagePixels, const int width, const int height, const int dimFactor) {
     const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
-    const int r = height / availableThreads;
+    const int rowWorksCount = height / availableThreads;
     vector<function<void()>> rowWorks;
 
-    const double factor = dimFactor / 100.0;
+    const double factor = 1.0 - dimFactor / 100.0;
 
     for (int i = 0; i < availableThreads; i++) {
-        const int startRow = i * r;
-        const int endRow = (i + 1) * r - 1;
+        const int startRow = i * rowWorksCount;
+        int endRow = (i + 1) * rowWorksCount - 1;
+        if (i == availableThreads - 1) endRow = height - 1;
 
         rowWorks.emplace_back([factor, imagePixels, width, startRow, endRow] {
             unsigned short pixel, red, green, blue;
 
             for (int i = width * startRow; i < width * endRow + width; i++) {
                 pixel = imagePixels[i];
+
                 red = (unsigned short) (((pixel >> RED_SHIFT) & RED_MASK) * factor);
                 green = (unsigned short) (((pixel >> GREEN_SHIFT) & GREEN_MASK) * factor);
                 blue = (unsigned short) ((pixel & BLUE_MASK) * factor);
@@ -149,8 +151,6 @@ void dim(unsigned short *imagePixels, const int width, const int height, const i
     for (auto &f: futures) {
         f.wait();
     }
-
-
 }
 
 void processingRow(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startRow, const int endRow) {
@@ -301,7 +301,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 
     long sumRed, sumGreen, sumBlue, sumInputRed, sumInputGreen, sumInputBlue, sumOutputRed, sumOutputGreen, sumOutputBlue;
 
-    int red, green, blue;
+    unsigned short red, green, blue;
     unsigned short blurStack[divisor];
 
     for (int col = startColumn; col <= endColumn; col++) {
@@ -357,10 +357,10 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 
         for (int y = 0; y < targetHeight; y++) {
             imagePixels[destinationIndex] =
-                    (short) ((imagePixels[destinationIndex] bitand PIXEL_MASK) bitor
-                             ((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor (
-                                     (((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
-                             (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
+                    (unsigned short) ((imagePixels[destinationIndex] bitand PIXEL_MASK) bitor
+                                      ((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor (
+                                              (((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
+                                      (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
 
             destinationIndex += targetWidth;
             sumRed -= sumOutputRed;
@@ -411,30 +411,33 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 }
 
 void blur(unsigned short *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
-    const int widthMax = targetWidth % 2 != 0 ? targetWidth : targetWidth - 1;
-    const int heightMax = targetHeight % 2 != 0 ? targetHeight : targetHeight - 1;
+    const int widthMax = targetWidth - 1;
+    const int heightMax = targetHeight - 1;
+    const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
-    const auto *sharedValues = new SharedValues{widthMax, heightMax, radius * 2 + 1, MUL_TABLE[radius], SHR_TABLE[radius],
+    const auto *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
                                                 targetWidth,
-                                                targetHeight, radius};
+                                                targetHeight, newRadius};
 
     const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
-    const int r = targetHeight / availableThreads;
-    const int c = targetWidth / availableThreads;
+    const int rowWorksCount = targetHeight / availableThreads;
+    const int columnWorksCount = targetWidth / availableThreads;
 
     vector<function<void()>> rowWorks;
     vector<function<void()>> columnWorks;
 
     for (int i = 0; i < availableThreads; i++) {
-        const int startRow = i * r;
-        const int endRow = (i + 1) * r - 1;
+        const int startRow = i * rowWorksCount;
+        int endRow = (i + 1) * rowWorksCount - 1;
+        if (i == availableThreads - 1) endRow = heightMax;
         rowWorks.emplace_back([sharedValues, imagePixels, startRow, endRow] { return processingRow(sharedValues, imagePixels, startRow, endRow); });
     }
 
     for (int i = 0; i < availableThreads; i++) {
-        const int startColumn = i * c;
-        const int endColumn = (i + 1) * c - 1;
+        int startColumn = i * columnWorksCount;
+        int endColumn = (i + 1) * columnWorksCount - 1;
+        if (i == availableThreads - 1) endColumn = widthMax;
         columnWorks.emplace_back(
                 [sharedValues, imagePixels, startColumn, endColumn] { return processingColumn(sharedValues, imagePixels, startColumn, endColumn); });
     }
@@ -451,7 +454,7 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
     }
 
     for (const auto &column: columnWorks) {
-      //  futures.emplace_back(pool.EnqueueJob(column));
+        futures.emplace_back(pool.EnqueueJob(column));
     }
 
     for (auto &f: futures) {

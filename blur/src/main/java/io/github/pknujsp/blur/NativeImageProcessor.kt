@@ -12,11 +12,11 @@ internal class NativeImageProcessor {
     }
   }
 
-  fun blurAndDim(
-    decorView: View, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int, dimFactor: Int,
+  fun blur(
+    decorView: View, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int,
   ): Result<Bitmap> = with(
     applyBlur(
-      decorView, radius, resizeRatio, statusBarHeight, navigationBarHeight, dimFactor,
+      decorView, radius, resizeRatio, statusBarHeight, navigationBarHeight,
     ),
   ) {
     return when (this) {
@@ -27,7 +27,7 @@ internal class NativeImageProcessor {
   }
 
   private external fun applyBlur(
-    decorView: View, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int, dimFactor: Int,
+    decorView: View, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int,
   ): Any?
 
 }

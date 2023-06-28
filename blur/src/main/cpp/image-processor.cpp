@@ -36,14 +36,10 @@ void gl(unsigned int *pixels, const int width, const int height) {
 
 extern "C"
 jobject resize(JNIEnv *env, jint newWidth, jint newHeight, _jobject *bitmap, jclass bitmapClass) {
-    bool ss = bitmapClass == nullptr;
-
     jmethodID createScaledBitmapMethod = env->GetStaticMethodID(bitmapClass, "createScaledBitmap",
                                                                 "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
-
     jobject resizedBitmap = env->CallStaticObjectMethod(bitmapClass, createScaledBitmapMethod, bitmap, newWidth,
                                                         newHeight, true);
-
     return resizedBitmap;
 }
 
@@ -69,15 +65,13 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
     jmethodID drawMethod = env->GetMethodID(decorViewClass, "draw", "(Landroid/graphics/Canvas;)V");
     env->CallVoidMethod(decorView, drawMethod, canvas);
 
-    bool ss = srcBitmap == nullptr;
-
     return srcBitmap;
 }
 
 extern "C"
 JNIEXPORT jobject JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject decorView, jint radius, jdouble resizeRatio,
-                                                           jint statusBarHeight, jint navigationBarHeight, jint dimFactor) {
+                                                           jint statusBarHeight, jint navigationBarHeight) {
     try {
         jclass decorViewClass = env->GetObjectClass(decorView);
 
@@ -94,33 +88,28 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
 
         jint newWidth = (jint) (contentWidth / resizeRatio);
         jint newHeight = (jint) (contentHeight / resizeRatio);
+        if (newWidth % 2 != 0) newWidth--;
+        if (newHeight % 2 != 0) newHeight--;
 
         jobject srcBitmap = toBitmap(env, decorView, decorViewClass, bitmapClass, contentWidth, contentHeight, statusBarHeight,
                                      navigationBarHeight);
 
-        void *srcPixels = nullptr;
-        AndroidBitmap_lockPixels(env, srcBitmap, (void **) &srcPixels);
-
-        jobject resizedBitmap = resize(env, newWidth, newHeight, srcBitmap, bitmapClass);
-
-        bool srcBitmapIsNull = srcBitmap == nullptr;
-
-        AndroidBitmap_unlockPixels(env, srcBitmap);
+        srcBitmap = resize(env, newWidth, newHeight, srcBitmap, bitmapClass);
 
         AndroidBitmapInfo info;
         void *pixels = nullptr;
 
-        if ((AndroidBitmap_getInfo(env, resizedBitmap, &info)) < 0) return nullptr;
-        if ((AndroidBitmap_lockPixels(env, resizedBitmap, (void **) &pixels)) < 0) return nullptr;
+        if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;
+        if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return nullptr;
 
         const auto srcSize = (jsize) (newWidth * newHeight);
         jshortArray result = env->NewShortArray(srcSize);
         env->SetShortArrayRegion(result, 0, srcSize, (jshort *) pixels);
 
-        blur((u_short *) pixels, radius % 2 == 0 ? radius + 1 : radius, newWidth, newHeight);
+        blur((u_short *) pixels, radius, newWidth, newHeight);
 
-        AndroidBitmap_unlockPixels(env, resizedBitmap);
-        return resizedBitmap;
+        AndroidBitmap_unlockPixels(env, srcBitmap);
+        return srcBitmap;
     } catch (const char *e) {
         jthrowable throwable = env->ExceptionOccurred();
         return throwable;

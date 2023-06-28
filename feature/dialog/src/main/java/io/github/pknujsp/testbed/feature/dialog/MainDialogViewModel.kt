@@ -1,86 +1,91 @@
 package io.github.pknujsp.testbed.feature.dialog
 
-import android.view.View
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.pknujsp.testbed.core.ui.DialogType
 import io.github.pknujsp.testbed.core.ui.SimpleDialogBuilder
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class MainDialogViewModel : ViewModel() {
-  private val _dialogBuilder = MutableStateFlow<SimpleDialogBuilder?>(null)
-  val dialogBuilder get() = _dialogBuilder.asStateFlow()
+  private val _dialogBuilder = MutableSharedFlow<SimpleDialogBuilder?>(
+    replay = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST,
+  )
+  val dialogBuilder get() = _dialogBuilder.asSharedFlow()
 
   fun init(builder: SimpleDialogBuilder) {
     viewModelScope.launch {
-      _dialogBuilder.value = builder
+      _dialogBuilder.emit(builder)
     }
   }
 
   fun blur(blur: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setBlur(blur = blur > 0, blurIndensity = blur)
+        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun dim(dim: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setDim(dim = dim > 0, dimIndensity = dim)
+        _dialogBuilder.emit(it)
+
       }
     }
   }
 
   fun bottomMargin(margin: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setBottomMargin(margin)
+        _dialogBuilder.emit(it)
+
       }
     }
   }
 
   fun horizontalMargin(margin: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setHorizontalMargin(margin)
+        _dialogBuilder.emit(it)
+
       }
     }
   }
 
   fun cornerRadius(radius: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setCornerRadius(radius)
+        _dialogBuilder.emit(it)
+
       }
     }
   }
 
-  fun dialogType(dialogType: DialogType, view: View) {
-    viewModelScope.launch {
-      _dialogBuilder.update {
-        it?.dialogType = dialogType
-        it
-      }
-    }
-  }
 
   fun size(width: Int, height: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setLayoutSize(width, height)
+        _dialogBuilder.emit(it)
+
       }
     }
   }
 
   fun elevation(elevation: Int) {
     viewModelScope.launch {
-      _dialogBuilder.update {
+      _dialogBuilder.replayCache.last().also {
         it?.setElevation(elevation)
+        _dialogBuilder.emit(it)
       }
     }
   }

@@ -13,32 +13,20 @@ import androidx.appcompat.app.AlertDialog
 
 class SimpleDialogBuilder private constructor(
   context: Context,
-  var contentView: View?,
-  var dialogType: DialogType,
+  dialogType: DialogType,
 ) {
 
-  private val dialogStyler: SimpleDialogStyler =
-    SimpleDialogStyler(SimpleDialogAttributes(contentView = contentView, dialogType = dialogType), context)
+  private val dialogStyler: SimpleDialogStyler = SimpleDialogStyler(SimpleDialogAttributes(dialogType = dialogType), context)
 
-  private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType)).apply {
-    if (contentView != null) setView(contentView)
-  }
+  private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType))
 
   companion object {
-    /**
-     * Create a new instance of [SimpleDialogBuilder] with [contentView] and [dialogType].(새로운 [SimpleDialogBuilder] 인스턴스를 [contentView]와 [dialogType]으로 생성합니다.)
-     */
-    fun builder(@ActivityContext context: Context, contentView: View, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
-      context, contentView,
-      dialogType,
-    )
 
     /**
-     * Create a new instance of [SimpleDialogBuilder] with [dialogType].(새로운 [SimpleDialogBuilder] 인스턴스를 [dialogType]으로 생성합니다.)
+     * Create Builder instance.(Builder 인스턴스를 생성합니다.)
      */
     fun builder(@ActivityContext context: Context, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
-      context, null,
-      dialogType,
+      context, dialogType,
     )
   }
 
@@ -154,6 +142,11 @@ class SimpleDialogBuilder private constructor(
    */
   fun setBackgroundColor(@ColorInt color: Int): SimpleDialogBuilder {
     dialogStyler.simpleDialogAttributes.backgroundColor = color
+    return this
+  }
+
+  fun setContentView(view: View): SimpleDialogBuilder {
+    alertDialogBuilder.setView(view)
     return this
   }
 

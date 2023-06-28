@@ -21,15 +21,14 @@ class NativeBlurProcessor : Workers(), IWorkers {
     _nativeImageProcessor = NativeImageProcessor()
   }
 
-  fun nativeBlurOrDim(
+  fun nativeBlur(
     window: Window,
     radius: Int,
     resizeRatio: Double,
-    dimFactor: Int,
-  ): Result<Bitmap> = nativeImageProcessor.blurAndDim(
+  ): Result<Bitmap> = nativeImageProcessor.blur(
     window.decorView, radius, resizeRatio, BitmapUtils.statusBarHeight, BitmapUtils.navigationBarHeight,
-    dimFactor,
-  )
+
+    )
 
   override fun cancel() {
     cancelWorks()
