@@ -121,6 +121,8 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
                                                            jint statusBarHeight, jint navigationBarHeight, jint dimFactor) {
     jobject srcBitmap = toBitmap(env, decor_view, resizeRatio, statusBarHeight, navigationBarHeight);
 
+    return srcBitmap;
+
     AndroidBitmapInfo info;
 
     if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;

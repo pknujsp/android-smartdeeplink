@@ -422,6 +422,7 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
 
     const int r = targetHeight / availableThreads;
     const int c = targetWidth / availableThreads;
+
     vector<function<void()>> rowWorks;
     vector<function<void()>> columnWorks;
 

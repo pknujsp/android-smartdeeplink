@@ -95,16 +95,15 @@ internal class SimpleDialogStyler(
           val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
 
           blurProcessor.nativeBlurOrDim(window, radius, 3.0, simpleDialogAttributes.dimIndensity).onSuccess {
-            val end = "${System.currentTimeMillis() - startTime}MS 소요됨"
-
             if (dialog.isShowing) {
-              val view = View(window.context).apply {
-                id = R.id.dialog_custom_background
-                background = it.toDrawable(resources)
-              }
+
               println("${System.currentTimeMillis() - startTime}MS 소요됨")
 
               withContext(Dispatchers.Main) {
+                val view = View(window.context).apply {
+                  id = R.id.dialog_custom_background
+                  background = it.toDrawable(resources)
+                }
                 //window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 window.decorView.draw(Canvas(it))
               }
