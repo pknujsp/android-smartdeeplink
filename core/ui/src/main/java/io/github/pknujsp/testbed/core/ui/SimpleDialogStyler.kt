@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.View
@@ -88,8 +87,9 @@ internal class SimpleDialogStyler(
         ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
          */
+        window.decorView.clearAnimation()
         println("MainScope")
-        MainScope().launch(Dispatchers.Default) {
+        MainScope().launch {
           println("MainScope.launched")
           val startTime = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
@@ -104,8 +104,7 @@ internal class SimpleDialogStyler(
                   id = R.id.dialog_custom_background
                   background = it.toDrawable(resources)
                 }
-                //window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                window.decorView.draw(Canvas(it))
+                window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
               }
             }
           }.onFailure {

@@ -19,11 +19,15 @@ internal class NativeImageProcessor {
       decorView, radius, resizeRatio, statusBarHeight, navigationBarHeight, dimFactor,
     ),
   ) {
-    if (this != null) Result.success(this)
-    else Result.failure(RuntimeException("Blurring failed"))
+    return when (this) {
+      null -> Result.failure(NullPointerException())
+      is Throwable -> Result.failure(this)
+      else -> Result.success(this as Bitmap)
+    }
   }
 
   private external fun applyBlur(
     decorView: View, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int, dimFactor: Int,
-  ): Bitmap?
+  ): Any?
+
 }

@@ -451,7 +451,7 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
     }
 
     for (const auto &column: columnWorks) {
-        futures.emplace_back(pool.EnqueueJob(column));
+      //  futures.emplace_back(pool.EnqueueJob(column));
     }
 
     for (auto &f: futures) {
