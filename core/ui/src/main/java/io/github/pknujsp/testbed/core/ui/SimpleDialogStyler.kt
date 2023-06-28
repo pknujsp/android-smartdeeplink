@@ -1,27 +1,25 @@
 package io.github.pknujsp.testbed.core.ui
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
-import io.github.pknujsp.blur.IBlur
-import io.github.pknujsp.blur.NativeBlurProcessor
+import io.github.pknujsp.blur.BlurProcessor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.lang.ref.SoftReference
+import java.lang.ref.WeakReference
 
 
 internal class SimpleDialogStyler(
@@ -29,49 +27,46 @@ internal class SimpleDialogStyler(
   @ActivityContext context: Context,
 ) {
 
-  private val activityRoot: SoftReference<Pair<View, Window>>? = (context as? Activity)?.let { activity ->
-    val window = activity.window
-    val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
-    SoftReference(contentView to activity.window)
+  private val activityRoot = WeakReference((context as Activity).window).run {
+    enqueue()
+    get()!!
   }
 
   private companion object {
     private val density: Float = Resources.getSystem().displayMetrics.density
 
-    @SuppressLint("InternalInsetResource", "DiscouragedApi") private val navigationBarHeight: Int = Resources.getSystem().run {
-      getDimensionPixelSize(getIdentifier("navigation_bar_height", "dimen", "android"))
-    }
     private val maxBlurRadius: Float = 24 * density
 
-    private val blurProcessor: IBlur = NativeBlurProcessor()
+    private val blurProcessor = BlurProcessor()
   }
 
   fun applyStyle(dialog: Dialog) {
     setOnDismissDialogListener(dialog)
+    blurOrDim(dialog)
+
     dialog.window?.apply {
       position(this)
       spacing(this)
-      blur(dialog)
-      dim(this)
+      //dim(this)
       background(this)
 
       attributes = attributes.also { attr ->
         attr.copyFrom(attr)
         size(attr)
         //blur(attr)
-        dim(attr)
+        //dim(attr)
       }
     }
   }
 
-  private fun blur(attributes: WindowManager.LayoutParams) {
+  private fun blurOrDim(attributes: WindowManager.LayoutParams) {
     if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) attributes.blurBehindRadius =
+    if (simpleDialogAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius =
       (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100f)).toInt()
   }
 
-  private fun blur(dialog: Dialog) {
+  private fun blurOrDim(dialog: Dialog) {
     if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
 
     /**
@@ -82,9 +77,8 @@ internal class SimpleDialogStyler(
      */
 
     // new
-    if (simpleDialogAttributes.blur) {
-      activityRoot?.get()?.run {
-
+    if (simpleDialogAttributes.blur || simpleDialogAttributes.dim) {
+      activityRoot.also { window ->
         /** Only available on Android 12 and above!
         window.addContentView(
         View(window.context).apply {
@@ -94,25 +88,30 @@ internal class SimpleDialogStyler(
         ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
          */
-
-        (MainScope()).launch(Dispatchers.Default) {
+        println("MainScope")
+        MainScope().launch(Dispatchers.Default) {
+          println("MainScope.launched")
           val startTime = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
 
-          blurProcessor.blur(first, second, radius, 2.5).onSuccess {
-            withContext(Dispatchers.Main) {
-              if (!dialog.isShowing) return@withContext
+          blurProcessor.nativeBlurOrDim(window, radius, 3.0, simpleDialogAttributes.dimIndensity).onSuccess {
+            val end = "${System.currentTimeMillis() - startTime}MS 소요됨"
 
-              second.addContentView(
-                View(second.context).apply {
-                  id = R.id.dialog_custom_background
-                  background = it.toDrawable(resources)
-                },
-                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-              )
-              Toast.makeText(second.context, "${System.currentTimeMillis() - startTime}MS 소요됨", Toast.LENGTH_SHORT).show()
+            if (dialog.isShowing) {
+              val view = View(window.context).apply {
+                id = R.id.dialog_custom_background
+                background = it.toDrawable(resources)
+              }
+              println("${System.currentTimeMillis() - startTime}MS 소요됨")
+
+              withContext(Dispatchers.Main) {
+                //window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                window.decorView.draw(Canvas(it))
+              }
             }
-          }.onFailure { }
+          }.onFailure {
+            println("blurProcessor.blur.onFailure -> $it")
+          }
 
           /**
           blurProcessor.blur(first, second, radius).onSuccess {
@@ -205,13 +204,11 @@ internal class SimpleDialogStyler(
     dialog.setOnDismissListener {
       if (simpleDialogAttributes.blur && simpleDialogAttributes.dialogType != DialogType.Fullscreen) {
         blurProcessor.cancel()
-        activityRoot?.get()?.run {
-          (second.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup)?.run {
+        activityRoot.run {
+          (findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup)?.run {
             removeView(findViewById(R.id.dialog_custom_background))
           }
         }
-
-        activityRoot?.clear()
       }
     }
   }

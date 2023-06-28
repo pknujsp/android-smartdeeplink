@@ -1,37 +1,38 @@
 package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
-import android.view.View
 import android.view.Window
-import io.github.pknujsp.blur.ViewBitmapUtils.toBitmap
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 
-class NativeBlurProcessor : Workers(), IBlur {
+class NativeBlurProcessor : Workers(), IWorkers {
 
   private companion object {
-    private val nativeImageProcessor by lazy { NativeImageProcessor() }
+    private var _nativeImageProcessor: NativeImageProcessor? = null
+    private val nativeImageProcessor: NativeImageProcessor
+      get() = _nativeImageProcessor!!
+
+
+    init {
+      BitmapUtils.init()
+    }
   }
 
-  override suspend fun blur(view: View, window: Window, radius: Int, resizeRatio: Double): Result<Bitmap> =
-    suspendCancellableCoroutine { continuation ->
-      launch(Dispatchers.Default) {
-        view.toBitmap(window, resizeRatio).fold(
-          onSuccess = { bitmap ->
-            val result = nativeImageProcessor.blur(bitmap, radius, bitmap.width, bitmap.height)
-            if (result) Result.success(bitmap)
-            else Result.failure(RuntimeException("Native blur failed"))
-          },
-          onFailure = { Result.failure(it) },
-        ).run {
-          continuation.resume(this)
-        }
-      }
-    }
+  init {
+    _nativeImageProcessor = NativeImageProcessor()
+  }
+
+  fun nativeBlurOrDim(
+    window: Window,
+    radius: Int,
+    resizeRatio: Double,
+    dimFactor: Int,
+  ): Result<Bitmap> = nativeImageProcessor.blurAndDim(
+    window.decorView, radius, resizeRatio, BitmapUtils.statusBarHeight, BitmapUtils.navigationBarHeight,
+    dimFactor,
+  )
 
   override fun cancel() {
     cancelWorks()
   }
+
 }

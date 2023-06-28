@@ -2,9 +2,8 @@ package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
 import android.util.Size
-import android.view.View
 import android.view.Window
-import io.github.pknujsp.blur.ViewBitmapUtils.toBitmap
+import io.github.pknujsp.blur.BitmapUtils.toBitmap
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -14,7 +13,7 @@ import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
 
-class JvmBlurProcessor : Workers(), IBlur {
+class KotlinBlurProcessor : Workers(), IWorkers {
 
   private companion object {
 
@@ -73,12 +72,13 @@ class JvmBlurProcessor : Workers(), IBlur {
     val shiftSum: Int,
   )
 
-  override suspend fun blur(
-    view: View, window: Window, radius: Int, resizeRatio: Double,
+
+  suspend fun kotlinBlurOrDim(
+    window: Window, radius: Int, resizeRatio: Double, dimFactor: Int,
   ): Result<Bitmap> = suspendCancellableCoroutine { continuation ->
     launch(dispatchers) {
       try {
-        view.toBitmap(window, resizeRatio).fold(
+        window.toBitmap(resizeRatio).fold(
           onSuccess = { reducedBitmap ->
             val reducedSize = Size(
               reducedBitmap.width, reducedBitmap.height,
@@ -89,21 +89,23 @@ class JvmBlurProcessor : Workers(), IBlur {
             val r = reducedSize.height / availableThreads
             val c = reducedSize.width / availableThreads
 
+            val newRadius = radius.toOdd()
+
             val sharedValues = WeakReference(
               SharedValues(
                 widthMax = reducedSize.width - 1,
                 heightMax = reducedSize.height - 1,
-                divisor = radius * 2 + 1,
-                multiplySum = mulTable[radius],
-                shiftSum = shrTable[radius],
+                divisor = newRadius * 2 + 1,
+                multiplySum = mulTable[newRadius],
+                shiftSum = shrTable[newRadius],
               ),
             ).get()!!
 
             val rowWorks = Array(availableThreads) { thread ->
-              ProcessingRow(sharedValues, pixels, reducedSize, thread * r, (thread + 1) * r - 1, radius)
+              ProcessingRow(sharedValues, pixels, reducedSize, thread * r, (thread + 1) * r - 1, newRadius)
             }
             val columnWorks = Array(availableThreads) { thread ->
-              ProcessingColumn(sharedValues, pixels, reducedSize, thread * c, (thread + 1) * c - 1, radius)
+              ProcessingColumn(sharedValues, pixels, reducedSize, thread * c, (thread + 1) * c - 1, newRadius)
             }
 
             rowWorks.map { rowWork ->
@@ -118,13 +120,10 @@ class JvmBlurProcessor : Workers(), IBlur {
               }
             }.awaitAll()
             reducedBitmap.setPixels(pixels, 0, reducedSize.width, 0, 0, reducedSize.width, reducedSize.height)
-
             continuation.resume(Result.success(reducedBitmap))
           },
           onFailure = { continuation.resume(Result.failure(it)) },
         )
-
-
       } catch (e: Exception) {
         continuation.resume(Result.failure(e))
       }

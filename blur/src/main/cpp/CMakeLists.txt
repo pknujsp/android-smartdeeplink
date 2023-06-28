@@ -45,6 +45,8 @@ find_library(
 find_library(EGL-lib EGL)
 find_library(GLESv3-lib GLESv3)
 
+find_library(ANDROID_LIB android)
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
@@ -58,4 +60,5 @@ target_link_libraries( # Specifies the target library.
         ${jnigraphics-lib}
         ${EGL-lib}
         ${GLESv3-lib}
+        ${ANDROID_LIB}
         )

@@ -5,6 +5,14 @@
 #ifndef TESTBED_BLUR_H
 #define TESTBED_BLUR_H
 
+const unsigned short RED_MASK = 0x1f;
+const unsigned short GREEN_MASK = 0x3f;
+const unsigned short BLUE_MASK = 0x1f;
+
+const unsigned short RED_SHIFT = 11;
+const unsigned short GREEN_SHIFT = 5;
+const unsigned short PIXEL_MASK = 0xff000000;
+
 struct SharedValues {
 
     const int widthMax;
@@ -63,10 +71,12 @@ static const int SHR_TABLE[] = {
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24};
 
-void processingRow(const SharedValues *const sharedValues, unsigned int *imagePixels, const int startRow, const int endRow);
+void processingRow(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startRow, const int endRow);
 
-void processingColumn(const SharedValues *const sharedValues, unsigned int *imagePixels, const int startColumn, const int endColumn);
+void processingColumn(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startColumn, const int endColumn);
 
-void blur(unsigned int *imagePixels, const int radius, const int targetWidth, const int targetHeight);
+void blur(unsigned short *imagePixels, const int radius, const int targetWidth, const int targetHeight);
+
+void dim(unsigned short *imagePixels, const int width, const int height, const int dimFactor);
 
 #endif //TESTBED_BLUR_H
