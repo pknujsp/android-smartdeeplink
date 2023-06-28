@@ -119,28 +119,31 @@ extern "C"
 JNIEXPORT jobject JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject decor_view, jint radius, jdouble resizeRatio,
                                                            jint statusBarHeight, jint navigationBarHeight, jint dimFactor) {
-    jobject srcBitmap = toBitmap(env, decor_view, resizeRatio, statusBarHeight, navigationBarHeight);
+    try {
+        jobject srcBitmap = toBitmap(env, decor_view, resizeRatio, statusBarHeight, navigationBarHeight);
 
-    return srcBitmap;
+        AndroidBitmapInfo info;
 
-    AndroidBitmapInfo info;
+        if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;
+        if (info.format != ANDROID_BITMAP_FORMAT_RGB_565) return nullptr;
 
-    if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;
-    if (info.format != ANDROID_BITMAP_FORMAT_RGB_565) return nullptr;
+        void *pixels = nullptr;
+        if ((AndroidBitmap_lockPixels(env, srcBitmap, &pixels)) < 0) return nullptr;
 
-    void *pixels;
-    if ((AndroidBitmap_lockPixels(env, srcBitmap, &pixels)) < 0) return nullptr;
+        const auto srcSize = (jsize) (info.width * info.height);
+        jshortArray result = env->NewShortArray(srcSize);
+        env->SetShortArrayRegion(result, 0, srcSize, (jshort *) pixels);
 
-    const auto srcSize = (jsize) (info.width * info.height);
-    jshortArray result = env->NewShortArray(srcSize);
-    env->SetShortArrayRegion(result, 0, srcSize, (jshort *) pixels);
+        //gl((unsigned int *) pixels, target_width, target_height);
 
-    //gl((unsigned int *) pixels, target_width, target_height);
+        //dim((unsigned short *) pixels, (int) info.width, (int) info.height, dimFactor);
+        blur((unsigned short *) pixels, radius % 2 == 0 ? radius + 1 : radius, (int) info.width, (int) info.height);
 
-    //dim((unsigned short *) pixels, (int) info.width, (int) info.height, dimFactor);
-    blur((unsigned short *) pixels, radius % 2 == 0 ? radius + 1 : radius, (int) info.width, (int) info.height);
+        AndroidBitmap_unlockPixels(env, srcBitmap);
+        return srcBitmap;
+    } catch (std::exception &exception) {
+        jthrowable throwable = env->ExceptionOccurred();
+        return throwable;
+    }
 
-    AndroidBitmap_unlockPixels(env, srcBitmap);
-
-    return srcBitmap;
 }
