@@ -2,7 +2,7 @@ package io.github.pknujsp.testbed.feature.dialog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.pknujsp.testbed.core.ui.SimpleDialogBuilder
+import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

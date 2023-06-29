@@ -10,11 +10,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import io.github.pknujsp.testbed.core.ui.DialogType
-import io.github.pknujsp.testbed.core.ui.SimpleDialogBuilder
 import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewFullLoadingBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
+import io.github.pknujsp.testbed.core.ui.dialog.DialogType
+import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import io.github.pknujsp.testbed.feature.dialog.databinding.FragmentMainDialogBinding
 import kotlinx.coroutines.launch
 

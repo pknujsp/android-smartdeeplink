@@ -1,4 +1,4 @@
-package io.github.pknujsp.testbed.core.ui
+package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.graphics.Color
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -17,7 +17,7 @@ private const val defaultWidth: Int = WRAP_CONTENT
 private const val defaultHeight: Int = WRAP_CONTENT
 private const val defaultBackgroundColor: Int = Color.WHITE
 
-data class SimpleDialogAttributes(
+data class SimpleDialogStyleAttributes(
   var blur: Boolean = true,
   @IntRange(from = 0, to = 100) var blurIndensity: Int = currentBlurIndensity,
   var dim: Boolean = true,

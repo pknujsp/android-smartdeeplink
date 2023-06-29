@@ -1,4 +1,4 @@
-package io.github.pknujsp.testbed.core.ui
+package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.app.Activity
 import android.app.Dialog
@@ -14,6 +14,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurProcessor
+import io.github.pknujsp.testbed.core.ui.R
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -23,7 +24,7 @@ import kotlinx.coroutines.withContext
 
 
 internal class SimpleDialogStyler(
-  val simpleDialogAttributes: SimpleDialogAttributes,
+  val simpleDialogStyleAttributes: SimpleDialogStyleAttributes,
   @ActivityContext context: Context,
 ) {
 
@@ -56,14 +57,14 @@ internal class SimpleDialogStyler(
   }
 
   private fun blur(attributes: WindowManager.LayoutParams) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (simpleDialogAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius =
-      (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100f)).toInt()
+    if (simpleDialogStyleAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius =
+      (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100f)).toInt()
   }
 
   private fun blur(dialog: Dialog) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
     /**
     window.apply {
@@ -73,7 +74,7 @@ internal class SimpleDialogStyler(
      */
 
     // new
-    if (simpleDialogAttributes.blur) {
+    if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
         /** Only available on Android 12 and above!
         window.addContentView(
@@ -90,7 +91,7 @@ internal class SimpleDialogStyler(
 
         (MainScope() + exceptionHandler).launch {
           withContext(Dispatchers.Default) {
-            val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
+            val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
 
             blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
               if (dialog.isShowing) {
@@ -112,24 +113,24 @@ internal class SimpleDialogStyler(
   }
 
   private fun dim(window: Window) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
     window.apply {
-      if (simpleDialogAttributes.dim) addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+      if (simpleDialogStyleAttributes.dim) addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
       else clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
     }
   }
 
   private fun dim(attributes: WindowManager.LayoutParams) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (simpleDialogAttributes.dim) attributes.dimAmount = simpleDialogAttributes.dimIndensity / 100f
+    if (simpleDialogStyleAttributes.dim) attributes.dimAmount = simpleDialogStyleAttributes.dimIndensity / 100f
   }
 
   private fun position(window: Window) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (simpleDialogAttributes.dialogType == DialogType.BottomSheet) {
+    if (simpleDialogStyleAttributes.dialogType == DialogType.BottomSheet) {
       window.setGravity(android.view.Gravity.BOTTOM)
     }
   }
@@ -138,33 +139,34 @@ internal class SimpleDialogStyler(
     window.decorView.allViews.filter {
       it.id == android.R.id.content
     }.firstOrNull()?.also { parent ->
-      if (simpleDialogAttributes.dialogType != DialogType.Fullscreen) {
-        window.setElevation((simpleDialogAttributes.elevation - 1) * density)
-        parent.elevation = simpleDialogAttributes.elevation * density
+      if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
+        window.setElevation((simpleDialogStyleAttributes.elevation - 1) * density)
+        parent.elevation = simpleDialogStyleAttributes.elevation * density
       }
 
-      simpleDialogAttributes.backgroundResourceId?.run {
+      simpleDialogStyleAttributes.backgroundResourceId?.run {
         parent.setBackgroundResource(this)
       } ?: run {
         parent.background = GradientDrawable().apply {
           shape = GradientDrawable.RECTANGLE
-          setColor(simpleDialogAttributes.backgroundColor)
-          if (simpleDialogAttributes.dialogType != DialogType.Fullscreen) cornerRadius = simpleDialogAttributes.cornerRadius * density
+          setColor(simpleDialogStyleAttributes.backgroundColor)
+          if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) cornerRadius = simpleDialogStyleAttributes.cornerRadius * density
         }
       }
     }
   }
 
   private fun spacing(window: Window) {
-    if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) return
+    if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
     window.decorView.allViews.filter {
       it.id == android.R.id.content
     }.firstOrNull()?.also { parent ->
       parent.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-        if (simpleDialogAttributes.dialogType == DialogType.BottomSheet) bottomMargin = simpleDialogAttributes.bottomMargin * density.toInt()
-        leftMargin = simpleDialogAttributes.horizontalMargin * density.toInt()
-        rightMargin = simpleDialogAttributes.horizontalMargin * density.toInt()
+        if (simpleDialogStyleAttributes.dialogType == DialogType.BottomSheet) bottomMargin =
+          simpleDialogStyleAttributes.bottomMargin * density.toInt()
+        leftMargin = simpleDialogStyleAttributes.horizontalMargin * density.toInt()
+        rightMargin = simpleDialogStyleAttributes.horizontalMargin * density.toInt()
       }
     }
 
@@ -173,16 +175,16 @@ internal class SimpleDialogStyler(
   private fun size(attributes: WindowManager.LayoutParams) {
     attributes.apply {
       width =
-        if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogAttributes.layoutWidth
+        if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogStyleAttributes.layoutWidth
       height =
-        if (simpleDialogAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogAttributes.layoutHeight
+        if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogStyleAttributes.layoutHeight
     }
   }
 
 
   private fun setOnDismissDialogListener(dialog: Dialog) {
     dialog.setOnDismissListener {
-      if (simpleDialogAttributes.blur && simpleDialogAttributes.dialogType != DialogType.Fullscreen) {
+      if (simpleDialogStyleAttributes.blur && simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
         blurProcessor.cancel()
         activityWindow.run {
           (findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup)?.run {

@@ -1,4 +1,4 @@
-package io.github.pknujsp.testbed.core.ui
+package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.view.ViewGroup
 import androidx.annotation.IntDef

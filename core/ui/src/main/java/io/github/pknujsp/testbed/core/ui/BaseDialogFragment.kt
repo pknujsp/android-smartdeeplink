@@ -10,6 +10,7 @@ import android.view.WindowManager
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
+import io.github.pknujsp.testbed.core.ui.dialog.DialogType
 
 private typealias Inflate<Binding> = (LayoutInflater, ViewGroup?, Boolean) -> Binding
 

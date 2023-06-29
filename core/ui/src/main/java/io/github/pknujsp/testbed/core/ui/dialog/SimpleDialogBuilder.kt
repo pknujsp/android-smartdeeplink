@@ -1,4 +1,4 @@
-package io.github.pknujsp.testbed.core.ui
+package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.content.Context
 import android.view.View
@@ -9,6 +9,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
+import io.github.pknujsp.testbed.core.ui.R
 
 
 class SimpleDialogBuilder private constructor(
@@ -16,7 +17,7 @@ class SimpleDialogBuilder private constructor(
   dialogType: DialogType,
 ) {
 
-  private val dialogStyler: SimpleDialogStyler = SimpleDialogStyler(SimpleDialogAttributes(dialogType = dialogType), context)
+  private val dialogStyler: SimpleDialogStyler = SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)
 
   private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType))
 
@@ -40,9 +41,12 @@ class SimpleDialogBuilder private constructor(
    *
    * Warning! Performance may be degraded if you set [blurIndensity] to a high value.(경고! [blurIndensity]를 높은 값으로 설정한다면 성능이 저하될 수 있습니다.)
    */
-  fun setBlur(blur: Boolean, @IntRange(from = 0, to = 100) blurIndensity: Int = SimpleDialogAttributes.currentBlurIndensity): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.blur = blur
-    dialogStyler.simpleDialogAttributes.blurIndensity = blurIndensity
+  fun setBlur(
+    blur: Boolean,
+    @IntRange(from = 0, to = 100) blurIndensity: Int = SimpleDialogStyleAttributes.currentBlurIndensity,
+  ): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.blur = blur
+    dialogStyler.simpleDialogStyleAttributes.blurIndensity = blurIndensity
     return this
   }
 
@@ -53,9 +57,9 @@ class SimpleDialogBuilder private constructor(
    *
    * If DialogType is DialogType.FullScreen, [dim] will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 [dim]은 무시됩니다.)
    */
-  fun setDim(dim: Boolean, @IntRange(from = 0, to = 100) dimIndensity: Int = SimpleDialogAttributes.currentDimIndensity): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.dim = dim
-    dialogStyler.simpleDialogAttributes.dimIndensity = dimIndensity
+  fun setDim(dim: Boolean, @IntRange(from = 0, to = 100) dimIndensity: Int = SimpleDialogStyleAttributes.currentDimIndensity): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.dim = dim
+    dialogStyler.simpleDialogStyleAttributes.dimIndensity = dimIndensity
     return this
   }
 
@@ -63,7 +67,7 @@ class SimpleDialogBuilder private constructor(
    * Set cancelable.(취소 가능 여부를 설정합니다.)
    */
   fun setCancelable(cancelable: Boolean): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.cancelable = cancelable
+    dialogStyler.simpleDialogStyleAttributes.cancelable = cancelable
     return this
   }
 
@@ -75,7 +79,7 @@ class SimpleDialogBuilder private constructor(
    * If you set [bottomMargin] to 0, the dialog will be full screen.(만약 [bottomMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
    */
   fun setBottomMargin(@Dimension(unit = Dimension.DP) bottomMargin: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.bottomMargin = bottomMargin
+    dialogStyler.simpleDialogStyleAttributes.bottomMargin = bottomMargin
     return this
   }
 
@@ -87,7 +91,7 @@ class SimpleDialogBuilder private constructor(
    * If you set [horizontalMargin] to 0, the dialog will be full screen.(만약 [horizontalMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
    */
   fun setHorizontalMargin(@Dimension(unit = Dimension.DP) horizontalMargin: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.horizontalMargin = horizontalMargin
+    dialogStyler.simpleDialogStyleAttributes.horizontalMargin = horizontalMargin
     return this
   }
 
@@ -99,7 +103,7 @@ class SimpleDialogBuilder private constructor(
    * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
    */
   fun setCornerRadius(@Dimension(unit = Dimension.DP) cornerRadius: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.cornerRadius = cornerRadius
+    dialogStyler.simpleDialogStyleAttributes.cornerRadius = cornerRadius
     return this
   }
 
@@ -107,7 +111,7 @@ class SimpleDialogBuilder private constructor(
    * Set background resource id.(배경 리소스 아이디를 설정합니다.)
    */
   fun setBackgroundResourceId(@IdRes backgroundResourceId: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.backgroundResourceId = backgroundResourceId
+    dialogStyler.simpleDialogStyleAttributes.backgroundResourceId = backgroundResourceId
     return this
   }
 
@@ -119,7 +123,7 @@ class SimpleDialogBuilder private constructor(
    * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
    */
   fun setElevation(@Dimension(unit = Dimension.DP) elevation: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.elevation = elevation
+    dialogStyler.simpleDialogStyleAttributes.elevation = elevation
     return this
   }
 
@@ -129,8 +133,8 @@ class SimpleDialogBuilder private constructor(
    * If you set [layoutWidth] or [layoutHeight] to [WRAP_CONTENT], the size will be automatically adjusted.(만약 [layoutWidth]나 [layoutHeight]를 [WRAP_CONTENT]로 설정한다면 크기가 자동으로 조절됩니다.)
    */
   fun setLayoutSize(@SizeMode layoutWidth: Int, @SizeMode layoutHeight: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.layoutWidth = layoutWidth
-    dialogStyler.simpleDialogAttributes.layoutHeight = layoutHeight
+    dialogStyler.simpleDialogStyleAttributes.layoutWidth = layoutWidth
+    dialogStyler.simpleDialogStyleAttributes.layoutHeight = layoutHeight
     return this
   }
 
@@ -141,7 +145,7 @@ class SimpleDialogBuilder private constructor(
    *
    */
   fun setBackgroundColor(@ColorInt color: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogAttributes.backgroundColor = color
+    dialogStyler.simpleDialogStyleAttributes.backgroundColor = color
     return this
   }
 
