@@ -172,6 +172,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
     const int shiftSum = sharedValues->shiftSum;
 
     unsigned short blurStack[divisor];
+    unsigned short pixel;
 
     // RGB565 short color = (R & 0x1f) << 11 | (G & 0x3f) << 5 | (B & 0x1f);
     // ARGB8888  int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff);
@@ -183,7 +184,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
 
         for (int rad = 0; rad <= blurRadius; rad++) {
             stackIndex = rad;
-            unsigned short pixel = imagePixels[startPixelIndex];
+            pixel = imagePixels[startPixelIndex];
             blurStack[stackIndex] = pixel;
 
             red = ((pixel >> RED_SHIFT) & RED_MASK);
@@ -253,7 +254,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
                 colOffset++;
             }
 
-            auto pixel = imagePixels[inPixelIndex];
+            pixel = imagePixels[inPixelIndex];
             blurStack[stackIndex] = pixel;
 
             red = ((pixel >> RED_SHIFT) bitand RED_MASK);
@@ -271,11 +272,11 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
             if (++stackPointer >= divisor) stackPointer = 0;
             stackIndex = stackPointer;
 
-            unsigned short stackPixel = blurStack[stackIndex];
+            pixel = blurStack[stackIndex];
 
-            red = ((stackPixel >> RED_SHIFT) bitand RED_MASK);
-            green = ((stackPixel >> GREEN_SHIFT) bitand GREEN_MASK);
-            blue = (stackPixel bitand BLUE_MASK);
+            red = ((pixel >> RED_SHIFT) bitand RED_MASK);
+            green = ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+            blue = (pixel bitand BLUE_MASK);
 
             sumOutputRed += red;
             sumOutputGreen += green;
@@ -303,6 +304,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 
     unsigned short red, green, blue;
     unsigned short blurStack[divisor];
+    unsigned short pixel;
 
     for (int col = startColumn; col <= endColumn; col++) {
         sumOutputBlue = sumOutputGreen = sumOutputRed = sumInputBlue = sumInputGreen = sumInputRed = sumBlue = sumGreen = sumRed = 0;
@@ -310,7 +312,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 
         for (int rad = 0; rad <= blurRadius; rad++) {
             stackIndex = rad;
-            unsigned short pixel = imagePixels[sourceIndex];
+            pixel = imagePixels[sourceIndex];
             blurStack[stackIndex] = pixel;
 
             red = ((pixel >> RED_SHIFT) bitand RED_MASK);
@@ -393,11 +395,11 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
             if (++stackPointer >= divisor) stackPointer = 0;
             stackIndex = stackPointer;
 
-            unsigned short stackPixel = blurStack[stackIndex];
+            pixel = blurStack[stackIndex];
 
-            red = ((stackPixel >> RED_SHIFT) bitand RED_MASK);
-            green = ((stackPixel >> GREEN_SHIFT) bitand GREEN_MASK);
-            blue = (stackPixel bitand BLUE_MASK);
+            red = ((pixel >> RED_SHIFT) bitand RED_MASK);
+            green = ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+            blue = (pixel bitand BLUE_MASK);
 
             sumOutputRed += red;
             sumOutputGreen += green;
@@ -415,9 +417,9 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
     const int heightMax = targetHeight - 1;
     const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
-    const auto *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
-                                                targetWidth,
-                                                targetHeight, newRadius};
+    const SharedValues *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
+                                                        targetWidth,
+                                                        targetHeight, newRadius};
 
     const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 

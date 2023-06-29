@@ -14,9 +14,11 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurProcessor
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 
 
@@ -82,7 +84,11 @@ internal class SimpleDialogStyler(
         ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
          */
-        MainScope().launch {
+
+        val exceptionHandler = CoroutineExceptionHandler { _, _ ->
+        }
+
+        (MainScope() + exceptionHandler).launch {
           withContext(Dispatchers.Default) {
             val radius = (maxBlurRadius * (simpleDialogAttributes.blurIndensity / 100.0)).toInt()
 
