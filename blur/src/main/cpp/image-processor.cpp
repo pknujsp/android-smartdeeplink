@@ -5,6 +5,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <android/window.h>
+#include <functional>
 #include <GLES3/gl31.h>
 #include <GLES3/gl3ext.h>
 #include "blur.h"
@@ -44,7 +45,7 @@ jobject resize(JNIEnv *env, jint newWidth, jint newHeight, _jobject *bitmap, jcl
 }
 
 extern "C"
-jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclass *bitmapClass, jint contentWidth, jint contentHeight,
+jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclass *bitmapClass, jint decorViewWidth, jint decorViewHeight,
                  jint statusBarHeight, jint navigationBarHeight) {
     jmethodID createBitmapMethod = env->GetStaticMethodID(bitmapClass, "createBitmap",
                                                           "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
@@ -53,14 +54,11 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
     jfieldID configField = env->GetStaticFieldID(configClass, "RGB_565", "Landroid/graphics/Bitmap$Config;");
     jobject config = env->GetStaticObjectField(configClass, configField);
 
-    jobject srcBitmap = env->CallStaticObjectMethod(bitmapClass, createBitmapMethod, contentWidth, contentHeight, config);
+    jobject srcBitmap = env->CallStaticObjectMethod(bitmapClass, createBitmapMethod, decorViewWidth, decorViewHeight, config);
 
     jclass canvasClass = env->FindClass("android/graphics/Canvas");
     jmethodID canvasConstructor = env->GetMethodID(canvasClass, "<init>", "(Landroid/graphics/Bitmap;)V");
     jobject canvas = env->NewObject(canvasClass, canvasConstructor, srcBitmap);
-
-    jmethodID translateMethod = env->GetMethodID(canvasClass, "translate", "(FF)V");
-    env->CallVoidMethod(canvas, translateMethod, 0.0f, (jfloat) -statusBarHeight);
 
     jmethodID drawMethod = env->GetMethodID(decorViewClass, "draw", "(Landroid/graphics/Canvas;)V");
     env->CallVoidMethod(decorView, drawMethod, canvas);
@@ -70,31 +68,81 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject decorView, jint radius, jdouble resizeRatio,
-                                                           jint statusBarHeight, jint navigationBarHeight) {
+Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject bitmap, jint width, jint height, jint radius,
+                                                           jdouble resizeRatio, jint statusBarHeight, jint navigationBarHeight) {
     try {
+        jclass windowClass = env->GetObjectClass(window);
+
+        jmethodID getDecorViewMethod = env->GetMethodID(windowClass, "getDecorView", "()Landroid/view/View;");
+
+        jobject decorView = env->CallObjectMethod(window, getDecorViewMethod);
         jclass decorViewClass = env->GetObjectClass(decorView);
 
-        jmethodID getWidthMethod = env->GetMethodID(decorViewClass, "getWidth", "()I");
-        jmethodID getHeightMethod = env->GetMethodID(decorViewClass, "getHeight", "()I");
+        jmethodID findViewByIdMethod = env->GetMethodID(decorViewClass, "findViewById", "(I)Landroid/view/View;");
 
-        if (getWidthMethod == nullptr || getHeightMethod == nullptr)
-            return nullptr;
+        // android.R.id.content
+        jobject contentView = env->CallObjectMethod(decorView, findViewByIdMethod, 16908290);
+        jclass contentViewClass = env->GetObjectClass(contentView);
 
-        const jint contentWidth = env->CallIntMethod(decorView, getWidthMethod);
-        const jint contentHeight = env->CallIntMethod(decorView, getHeightMethod) - navigationBarHeight - statusBarHeight;
+        jmethodID getLocationInWindowMethod = env->GetMethodID(contentViewClass, "getLocationInWindow", "([I)V");
+
+        jintArray locationOfContentViewInWindow = env->NewIntArray(2);
+        env->CallVoidMethod(contentView, getLocationInWindowMethod, locationOfContentViewInWindow);
+
+        jmethodID getWidthMethod = env->GetMethodID(contentViewClass, "getWidth", "()I");
+        jmethodID getHeightMethod = env->GetMethodID(contentViewClass, "getHeight", "()I");
+
+        const jint contentViewWidth = env->CallIntMethod(contentView, getWidthMethod);
+        const jint contentViewHeight = env->CallIntMethod(contentView, getHeightMethod);
+
+        jint *loc = env->GetIntArrayElements(locationOfContentViewInWindow, nullptr);
+
+        const int rect[] = {
+                loc[0],
+                loc[1],
+                loc[0] + contentViewWidth,
+                loc[1] + contentViewHeight};
+
+        jclass rectClass = env->FindClass("android/graphics/Rect");
+        jmethodID rectConstructor = env->GetMethodID(rectClass, "<init>", "(IIII)V");
+
+        jobject rectObject = env->NewObject(rectClass, rectConstructor, rect[0], rect[1], rect[2], rect[3]);
+
+        jclass pixelCopyClass = env->FindClass("android/view/PixelCopy");
+        jmethodID requestMethod = env->GetStaticMethodID(pixelCopyClass, "request",
+                                                         "(Landroid/view/Window;Landroid/graphics/Rect;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V");
+
+        jclass handlerClass = env->FindClass("android/os/Handler");
+        jmethodID handlerConstructor = env->GetMethodID(handlerClass, "<init>", "(Landroid/os/Looper;)V");
+        jclass looperClass = env->FindClass("android/os/Looper");
+        jmethodID getMainLooperMethod = env->GetStaticMethodID(looperClass, "getMainLooper", "()Landroid/os/Looper;");
+        jobject looper = env->CallStaticObjectMethod(looperClass, getMainLooperMethod);
+
+        jobject handler = env->NewObject(handlerClass, handlerConstructor, looper);
+
+        jclass pixelCopyFinishedListenerInterface = env->FindClass("android/view/PixelCopy$OnPixelCopyFinishedListener");
+        jmethodID onPixelCopyFinishedMethod = env->GetMethodID(pixelCopyFinishedListenerInterface, "onPixelCopyFinished",
+                                                               "(I)V");
+
+
+        jobject pixelCopyFinishedListener = env->NewObject(pixelCopyFinishedListenerInterface,);
 
         jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+        jmethodID createBitmapMethod = env->GetStaticMethodID(bitmapClass, "createBitmap",
+                                                              "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
 
-        jint newWidth = (jint) (contentWidth / resizeRatio);
-        jint newHeight = (jint) (contentHeight / resizeRatio);
+        jclass configClass = env->FindClass("android/graphics/Bitmap$Config");
+        jfieldID configField = env->GetStaticFieldID(configClass, "RGB_565", "Landroid/graphics/Bitmap$Config;");
+        jobject config = env->GetStaticObjectField(configClass, configField);
+
+        jobject srcBitmap = env->CallStaticObjectMethod(bitmapClass, createBitmapMethod, contentViewWidth, contentViewHeight, config);
+
+        env->CallStaticVoidMethod(pixelCopyClass, requestMethod, window, rectObject, srcBitmap, onPixelCopyFinishedMethod, handler);
+
+        jint newWidth = (jint) (contentViewHeight);
+        jint newHeight = (jint) (contentViewWidth);
         if (newWidth % 2 != 0) newWidth--;
         if (newHeight % 2 != 0) newHeight--;
-
-        jobject srcBitmap = toBitmap(env, decorView, decorViewClass, bitmapClass, contentWidth, contentHeight, statusBarHeight,
-                                     navigationBarHeight);
-
-        srcBitmap = resize(env, newWidth, newHeight, srcBitmap, bitmapClass);
 
         AndroidBitmapInfo info;
         void *pixels = nullptr;
