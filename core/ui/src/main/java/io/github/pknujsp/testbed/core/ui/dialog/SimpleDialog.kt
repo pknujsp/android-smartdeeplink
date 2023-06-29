@@ -16,7 +16,7 @@ abstract class SimpleDialog(
   private val draggablePixelsRangeRect: Rect get() = _draggablePixelsRangeRect!!
 
   init {
-    setDrag()
+    init()
   }
 
   override fun cancel() {
@@ -25,12 +25,6 @@ abstract class SimpleDialog(
 
   override fun dismiss() {
     alertDialog.dismiss()
-  }
-
-  private fun setDrag() {
-    if (attributes.isDraggable) {
-      initDrag()
-    }
   }
 
   protected open fun initDrag() {
@@ -48,6 +42,8 @@ abstract class SimpleDialog(
         )
       }
 
+      val dragDirection = attributes.dragDirection
+
       val decorView = window.decorView
 
       var dx: Float = 0f
@@ -60,15 +56,13 @@ abstract class SimpleDialog(
         fun(view: View, event: MotionEvent): Boolean {
           when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-              dx = view.x - event.rawX.toInt()
-              dy = view.y - event.rawY.toInt()
+              dx = view.x
+              dy = view.y
             }
 
             MotionEvent.ACTION_MOVE -> {
-              newX = event.rawX + dx
-              newY = event.rawY + dy
-
-              if (!isOutSideFromWindow(newX, newY, view.width, view.height)) view.animate().x(newX).y(newY).setDuration(0).start()
+              val xy = filter(dx, dy, event.rawX + dx, event.rawY + dy, view.width, view.height)
+              view.animate().x(xy.first).y(xy.second).setDuration(0).start()
             }
           }
           return true
@@ -77,7 +71,44 @@ abstract class SimpleDialog(
     }
   }
 
-  private fun isOutSideFromWindow(dx: Float, dy: Float, width: Int, height: Int): Boolean =
-    (dx < draggablePixelsRangeRect.left) || (dx + width > draggablePixelsRangeRect.right) || (dy < draggablePixelsRangeRect.top) || (dy + height > draggablePixelsRangeRect.bottom)
+  private fun init() {
+    alertDialog.run {
+      setCancelable(attributes.isCancelable)
+      setCanceledOnTouchOutside(attributes.isCancelable)
+    }
 
+    if (attributes.isDraggable) initDrag()
+  }
+
+  private fun filter(originalX: Float, originalY: Float, newX: Float, newY: Float, width: Int, height: Int): Pair<Float, Float> {
+    when (attributes.dragDirection) {
+      is DragDirection.Both -> {
+        val x = if (originalX < draggablePixelsRangeRect.left) draggablePixelsRangeRect.left
+        else if (originalX + width > draggablePixelsRangeRect.right) draggablePixelsRangeRect.right - width
+        else originalX
+
+        val y = if (originalY < draggablePixelsRangeRect.top) draggablePixelsRangeRect.top
+        else if (originalY + height > draggablePixelsRangeRect.bottom) draggablePixelsRangeRect.bottom - height
+        else originalY
+
+        return Pair(x.toFloat(), y.toFloat())
+      }
+
+      is DragDirection.Horizontal -> {
+        val x = if (originalX < draggablePixelsRangeRect.left) draggablePixelsRangeRect.left
+        else if (originalX + width > draggablePixelsRangeRect.right) draggablePixelsRangeRect.right - width
+        else originalX
+
+        return Pair(x.toFloat(), originalY)
+      }
+
+      is DragDirection.Vertical -> {
+        val y = if (originalY < draggablePixelsRangeRect.top) draggablePixelsRangeRect.top
+        else if (originalY + height > draggablePixelsRangeRect.bottom) draggablePixelsRangeRect.bottom - height
+        else originalY
+
+        return Pair(originalX, y.toFloat())
+      }
+    }
+  }
 }

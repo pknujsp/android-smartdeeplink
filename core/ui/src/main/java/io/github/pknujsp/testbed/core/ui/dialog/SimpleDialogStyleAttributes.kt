@@ -7,7 +7,7 @@ import androidx.annotation.Dimension
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 
-private const val defaultBlurIndensity: Int = 20
+private const val defaultBlurIndensity: Int = 10
 private const val defaultDimIndensity: Int = 40
 private const val defaultMarginBottom: Int = 12
 private const val defaultMarginHorizontal: Int = 16

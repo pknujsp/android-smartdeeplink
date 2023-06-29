@@ -13,6 +13,7 @@ import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewFullLoadingBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
 import io.github.pknujsp.testbed.core.ui.dialog.DialogType
+import io.github.pknujsp.testbed.core.ui.dialog.DragDirection
 import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialog
 import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import io.github.pknujsp.testbed.feature.dialog.databinding.FragmentMainDialogBinding
@@ -82,7 +83,7 @@ class MainDialogFragment : Fragment() {
         )
       }
       draggable.setOnCheckedChangeListener { _, isChecked ->
-        viewModel.drag(isChecked)
+        viewModel.draggable(isChecked)
       }
       cancelable.setOnCheckedChangeListener { _, isChecked ->
         viewModel.cancelable(isChecked)
@@ -99,7 +100,15 @@ class MainDialogFragment : Fragment() {
       onlyDraggleOnModalPoint.setOnCheckedChangeListener { _, isChecked ->
         viewModel.onlyDraggleOnModalPoint(isChecked)
       }
-      dra
+      draggleDirectionsRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+        viewModel.draggleDirections(
+          when (checkedId) {
+            R.id.horizontal_radio -> DragDirection.Horizontal
+            R.id.vertical_radio -> DragDirection.Vertical
+            else -> DragDirection.Both
+          },
+        )
+      }
 
     }
   }
@@ -126,8 +135,16 @@ class MainDialogFragment : Fragment() {
           if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
           if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
         ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
-          .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(true)
-          .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()),
+          .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(cancelable.isChecked)
+          .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()).setDragDirection(
+            when (draggleDirectionsRadioGroup.checkedRadioButtonId) {
+              R.id.horizontal_radio -> DragDirection.Horizontal
+              R.id.vertical_radio -> DragDirection.Vertical
+              else -> DragDirection.Both
+            },
+          ).setDraggable(draggable.isChecked).setCanceledOnTouchOutside(canceledOnTouchOutside.isChecked)
+          .setRestrictViewsFromOffWindow(restrictViewsFromOffWindow.isChecked).setIsShowModalPoint(showModalPoint.isChecked)
+          .setIsOnlyDraggleOnModalPoint(onlyDraggleOnModalPoint.isChecked),
       )
     }
   }

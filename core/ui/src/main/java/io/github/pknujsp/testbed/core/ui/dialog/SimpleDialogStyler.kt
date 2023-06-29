@@ -15,12 +15,9 @@ import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurProcessor
 import io.github.pknujsp.testbed.core.ui.R
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.withContext
 
 
 internal class SimpleDialogStyler(
@@ -86,26 +83,19 @@ internal class SimpleDialogStyler(
         )
          */
 
-        val exceptionHandler = CoroutineExceptionHandler { _, _ ->
-        }
 
-        (MainScope() + exceptionHandler).launch {
-          withContext(Dispatchers.Default) {
-            val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-
-            blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
-              if (dialog.isShowing) {
-                val view = View(window.context).apply {
-                  id = R.id.dialog_custom_background
-                  background = it.toDrawable(resources)
-                }
-                withContext(Dispatchers.Main) {
-                  window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                }
+        MainScope().launch(Dispatchers.Main.immediate) {
+          val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
+          blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
+            if (dialog.isShowing) {
+              val view = View(window.context).apply {
+                id = R.id.dialog_custom_background
+                background = it.toDrawable(resources)
               }
-            }.onFailure {
-
+              window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
+          }.onFailure {
+
           }
         }
       }
