@@ -22,7 +22,6 @@ data class SimpleDialogStyleAttributes(
   @IntRange(from = 0, to = 100) var blurIndensity: Int = currentBlurIndensity,
   var dim: Boolean = true,
   @IntRange(from = 0, to = 100) var dimIndensity: Int = currentDimIndensity,
-  var cancelable: Boolean = true,
   var dialogType: DialogType,
   @Dimension(unit = Dimension.DP) var bottomMargin: Int = currentMarginBottom,
   @Dimension(unit = Dimension.DP) var horizontalMargin: Int = currentMarginHorizontal,

@@ -19,6 +19,8 @@ class SimpleDialogBuilder private constructor(
 
   private val dialogStyler: SimpleDialogStyler = SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)
 
+  private val generalAttributes: SimpleDialogGeneralAttributes = SimpleDialogGeneralAttributes()
+
   private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType))
 
   companion object {
@@ -67,7 +69,67 @@ class SimpleDialogBuilder private constructor(
    * Set cancelable.(취소 가능 여부를 설정합니다.)
    */
   fun setCancelable(cancelable: Boolean): SimpleDialogBuilder {
-    dialogStyler.simpleDialogStyleAttributes.cancelable = cancelable
+    generalAttributes.isCancelable = cancelable
+    return this
+  }
+
+  /**
+   * Set canceled on touch outside.(바깥쪽 터치로 취소 가능 여부를 설정합니다.)
+   */
+  fun setCanceledOnTouchOutside(canceledOnTouchOutside: Boolean): SimpleDialogBuilder {
+    generalAttributes.isCanceledOnTouchOutside = canceledOnTouchOutside
+    return this
+  }
+
+  /**
+   * Set draggble.(드래그 가능 여부를 설정합니다.)
+   *
+   * If you set [draggable] to false, [setDragDirection] will be ignored.(만약 [draggable]을 false로 설정한다면 [setDragDirection]은 무시됩니다.)
+   */
+  fun setDraggable(draggable: Boolean): SimpleDialogBuilder {
+    generalAttributes.isDraggable = draggable
+    return this
+  }
+
+  /**
+   * Set drag direction.(드래그 방향을 설정합니다.)
+   *
+   * If you set [setDraggable] to false, [DragDirection] will be ignored.(만약 [setDraggable]을 false로 설정한다면 [DragDirection]은 무시됩니다.)
+   */
+  fun setDragDirection(dragDirection: DragDirection): SimpleDialogBuilder {
+    generalAttributes.dragDirection = dragDirection
+    return this
+  }
+
+  /**
+   * Set restrict views from off window.(화면 밖으로 나가는 뷰를 제한합니다.)
+   *
+   * If you set [restrictViewsFromOffWindow] to true, Dialog will not be able to move off the screen.(만약 [restrictViewsFromOffWindow]을 true로 설정한다면 Dialog는 화면 밖으로 나갈 수 없습니다.)
+   *
+   * else, Dialog will be able to move off the screen.(만약 [restrictViewsFromOffWindow]을 false로 설정한다면 Dialog는 화면 밖으로 나갈 수 있습니다.)
+   */
+  fun setRestrictViewsFromOffWindow(restrictViewsFromOffWindow: Boolean): SimpleDialogBuilder {
+    generalAttributes.isRestrictViewsFromOffWindow = restrictViewsFromOffWindow
+    return this
+  }
+
+  /**
+   * Set draggble only on modal point.(모달 포인트에서만 드래그 가능 여부를 설정합니다.)
+   *
+   * If you set [isOnlyDraggleOnModalPoint] to true, Dialog will be able to move only on modal point.(만약 [isOnlyDraggleOnModalPoint]을 true로 설정한다면 Dialog는 모달 포인트에서만 움직일 수 있습니다.)
+   */
+  fun setIsOnlyDraggleOnModalPoint(isOnlyDraggleOnModalPoint: Boolean): SimpleDialogBuilder {
+    generalAttributes.isOnlyDraggleOnModalPoint = isOnlyDraggleOnModalPoint
+    return this
+  }
+
+  /**
+   * Set show modal point.(모달 포인트를 보여줄지 설정합니다.)
+   *
+   * Only If you set [setDraggable] to true, [isShowModalPoint] will be applied.([setDraggable]을 true로 설정하는 경우에만 [isShowModalPoint]가 적용됩니다.)
+   */
+  fun setIsShowModalPoint(isShowModalPoint: Boolean): SimpleDialogBuilder {
+    generalAttributes.isShowModalPoint = isShowModalPoint
     return this
   }
 
@@ -157,11 +219,16 @@ class SimpleDialogBuilder private constructor(
   /**
    * Build and show dialog.(다이얼로그를 생성하고 보여줍니다.)
    */
-  fun buildAndShow(): AlertDialog = alertDialogBuilder.create().apply {
+  fun buildAndShow(): SimpleDialog = alertDialogBuilder.create().run {
     dialogStyler.applyStyle(this)
     show()
-  }
 
+    when (dialogStyler.simpleDialogStyleAttributes.dialogType) {
+      DialogType.BottomSheet -> BottomSheetDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
+      DialogType.Normal -> NormalDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
+      DialogType.Fullscreen -> FullScreenDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
+    }
+  }
 
   @StyleRes
   private fun theme(dialogType: DialogType): Int = when (dialogType) {
