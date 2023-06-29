@@ -10,6 +10,8 @@
     <item name="android:clipChildren">false</item>
     <item name="android:windowSoftInputMode">adjustResize</item>
     <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:gravity">center_horizontal|center_vertical</item>
+    <item name="android:layout_gravity">center_horizontal|center_vertical</item>
     <item name="enforceMaterialTheme">false</item>
   </style>
 

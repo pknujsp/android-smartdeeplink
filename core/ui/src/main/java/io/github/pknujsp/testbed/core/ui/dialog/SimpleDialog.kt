@@ -61,7 +61,7 @@ abstract class SimpleDialog(
             }
 
             MotionEvent.ACTION_MOVE -> {
-              val xy = filter(dx, dy, event.rawX + dx, event.rawY + dy, view.width, view.height)
+              val xy = filter(dx, dy, dx + event.rawX, dy + event.rawY, view.width, view.height)
               view.animate().x(xy.first).y(xy.second).setDuration(0).start()
             }
           }
