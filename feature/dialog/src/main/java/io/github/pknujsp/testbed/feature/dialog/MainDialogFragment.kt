@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -14,6 +13,7 @@ import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewFullLoadingBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
 import io.github.pknujsp.testbed.core.ui.dialog.DialogType
+import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialog
 import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import io.github.pknujsp.testbed.feature.dialog.databinding.FragmentMainDialogBinding
 import kotlinx.coroutines.launch
@@ -24,7 +24,7 @@ class MainDialogFragment : Fragment() {
 
   private val viewModel by viewModels<MainDialogViewModel>()
 
-  private var dialog: AlertDialog? = null
+  private var dialog: SimpleDialog? = null
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     _binding = FragmentMainDialogBinding.inflate(inflater, container, false)
@@ -81,6 +81,26 @@ class MainDialogFragment : Fragment() {
           if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
         )
       }
+      draggable.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.drag(isChecked)
+      }
+      cancelable.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.cancelable(isChecked)
+      }
+      canceledOnTouchOutside.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.canceledOnTouchOutside(isChecked)
+      }
+      restrictViewsFromOffWindow.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.restrictViewsFromOffWindow(isChecked)
+      }
+      showModalPoint.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.showModalPoint(isChecked)
+      }
+      onlyDraggleOnModalPoint.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.onlyDraggleOnModalPoint(isChecked)
+      }
+      dra
+
     }
   }
 

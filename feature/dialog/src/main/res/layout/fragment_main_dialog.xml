@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Dialog Type"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <RadioGroup
         android:id="@+id/dialog_types_radio_group"
@@ -57,7 +57,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Blur -> 20"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/blur_slider"
@@ -73,7 +73,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Dim -> 20"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/dim_slider"
@@ -89,7 +89,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Bottom Margin -> 12"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/bottom_margin_slider"
@@ -105,7 +105,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Horizontal Margin -> 16"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/horizontal_margin_slider"
@@ -121,7 +121,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Corner Radius -> 16"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/corner_radius_slider"
@@ -137,7 +137,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Elevation -> 8"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
         android:id="@+id/elevation_slider"
@@ -152,7 +152,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Width"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/width"
@@ -165,7 +165,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Height"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/height"
@@ -173,6 +173,75 @@
         android:layout_height="wrap_content"
         android:checked="false"
         android:text="Match_parent" />
+
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/draggable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="Draggable" />
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/cancelable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="Cancelable" />
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/canceled_on_touch_outside"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="CanceledOnTouchOutside" />
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/restrict_views_from_off_window"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="RestrictViewsFromOffWindow" />
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/only_draggle_on_modal_point"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="OnlyDraggleOnModalPoint" />
+
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/show_modal_point"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="ShowModalPoint" />
+
+      <RadioGroup
+        android:id="@+id/draggle_directions_radio_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+          android:id="@+id/vertical_radio"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="Vertical" />
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+          android:id="@+id/horizontal_radio"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:checked="true"
+          android:text="Horizontal" />
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+          android:id="@+id/both_radio"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="Both" />
+
+      </RadioGroup>
     </LinearLayout>
 
   </androidx.core.widget.NestedScrollView>

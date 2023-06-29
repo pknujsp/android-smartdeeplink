@@ -12,18 +12,8 @@ abstract class SimpleDialog(
   val attributes: SimpleDialogGeneralAttributes, val styleAttributes: SimpleDialogStyleAttributes,
 ) : DialogInterface by alertDialog {
 
-  private val draggablePixelsRangeRect = Resources.getSystem().run {
-    val displayMetrics = displayMetrics
-    val widthPixels = displayMetrics.widthPixels
-    val heightPixels = displayMetrics.heightPixels
-
-    Rect(
-      0 + styleAttributes.horizontalMargin,
-      0 + styleAttributes.bottomMargin,
-      widthPixels - styleAttributes.horizontalMargin,
-      heightPixels - styleAttributes.bottomMargin,
-    )
-  }
+  private var _draggablePixelsRangeRect: Rect? = null
+  private val draggablePixelsRangeRect: Rect get() = _draggablePixelsRangeRect!!
 
   init {
     setDrag()
@@ -45,6 +35,19 @@ abstract class SimpleDialog(
 
   protected open fun initDrag() {
     alertDialog.window?.let { window ->
+      _draggablePixelsRangeRect = Resources.getSystem().run {
+        val displayMetrics = displayMetrics
+        val widthPixels = displayMetrics.widthPixels
+        val heightPixels = displayMetrics.heightPixels
+
+        Rect(
+          0 + styleAttributes.horizontalMargin,
+          0 + styleAttributes.bottomMargin,
+          widthPixels - styleAttributes.horizontalMargin,
+          heightPixels - styleAttributes.bottomMargin,
+        )
+      }
+
       val decorView = window.decorView
 
       var dx: Float = 0f
