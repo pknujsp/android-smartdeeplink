@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
+import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 
@@ -31,6 +32,8 @@ data class SimpleDialogStyleAttributes(
   @Dimension(unit = Dimension.DP) var elevation: Int = currentElevation,
   @SizeMode var layoutWidth: Int = currentWidth,
   @SizeMode var layoutHeight: Int = currentHeight,
+  @DrawableRes var customModalViewId: Int? = null,
+  var isShowModalPoint: Boolean = false,
 ) {
   companion object {
     /**

@@ -9,8 +9,6 @@ package io.github.pknujsp.testbed.core.ui.dialog
  * @property isCanceledOnTouchOutside Whether the dialog is canceled when touched outside.(Dialog가 바깥쪽을 터치하면 취소되는지 여부)
  * @property isRestrictViewsFromOffWindow Whether the dialog is restricted from going off the screen.(Dialog가 화면 밖으로 나가는 것을 제한하는지 여부)
  * @property isOnlyDraggleOnModalPoint Whether the dialog can only be dragged to the modal point.(Dialog를 모달 포인트로만 드래그 가능한지 여부)
- * @property isShowModalPoint Whether to show the modal point.(모달 포인트를 보여줄지 여부)
- * @property customModalViewId The id of the custom modal view.(커스텀 모달 뷰의 id)
  */
 data class SimpleDialogGeneralAttributes(
   var isDraggable: Boolean = false,
@@ -19,8 +17,6 @@ data class SimpleDialogGeneralAttributes(
   var isCanceledOnTouchOutside: Boolean = false,
   var isRestrictViewsFromOffWindow: Boolean = true,
   var isOnlyDraggleOnModalPoint: Boolean = true,
-  var isShowModalPoint: Boolean = false,
-  var customModalViewId: Int? = null,
 )
 
 sealed class DragDirection {

@@ -5,9 +5,9 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
+import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
-import androidx.annotation.LayoutRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import io.github.pknujsp.testbed.core.ui.R
@@ -128,8 +128,8 @@ class SimpleDialogBuilder private constructor(
    * Set custom modal view id.(커스텀 모달 뷰 id를 설정합니다.)
    *
    */
-  fun setCustomModalViewId(@LayoutRes customModalViewId: Int): SimpleDialogBuilder {
-    generalAttributes.customModalViewId = customModalViewId
+  fun setCustomModalViewId(@DrawableRes customModalViewId: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.customModalViewId = customModalViewId
     return this
   }
 
@@ -139,7 +139,7 @@ class SimpleDialogBuilder private constructor(
    * Only If you set [setDraggable] to true, [isShowModalPoint] will be applied.([setDraggable]을 true로 설정하는 경우에만 [isShowModalPoint]가 적용됩니다.)
    */
   fun setIsShowModalPoint(isShowModalPoint: Boolean): SimpleDialogBuilder {
-    generalAttributes.isShowModalPoint = isShowModalPoint
+    dialogStyler.simpleDialogStyleAttributes.isShowModalPoint = isShowModalPoint
     return this
   }
 

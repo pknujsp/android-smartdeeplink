@@ -3,9 +3,10 @@ package io.github.pknujsp.testbed.core.ui.dialog
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
-import android.content.res.ColorStateList
 import android.content.res.Resources
-import android.graphics.drawable.GradientDrawable
+import android.graphics.Color
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.view.Gravity
 import android.view.View
@@ -14,6 +15,8 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.children
@@ -56,7 +59,7 @@ internal class SimpleDialogStyler(
         }
       }
 
-      setBackground(contentView)
+      setBackgroundAndModal(contentView)
       setContentViewLayout(contentView)
       setDim(this)
 
@@ -140,20 +143,39 @@ internal class SimpleDialogStyler(
   }.first() as FrameLayout
 
 
-  private fun setBackground(contentView: FrameLayout) {
+  private fun setBackgroundAndModal(contentView: FrameLayout) {
     contentView.apply {
       if (simpleDialogStyleAttributes.backgroundResourceId == null) {
-        background = GradientDrawable().apply {
-          shape = GradientDrawable.RECTANGLE
-          backgroundTintList = ColorStateList.valueOf(simpleDialogStyleAttributes.backgroundColor)
-          if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) cornerRadius = simpleDialogStyleAttributes.cornerRadius * density
+        val drawables = mutableListOf<Drawable>()
+        drawables.add(
+          CornersDrawable(
+            Color.WHITE,
+            simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
+            simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
+          ),
+        )
+
+        var iconHeight = 0
+        if (simpleDialogStyleAttributes.isShowModalPoint) {
+          val iconWidth = (34 * density).toInt()
+          iconHeight = (14 * density).toInt()
+
+          val icon = ResourcesCompat.getDrawable(context.resources, simpleDialogStyleAttributes.customModalViewId ?: R.drawable.icon_more, null)!!
+          val iconLayer = DrawableCompat.wrap(icon).apply {
+            setBounds(0, 0, iconWidth, iconHeight)
+          }
+
+          drawables.add(iconLayer)
+        }
+
+        background = LayerDrawable(drawables.toTypedArray()).apply {
+          if (simpleDialogStyleAttributes.isShowModalPoint) setLayerInsetTop(1, iconHeight)
         }
       } else {
         setBackgroundResource(simpleDialogStyleAttributes.backgroundResourceId!!)
       }
 
       if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
-        //window.setElevation((simpleDialogStyleAttributes.elevation - 1) * density)
         elevation = simpleDialogStyleAttributes.elevation * density
       }
     }
@@ -192,4 +214,6 @@ internal class SimpleDialogStyler(
       }
     }
   }
+
+
 }

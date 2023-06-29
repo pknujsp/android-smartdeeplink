@@ -135,15 +135,5 @@ abstract class SimpleDialog(
     dialogView.animate().y(filterY(y)).setDuration(animationDuration).setStartDelay(startDelayDuration).start()
   }
 
-  private fun setModal() {
-    if (attributes.isShowModalPoint) {
-      if (attributes.isOnlyDraggleOnModalPoint) {
 
-      } else {
-        
-      }
-    } else {
-
-    }
-  }
 }
