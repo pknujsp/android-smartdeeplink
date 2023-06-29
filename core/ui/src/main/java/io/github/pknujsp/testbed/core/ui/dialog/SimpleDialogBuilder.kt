@@ -7,6 +7,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
+import androidx.annotation.LayoutRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import io.github.pknujsp.testbed.core.ui.R
@@ -120,6 +121,15 @@ class SimpleDialogBuilder private constructor(
    */
   fun setIsOnlyDraggleOnModalPoint(isOnlyDraggleOnModalPoint: Boolean): SimpleDialogBuilder {
     generalAttributes.isOnlyDraggleOnModalPoint = isOnlyDraggleOnModalPoint
+    return this
+  }
+
+  /**
+   * Set custom modal view id.(커스텀 모달 뷰 id를 설정합니다.)
+   *
+   */
+  fun setCustomModalViewId(@LayoutRes customModalViewId: Int): SimpleDialogBuilder {
+    generalAttributes.customModalViewId = customModalViewId
     return this
   }
 

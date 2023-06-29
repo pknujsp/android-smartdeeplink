@@ -85,6 +85,43 @@ internal object BitmapUtils {
     }
   }
 
+  fun Window.toBitmap(): Result<Bitmap> {
+    try {
+      val contentView = decorView.findViewById<View>(android.R.id.content)
+      val size = Size(contentView.width, contentView.height)
+
+      val bitmap: Bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.RGB_565)
+
+      val copySuccess: Boolean = runBlocking {
+        suspendCancellableCoroutine {
+          val locationOfViewInWindow = IntArray(2)
+          contentView.getLocationInWindow(locationOfViewInWindow)
+          val locationRect = WeakReference(
+            Rect(
+              locationOfViewInWindow[0],
+              locationOfViewInWindow[1],
+              locationOfViewInWindow[0] + size.width,
+              locationOfViewInWindow[1] + size.height,
+            ),
+          ).get()!!
+
+          PixelCopy.request(
+            this@toBitmap, locationRect, bitmap,
+            { result ->
+              it.resume(result == PixelCopy.SUCCESS)
+            },
+            Handler(Looper.getMainLooper()),
+          )
+        }
+      }
+
+      if (copySuccess) return Result.success(bitmap)
+      return Result.failure(Exception("Failed to copy view to bitmap"))
+    } catch (e: Exception) {
+      return Result.failure(e)
+    }
+  }
+
 
   fun Window.toBitmap(resizeRatio: Double = 1.0): Result<Bitmap> {
     try {

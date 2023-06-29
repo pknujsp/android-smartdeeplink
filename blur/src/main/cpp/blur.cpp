@@ -154,6 +154,7 @@ void dim(u_short *imagePixels, const int width, const int height, const int dimF
 }
 
 void processingRow(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startRow, const int endRow) {
+    LOGD("Starting processingRow endRow=%d", endRow);
     long sumRed, sumGreen, sumBlue;
     long sumInputRed, sumInputGreen, sumInputBlue;
     long sumOutputRed, sumOutputGreen, sumOutputBlue;
@@ -287,9 +288,11 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
             sumInputBlue -= blue;
         }
     }
+    LOGD("Ended processingRow endRow=%d", endRow);
 }
 
 void processingColumn(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startColumn, const int endColumn) {
+    LOGD("Starting processingColumn endColumn=%d", endColumn);
     const int heightMax = sharedValues->heightMax;
     const int blurRadius = sharedValues->blurRadius;
     const int targetWidth = sharedValues->targetWidth;
@@ -410,6 +413,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
             sumInputBlue -= blue;
         }
     }
+    LOGD("Ended processingColumn endColumn=%d", endColumn);
 }
 
 void blur(unsigned short *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
@@ -422,6 +426,8 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
                                                         targetHeight, newRadius};
 
     const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
+
+    LOGD("Available threads: %ld", availableThreads);
 
     const int rowWorksCount = targetHeight / availableThreads;
     const int columnWorksCount = targetWidth / availableThreads;
@@ -455,6 +461,7 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
         f.wait();
     }
 
+    futures.clear();
     for (const auto &column: columnWorks) {
         futures.emplace_back(pool.EnqueueJob(column));
     }

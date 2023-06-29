@@ -20,8 +20,10 @@ import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurProcessor
 import io.github.pknujsp.testbed.core.ui.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 internal class SimpleDialogStyler(
@@ -96,9 +98,8 @@ internal class SimpleDialogStyler(
         )
          */
 
-        MainScope().launch {
-
-
+        MainScope().launch(Dispatchers.Default) {
+          val start = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
           blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
             if (dialog.isShowing) {
@@ -106,7 +107,11 @@ internal class SimpleDialogStyler(
                 id = R.id.dialog_custom_background
                 background = it.toDrawable(resources)
               }
-              window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+              withContext(Dispatchers.Main) {
+                window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                val end = System.currentTimeMillis()
+                println("Total Blurring time: ${end - start}ms")
+              }
             }
           }.onFailure {
 

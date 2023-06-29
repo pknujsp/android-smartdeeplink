@@ -1,7 +1,6 @@
 package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
-import android.view.Window
 
 internal class NativeImageProcessor {
 
@@ -13,10 +12,10 @@ internal class NativeImageProcessor {
   }
 
   fun blur(
-    window: Window, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int,
+    bitmap: Bitmap, radius: Int, resizeRatio: Double,
   ): Result<Bitmap> = with(
     applyBlur(
-      window, radius, resizeRatio, statusBarHeight, navigationBarHeight,
+      bitmap, bitmap.width, bitmap.height, radius, resizeRatio,
     ),
   ) {
     return when (this) {
@@ -27,7 +26,7 @@ internal class NativeImageProcessor {
   }
 
   private external fun applyBlur(
-    window: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double, statusBarHeight: Int, navigationBarHeight: Int,
+    srcBitmap: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double,
   ): Any?
 
 }

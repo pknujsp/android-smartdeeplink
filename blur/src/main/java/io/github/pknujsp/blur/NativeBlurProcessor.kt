@@ -2,6 +2,7 @@ package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
 import android.view.Window
+import io.github.pknujsp.blur.BitmapUtils.toBitmap
 
 
 class NativeBlurProcessor : Workers(), IWorkers {
@@ -25,13 +26,16 @@ class NativeBlurProcessor : Workers(), IWorkers {
     window: Window,
     radius: Int,
     resizeRatio: Double,
-  ): Result<Bitmap> = nativeImageProcessor.blur(
-    window,
-    radius,
-    resizeRatio,
-    BitmapUtils.statusBarHeight,
-    BitmapUtils.navigationBarHeight,
-  )
+  ): Result<Bitmap> = window.run {
+    toBitmap().fold(
+      onSuccess = { bitmap ->
+        nativeImageProcessor.blur(bitmap, radius, resizeRatio)
+      },
+      onFailure = { throwable ->
+        Result.failure(throwable)
+      },
+    )
+  }
 
 
   override fun cancel() {
