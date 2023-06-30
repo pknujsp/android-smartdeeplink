@@ -29,4 +29,7 @@ internal class NativeImageProcessor {
     srcBitmap: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double,
   ): Any?
 
+  external fun initBlur(blurManager: BlurManager, width: Int, height: Int, radius: Int, resizeRatio: Double)
+
+  external fun blur(srcBitmap: Bitmap)
 }

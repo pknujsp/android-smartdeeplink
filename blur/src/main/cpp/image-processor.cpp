@@ -6,10 +6,10 @@
 #include <android/native_window_jni.h>
 #include <android/window.h>
 #include <functional>
-#include <chrono>
 #include <GLES3/gl31.h>
 #include <GLES3/gl3ext.h>
 #include "blur.h"
+#include "blur-manager.h"
 
 #define TAG "NativeImageProcessor"
 #define ANDROID_LOG_DEBUG 3
@@ -37,9 +37,7 @@ void gl(unsigned int *pixels, const int width, const int height) {
 }
 
 extern "C"
-jobject resize(JNIEnv *env, jint newWidth, jint newHeight, _jobject *bitmap, jclass bitmapClass) {
-    jmethodID createScaledBitmapMethod = env->GetStaticMethodID(bitmapClass, "createScaledBitmap",
-                                                                "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
+jobject resize(JNIEnv *env, jint newWidth, jint newHeight, _jobject *bitmap, jclass bitmapClass, jmethodID createScaledBitmapMethod) {
     jobject resizedBitmap = env->CallStaticObjectMethod(bitmapClass, createScaledBitmapMethod, bitmap, newWidth,
                                                         newHeight, true);
     return resizedBitmap;
@@ -72,7 +70,6 @@ JNIEXPORT jobject JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject srcBitmap, jint width, jint height, jint radius,
                                                            jdouble resizeRatio) {
     try {
-        std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
         jint newWidth = (jint) (width);
         jint newHeight = (jint) (height);
         if (newWidth % 2 != 0) newWidth--;
@@ -81,7 +78,9 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
         jobject src = srcBitmap;
         if (resizeRatio > 1.0) {
             jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-            src = resize(env, newWidth, newHeight, srcBitmap, bitmapClass);
+            jmethodID createScaledBitmapMethod = env->GetStaticMethodID(bitmapClass, "createScaledBitmap",
+                                                                        "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
+            src = resize(env, newWidth, newHeight, srcBitmap, bitmapClass, createScaledBitmapMethod);
         }
 
         AndroidBitmapInfo info;
@@ -90,14 +89,42 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
         if ((AndroidBitmap_getInfo(env, src, &info)) < 0) return nullptr;
         if ((AndroidBitmap_lockPixels(env, src, (void **) &pixels)) < 0) return nullptr;
 
-        blur((u_short *) pixels, radius, newWidth, newHeight);
+        const SharedValues *sharedValues = init(newWidth, newHeight, radius, resizeRatio > 1.0);
+
+        blur((u_short *) pixels, sharedValues);
 
         AndroidBitmap_unlockPixels(env, src);
-        std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-        LOGD("Native Blurring time: %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+
+        delete sharedValues;
         return src;
     } catch (const char *e) {
         jthrowable throwable = env->ExceptionOccurred();
         return throwable;
     }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_NativeImageProcessor_initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height,
+                                                          jint radius, jdouble resize_ratio) {
+    blurManager::initBlur(env, blur_manager, width, height, radius, resize_ratio);
+
+    blurManager::bitmapClass = env->FindClass("android/graphics/Bitmap");
+
+    blurManager::createBitmapMethod = env->GetStaticMethodID(blurManager::bitmapClass, "createBitmap",
+                                                             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+
+    blurManager::createScaledBitmapMethod = env->GetStaticMethodID(blurManager::bitmapClass, "createScaledBitmap",
+                                                                   "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz, jobject src_bitmap) {
+    jobject src = src_bitmap;
+    if (blurManager::sharedValues->isResized) {
+        src = resize(env, blurManager::sharedValues->targetWidth, blurManager::sharedValues->targetHeight, src, blurManager::bitmapClass,
+                     blurManager::createScaledBitmapMethod);
+    }
+    blurManager::blur(env, src);
 }

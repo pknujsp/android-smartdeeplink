@@ -9,6 +9,10 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project("image-processor")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
+
+add_definitions(-DVK_USE_PLATFORM_ANDROID_KHR=1)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -24,6 +28,9 @@ add_library( # Sets the name of the library.
         image-processor.cpp
         blur.h
         blur.cpp
+        blur-manager.h
+        blur-manager.cpp
+        shared-values.h
         )
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -56,6 +63,7 @@ target_link_libraries( # Specifies the target library.
 
         # Links the target library to the log library
         # included in the NDK.
+        vulkan
         ${log-lib}
         ${jnigraphics-lib}
         ${EGL-lib}

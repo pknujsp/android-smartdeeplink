@@ -43,19 +43,13 @@ internal object BitmapUtils {
 
       val copySuccess: Boolean = runBlocking {
         suspendCancellableCoroutine {
-          val locationOfViewInWindow = IntArray(2)
-          getLocationInWindow(locationOfViewInWindow)
-          val locationRect = WeakReference(
-            Rect(
-              locationOfViewInWindow[0],
-              locationOfViewInWindow[1],
-              locationOfViewInWindow[0] + originalSize.width,
-              locationOfViewInWindow[1] + originalSize.height,
-            ),
-          ).get()!!
 
           PixelCopy.request(
-            window, locationRect, originalBitmap,
+            window,
+            WeakReference(
+              getLocationRectInWindow(window),
+            ).get()!!,
+            originalBitmap,
             { result ->
               it.resume(result == PixelCopy.SUCCESS)
             },
@@ -94,19 +88,12 @@ internal object BitmapUtils {
 
       val copySuccess: Boolean = runBlocking {
         suspendCancellableCoroutine {
-          val locationOfViewInWindow = IntArray(2)
-          contentView.getLocationInWindow(locationOfViewInWindow)
-          val locationRect = WeakReference(
-            Rect(
-              locationOfViewInWindow[0],
-              locationOfViewInWindow[1],
-              locationOfViewInWindow[0] + size.width,
-              locationOfViewInWindow[1] + size.height,
-            ),
-          ).get()!!
-
           PixelCopy.request(
-            this@toBitmap, locationRect, bitmap,
+            this@toBitmap,
+            WeakReference(
+              contentView.getLocationRectInWindow(this@toBitmap),
+            ).get()!!,
+            bitmap,
             { result ->
               it.resume(result == PixelCopy.SUCCESS)
             },
@@ -120,6 +107,18 @@ internal object BitmapUtils {
     } catch (e: Exception) {
       return Result.failure(e)
     }
+  }
+
+  fun View.getLocationRectInWindow(window: Window): Rect {
+    val locationOfViewInWindow = IntArray(2)
+    getLocationInWindow(locationOfViewInWindow)
+
+    return Rect(
+      locationOfViewInWindow[0],
+      locationOfViewInWindow[1],
+      locationOfViewInWindow[0] + width,
+      locationOfViewInWindow[1] + height,
+    )
   }
 
 

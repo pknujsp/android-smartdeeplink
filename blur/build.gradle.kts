@@ -14,7 +14,17 @@ android {
     }
   }
 
+  defaultConfig {
+    externalNativeBuild {
+      cmake {
+        arguments.add("-DANDROID_STL=c++_shared")
+      }
+    }
+  }
 
+  buildFeatures {
+    prefab = true
+  }
 
   externalNativeBuild {
     cmake {
@@ -50,6 +60,7 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(project(":coroutineext"))
 }
 
 apply {

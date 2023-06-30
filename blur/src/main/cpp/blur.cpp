@@ -15,6 +15,9 @@
 #include <queue>
 #include <thread>
 #include <future>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_android.h>
+#include <vulkan/vulkan_core.h>
 
 #define LOG_TAG "Native Blur"
 #define ANDROID_LOG_DEBUG 3
@@ -107,6 +110,22 @@ namespace ThreadPool {
         return job_result_future;
     }
 
+}
+
+
+SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized) {
+
+    const int widthMax = targetWidth - 1;
+    const int heightMax = targetHeight - 1;
+    const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
+
+    const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
+
+    auto *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
+                                          targetWidth,
+                                          targetHeight, newRadius, availableThreads, isResized};
+    return
+            sharedValues;
 }
 
 void dim(u_short *imagePixels, const int width, const int height, const int dimFactor) {
@@ -416,21 +435,13 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
     LOGD("Ended processingColumn endColumn=%d", endColumn);
 }
 
-void blur(unsigned short *imagePixels, const int radius, const int targetWidth, const int targetHeight) {
-    const int widthMax = targetWidth - 1;
-    const int heightMax = targetHeight - 1;
-    const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
+void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
+    const int widthMax = sharedValues->widthMax;
+    const int heightMax = sharedValues->heightMax;
 
-    const SharedValues *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
-                                                        targetWidth,
-                                                        targetHeight, newRadius};
-
-    const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
-
-    LOGD("Available threads: %ld", availableThreads);
-
-    const int rowWorksCount = targetHeight / availableThreads;
-    const int columnWorksCount = targetWidth / availableThreads;
+    const int availableThreads = sharedValues->availableThreads;
+    const int rowWorksCount = sharedValues->targetHeight / availableThreads;
+    const int columnWorksCount = sharedValues->targetWidth / availableThreads;
 
     vector<function<void()>> rowWorks;
     vector<function<void()>> columnWorks;
@@ -469,6 +480,4 @@ void blur(unsigned short *imagePixels, const int radius, const int targetWidth, 
     for (auto &f: futures) {
         f.wait();
     }
-
-    delete sharedValues;
 }
