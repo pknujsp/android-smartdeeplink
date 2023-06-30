@@ -57,6 +57,6 @@ void processingColumn(const SharedValues *const sharedValues, short *imagePixels
 
 void blur(short *imagePixels, const SharedValues *sharedValues);
 
-SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized);
+SharedValues *init(const int srcWidth, const int srcHeight, const int radius, const double resizeRatio);
 
 #endif //TESTBED_BLUR_H

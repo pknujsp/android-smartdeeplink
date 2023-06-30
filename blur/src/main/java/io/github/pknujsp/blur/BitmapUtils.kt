@@ -118,10 +118,7 @@ internal object BitmapUtils {
       locationOfViewInWindow[1],
       locationOfViewInWindow[0] + width,
       locationOfViewInWindow[1] + height,
-    ).apply {
-      if (width % 2 != 0) right--
-      if (height % 2 != 0) bottom--
-    }
+    )
   }
 
 

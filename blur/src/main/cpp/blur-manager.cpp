@@ -16,15 +16,7 @@ void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint
     blurManagerObject = env->NewGlobalRef(blur_manager);
     onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
 
-    const bool isResized = resize_ratio > 1.0;
-
-    jint targetBitmapWidth = isResized ? (jint) (width / resize_ratio) : width;
-    jint targetBitmapHeight = isResized ? (jint) (height / resize_ratio) : height;
-
-    if (targetBitmapWidth % 2 != 0) targetBitmapWidth--;
-    if (targetBitmapHeight % 2 != 0) targetBitmapHeight--;
-
-    sharedValues = init(targetBitmapWidth, targetBitmapHeight, radius, isResized);
+    sharedValues = init(width, height, radius, resize_ratio);
 }
 
 SharedValues *BlurManager::getSharedValues() const {

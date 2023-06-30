@@ -28,8 +28,6 @@ using namespace std;
 
 static const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
-static mutex MUTEX;
-
 class ThreadPool {
 public:
     explicit ThreadPool(size_t num_threads);
@@ -102,13 +100,20 @@ ThreadPool::~ThreadPool() {
 static ThreadPool threadPool(availableThreads);
 
 
-SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized) {
+SharedValues *init(const int srcWidth, const int srcHeight, const int radius, const double resizeRatio) {
+    const bool resize = resizeRatio > 1.0;
+    int targetWidth = resize ? (int) (srcWidth / resizeRatio) : srcWidth;
+    int targetHeight = resize ? (int) (srcHeight / resizeRatio) : srcHeight;
+
+    if (targetWidth % 2 != 0) targetWidth--;
+    if (targetHeight % 2 != 0) targetHeight--;
+
     const int widthMax = targetWidth - 1;
     const int heightMax = targetHeight - 1;
     const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
     return new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
-                            targetWidth, targetHeight, newRadius, availableThreads, isResized};
+                            targetWidth, targetHeight, newRadius, availableThreads, resize};
 }
 
 
@@ -132,7 +137,7 @@ void processingRow(const SharedValues *const sharedValues, short *imagePixels, c
     const int shiftSum = sharedValues->shiftSum;
 
     short blurStack[divisor];
-    //short pixel;
+    short pixel;
 
     // RGB565 short color = (R & 0x1f) << 11 | (G & 0x3f) << 5 | (B & 0x1f);
     // ARGB8888  int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff);
@@ -191,12 +196,10 @@ void processingRow(const SharedValues *const sharedValues, short *imagePixels, c
         outputPixelIndex = startPixelIndex;
 
         for (int col = 0; col < targetWidth; col++) {
-            MUTEX.lock();
             imagePixels[outputPixelIndex] =
                     (short) (((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor
                              ((((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
                              (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
-            MUTEX.unlock();
             outputPixelIndex++;
             sumRed -= sumOutputRed;
             sumGreen -= sumOutputGreen;
@@ -322,13 +325,10 @@ void processingColumn(const SharedValues *const sharedValues, short *imagePixels
         destinationIndex = col;
 
         for (int y = 0; y < targetHeight; y++) {
-            MUTEX.lock();
-
             imagePixels[destinationIndex] =
                     (short) (((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor (
                             (((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
                              (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
-            MUTEX.unlock();
 
             destinationIndex += targetWidth;
             sumRed -= sumOutputRed;

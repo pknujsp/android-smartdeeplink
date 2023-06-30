@@ -77,30 +77,23 @@ JNIEXPORT jobject JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject srcBitmap, jint width, jint height, jint radius,
                                                            jdouble resizeRatio) {
     try {
-        jint newWidth = (jint) (width);
-        jint newHeight = (jint) (height);
-        if (newWidth % 2 != 0) newWidth--;
-        if (newHeight % 2 != 0) newHeight--;
+        const SharedValues *sharedValues = init(width, height, radius, resizeRatio);
 
-        jobject src = srcBitmap;
-        if (resizeRatio > 1.0) {
-            src = resize(env, newWidth, newHeight, srcBitmap);
+        if (sharedValues->isResized) {
+            srcBitmap = resize(env, sharedValues->targetWidth, sharedValues->targetHeight, srcBitmap);
         }
 
         AndroidBitmapInfo info;
         void *pixels = nullptr;
 
-        if ((AndroidBitmap_getInfo(env, src, &info)) < 0) return nullptr;
-        if ((AndroidBitmap_lockPixels(env, src, (void **) &pixels)) < 0) return nullptr;
-
-        const SharedValues *sharedValues = init(newWidth, newHeight, radius, resizeRatio > 1.0);
-
+        if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;
+        if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return nullptr;
         blur((short *) pixels, sharedValues);
 
-        AndroidBitmap_unlockPixels(env, src);
+        AndroidBitmap_unlockPixels(env, srcBitmap);
 
         delete sharedValues;
-        return src;
+        return srcBitmap;
     } catch (const char *e) {
         jthrowable throwable = env->ExceptionOccurred();
         return throwable;
