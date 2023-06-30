@@ -6,7 +6,6 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.DrawableRes
-import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
@@ -182,7 +181,7 @@ class SimpleDialogBuilder private constructor(
   /**
    * Set background resource id.(배경 리소스 아이디를 설정합니다.)
    */
-  fun setBackgroundResourceId(@IdRes backgroundResourceId: Int): SimpleDialogBuilder {
+  fun setBackgroundResourceId(@DrawableRes backgroundResourceId: Int): SimpleDialogBuilder {
     dialogStyler.simpleDialogStyleAttributes.backgroundResourceId = backgroundResourceId
     return this
   }

@@ -29,14 +29,14 @@ internal class CornersDrawable(
     super.onBoundsChange(bounds)
     path.reset()
 
-    val radii = floatArrayOf(
+    val radius = floatArrayOf(
       topLeftRadius, topLeftRadius,
       topRightRadius, topRightRadius,
       bottomRightRadius, bottomRightRadius,
       bottomLeftRadius, bottomLeftRadius,
     )
 
-    path.addRoundRect(RectF(bounds), radii, Path.Direction.CW)
+    path.addRoundRect(RectF(bounds), radius, Path.Direction.CW)
   }
 
   override fun draw(canvas: Canvas) {

@@ -4,10 +4,10 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Build
+import android.util.LruCache
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -15,8 +15,9 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.children
@@ -42,7 +43,19 @@ internal class SimpleDialogStyler(
     private val maxBlurRadius: Float = 16 * density
 
     private val blurProcessor = BlurProcessor()
+
+    private val drawableCache = LruCache<BackgroundDrawableInfo, Drawable>(10)
   }
+
+  private data class BackgroundDrawableInfo(
+    val leftCornerRadius: Float,
+    val rightCornerRadius: Float,
+    val topCornerRadius: Float,
+    val bottomCornerRadius: Float,
+    val isShowModal: Boolean,
+    @ColorInt val backgroundColor: Int,
+    @DrawableRes val customBackgroundDrawableId: Int?,
+  )
 
   fun applyStyle(dialog: Dialog) {
     setOnDismissDialogListener(dialog)
@@ -145,34 +158,54 @@ internal class SimpleDialogStyler(
 
   private fun setBackgroundAndModal(contentView: FrameLayout) {
     contentView.apply {
-      if (simpleDialogStyleAttributes.backgroundResourceId == null) {
-        val drawables = mutableListOf<Drawable>()
-        drawables.add(
-          CornersDrawable(
-            Color.WHITE,
-            simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
-            simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
-          ),
-        )
+      val backgroundDrawableInfo = BackgroundDrawableInfo(
+        leftCornerRadius = simpleDialogStyleAttributes.cornerRadius * density,
+        rightCornerRadius = simpleDialogStyleAttributes.cornerRadius * density,
+        topCornerRadius = simpleDialogStyleAttributes.cornerRadius * density,
+        bottomCornerRadius = simpleDialogStyleAttributes.cornerRadius * density,
+        isShowModal = simpleDialogStyleAttributes.isShowModalPoint,
+        backgroundColor = simpleDialogStyleAttributes.backgroundColor,
+        customBackgroundDrawableId = simpleDialogStyleAttributes.backgroundResourceId,
+      )
 
-        var iconHeight = 0
-        if (simpleDialogStyleAttributes.isShowModalPoint) {
-          val iconWidth = (34 * density).toInt()
-          iconHeight = (14 * density).toInt()
+      drawableCache.get(backgroundDrawableInfo)?.let { drawable ->
+        background = drawable
+      } ?: run {
+        if (simpleDialogStyleAttributes.backgroundResourceId == null) {
+          val drawables = mutableListOf<Drawable>()
 
-          val icon = ResourcesCompat.getDrawable(context.resources, simpleDialogStyleAttributes.customModalViewId ?: R.drawable.icon_more, null)!!
-          val iconLayer = DrawableCompat.wrap(icon).apply {
-            setBounds(0, 0, iconWidth, iconHeight)
+          drawables.add(
+            CornersDrawable(
+              simpleDialogStyleAttributes.backgroundColor,
+              simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
+              simpleDialogStyleAttributes.cornerRadius * density, simpleDialogStyleAttributes.cornerRadius * density,
+            ).apply {
+              this.setBounds(0, (12 * density).toInt(), width, height)
+            },
+          )
+
+          var iconHeight = 0
+          if (simpleDialogStyleAttributes.isShowModalPoint) {
+            iconHeight = (12 * density).toInt()
+
+            val icon =
+              ResourcesCompat.getDrawable(context.resources, simpleDialogStyleAttributes.customModalViewId ?: R.drawable.icon_more_edited, null)!!
+            val diffPx = icon.intrinsicHeight - iconHeight
+            val iconWidth = icon.intrinsicWidth - diffPx
+
+            drawables.add(icon)
           }
 
-          drawables.add(iconLayer)
+          background = LayerDrawable(drawables.toTypedArray()).apply {
+            if (simpleDialogStyleAttributes.isShowModalPoint) {
+              setLayerGravity(1, Gravity.CENTER_HORIZONTAL or Gravity.TOP)
+            }
+            setLayerInsetTop(0, iconHeight)
+            drawableCache.put(backgroundDrawableInfo, this)
+          }
+        } else {
+          setBackgroundResource(simpleDialogStyleAttributes.backgroundResourceId!!)
         }
-
-        background = LayerDrawable(drawables.toTypedArray()).apply {
-          if (simpleDialogStyleAttributes.isShowModalPoint) setLayerInsetTop(1, iconHeight)
-        }
-      } else {
-        setBackgroundResource(simpleDialogStyleAttributes.backgroundResourceId!!)
       }
 
       if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {

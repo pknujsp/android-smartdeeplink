@@ -5,7 +5,6 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.DrawableRes
-import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 
 private const val defaultBlurIndensity: Int = 10
@@ -27,7 +26,7 @@ data class SimpleDialogStyleAttributes(
   @Dimension(unit = Dimension.DP) var bottomMargin: Int = currentMarginBottom,
   @Dimension(unit = Dimension.DP) var horizontalMargin: Int = currentMarginHorizontal,
   @Dimension(unit = Dimension.DP) var cornerRadius: Int = currentCornerRadius,
-  @IdRes var backgroundResourceId: Int? = null,
+  @DrawableRes var backgroundResourceId: Int? = null,
   @ColorInt var backgroundColor: Int = currentBackgroundColor,
   @Dimension(unit = Dimension.DP) var elevation: Int = currentElevation,
   @SizeMode var layoutWidth: Int = currentWidth,
