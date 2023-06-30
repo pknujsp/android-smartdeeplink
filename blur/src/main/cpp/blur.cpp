@@ -118,7 +118,6 @@ SharedValues *init(const int srcWidth, const int srcHeight, const int radius, co
 
 
 void processingRow(const SharedValues *const sharedValues, short *imagePixels, const int startRow, const int endRow) {
-    LOGD("Starting processingRow endRow=%d", endRow);
     long sumRed, sumGreen, sumBlue;
     long sumInputRed, sumInputGreen, sumInputBlue;
     long sumOutputRed, sumOutputGreen, sumOutputBlue;
@@ -252,11 +251,9 @@ void processingRow(const SharedValues *const sharedValues, short *imagePixels, c
             sumInputBlue -= blue;
         }
     }
-    LOGD("Ended processingRow endRow=%d", endRow);
 }
 
 void processingColumn(const SharedValues *const sharedValues, short *imagePixels, const int startColumn, const int endColumn) {
-    LOGD("Starting processingColumn endColumn=%d", endColumn);
     const int heightMax = sharedValues->heightMax;
     const int blurRadius = sharedValues->blurRadius;
     const int targetWidth = sharedValues->targetWidth;
@@ -380,7 +377,6 @@ void processingColumn(const SharedValues *const sharedValues, short *imagePixels
             sumInputBlue -= blue;
         }
     }
-    LOGD("Ended processingColumn endColumn=%d", endColumn);
 }
 
 void blur(short *imagePixels, const SharedValues *sharedValues) {
