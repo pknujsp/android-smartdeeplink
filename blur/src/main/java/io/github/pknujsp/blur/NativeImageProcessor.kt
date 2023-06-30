@@ -2,14 +2,12 @@ package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
 
-internal class NativeImageProcessor {
+object NativeImageProcessor {
 
-  private companion object {
-
-    init {
-      System.loadLibrary("image-processor")
-    }
+  init {
+    System.loadLibrary("image-processor")
   }
+
 
   fun blur(
     bitmap: Bitmap, radius: Int, resizeRatio: Double,
@@ -32,4 +30,6 @@ internal class NativeImageProcessor {
   external fun initBlur(blurManager: BlurManager, width: Int, height: Int, radius: Int, resizeRatio: Double)
 
   external fun blur(srcBitmap: Bitmap)
+
+  external fun onDetachedFromWindow()
 }

@@ -1,6 +1,13 @@
 package io.github.pknujsp.blur
 
-interface BlurManager {
+import android.graphics.Bitmap
+import android.view.ViewTreeObserver
 
+interface BlurManager {
+  var onWindowAttachListener: ViewTreeObserver.OnWindowAttachListener?
+  var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener?
+  fun onBlurred(bitmap: Bitmap)
   fun onCleared()
+
+  fun onDetach()
 }

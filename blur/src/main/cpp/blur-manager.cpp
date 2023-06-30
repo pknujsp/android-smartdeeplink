@@ -7,9 +7,12 @@
 
 using namespace blurManager;
 
-void initBlur(JNIEnv *env, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
-    blurManagerObject = blur_manager;
-    blurManagerClass = env->GetObjectClass(blurManagerObject);
+static jmethodID onWindowDetachListenerMethodId;
+static jmethodID onBlurredMethodId;
+
+void initBlur(JNIEnv *env, jobject blur_manager, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio) {
+    blurManagerClass = env->GetObjectClass(blur_manager);
+    blurManagerObject = env->NewGlobalRef(blur_manager);
 
     jint srcBitmapWidth = width;
     jint srcBitmapHeight = height;
@@ -25,7 +28,19 @@ void initBlur(JNIEnv *env, jobject blur_manager, jint width, jint height, jint r
     if (targetBitmapWidth % 2 != 0) targetBitmapWidth--;
     if (targetBitmapHeight % 2 != 0) targetBitmapHeight--;
 
+
     sharedValues = init(targetBitmapWidth, targetBitmapHeight, radius, resize_ratio > 1.0);
+
+    onWindowDetachListenerMethodId = env->GetMethodID(blurManagerClass, "onWindowDetachListener", "()V");
+    onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
+
+    // fun onBlurred(bitmap: Bitmap)
+    // override var onWindowAttachListener: ViewTreeObserver.OnWindowAttachListener? = null
+    // override var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener? = null
+}
+
+void sendBitmap(JNIEnv *env, jobject bitmap) {
+    env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
 }
 
 void blur(JNIEnv *env, jobject srcBitmap) {
@@ -37,4 +52,15 @@ void blur(JNIEnv *env, jobject srcBitmap) {
     blur((unsigned short *) &pixels, sharedValues);
 
     AndroidBitmap_unlockPixels(env, srcBitmap);
+
+    sendBitmap(env, srcBitmap);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_NativeImageProcessor_onDetachedFromWindow(JNIEnv *env, jobject thiz) {
+    delete sharedValues;
+    env->DeleteGlobalRef(blurManagerClass);
+    env->DeleteGlobalRef(blurManagerObject);
+    delete bitmapClass;
 }

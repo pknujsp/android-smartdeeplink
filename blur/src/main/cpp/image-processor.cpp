@@ -126,5 +126,5 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz,
         src = resize(env, blurManager::sharedValues->targetWidth, blurManager::sharedValues->targetHeight, src, blurManager::bitmapClass,
                      blurManager::createScaledBitmapMethod);
     }
-    blurManager::blur(env, src);
+    blurManager::blur(env, thiz, src);
 }

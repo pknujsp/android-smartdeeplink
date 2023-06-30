@@ -177,5 +177,28 @@ internal object BitmapUtils {
     }
   }
 
+  fun View.toBitmap(window: Window, rect: Rect): Result<Bitmap> {
+    try {
+      val bitmap: Bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565)
 
+      val copySuccess: Boolean = runBlocking {
+        suspendCancellableCoroutine {
+          PixelCopy.request(
+            window,
+            rect,
+            bitmap,
+            { result ->
+              it.resume(result == PixelCopy.SUCCESS)
+            },
+            Handler(Looper.getMainLooper()),
+          )
+        }
+      }
+
+      if (copySuccess) return Result.success(bitmap)
+      return Result.failure(Exception("Failed to copy view to bitmap"))
+    } catch (e: Exception) {
+      return Result.failure(e)
+    }
+  }
 }
