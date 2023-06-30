@@ -9,7 +9,6 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.util.LruCache
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -18,16 +17,16 @@ import android.widget.LinearLayout
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurProcessor
+import io.github.pknujsp.blur.BlurringView
+import io.github.pknujsp.blur.NativeImageProcessor
 import io.github.pknujsp.testbed.core.ui.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 
 internal class SimpleDialogStyler(
@@ -114,24 +113,29 @@ internal class SimpleDialogStyler(
         )
          */
 
+        val blurringView = BlurringView(window.context, NativeImageProcessor)
+        window.addContentView(blurringView, blurringView.layoutParams)
+        
         MainScope().launch(Dispatchers.Default) {
           val start = System.currentTimeMillis()
           val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
+          /**
           blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
-            if (dialog.isShowing) {
-              val view = View(window.context).apply {
-                id = R.id.dialog_custom_background
-                background = it.toDrawable(resources)
-              }
-              withContext(Dispatchers.Main) {
-                window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                val end = System.currentTimeMillis()
-                println("Total Blurring time: ${end - start}ms")
-              }
-            }
+          if (dialog.isShowing) {
+          val view = View(window.context).apply {
+          id = R.id.dialog_custom_background
+          background = it.toDrawable(resources)
+          }
+          withContext(Dispatchers.Main) {
+          window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+          val end = System.currentTimeMillis()
+          println("Total Blurring time: ${end - start}ms")
+          }
+          }
           }.onFailure {
 
           }
+           */
         }
       }
     }

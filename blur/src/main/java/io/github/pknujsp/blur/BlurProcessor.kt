@@ -6,7 +6,7 @@ import android.view.Window
 class BlurProcessor : IBlur, IWorkers {
 
   private companion object {
-    private val nativeImageProcessor by lazy {
+    private val nativeBlurProcessor: NativeBlurProcessor by lazy {
       NativeBlurProcessor()
     }
 
@@ -22,7 +22,7 @@ class BlurProcessor : IBlur, IWorkers {
 
   }
 
-  override fun nativeBlur(window: Window, radius: Int, resizeRatio: Double): Result<Bitmap> = nativeImageProcessor.nativeBlur(
+  override fun nativeBlur(window: Window, radius: Int, resizeRatio: Double): Result<Bitmap> = nativeBlurProcessor.nativeBlur(
     window, radius.coerceAtLeast(MIN_RADIUS), resizeRatio,
   )
 
@@ -32,6 +32,6 @@ class BlurProcessor : IBlur, IWorkers {
 
   override fun cancel() {
     kotlinImageProcessor.cancel()
-    nativeImageProcessor.cancel()
+    nativeBlurProcessor.cancel()
   }
 }

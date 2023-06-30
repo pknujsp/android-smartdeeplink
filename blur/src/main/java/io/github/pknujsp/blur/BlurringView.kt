@@ -69,6 +69,7 @@ class BlurringView(context: Context) : View(context), BlurManager {
 
         onWindowAttachListener?.onWindowAttached()
         initialized = true
+        contentView.invalidate()
       }
     }
   }

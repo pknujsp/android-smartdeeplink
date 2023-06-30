@@ -6,7 +6,6 @@ import io.github.pknujsp.blur.BitmapUtils.toBitmap
 
 
 class NativeBlurProcessor : Workers(), IWorkers {
-
   private companion object {
     private var _nativeImageProcessor: NativeImageProcessor = NativeImageProcessor
     private val nativeImageProcessor: NativeImageProcessor
@@ -17,7 +16,7 @@ class NativeBlurProcessor : Workers(), IWorkers {
       BitmapUtils.init()
     }
   }
-  
+
   fun nativeBlur(
     window: Window,
     radius: Int,

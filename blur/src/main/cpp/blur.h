@@ -14,7 +14,7 @@ const unsigned short BLUE_MASK = 0x1f;
 
 const unsigned short RED_SHIFT = 11;
 const unsigned short GREEN_SHIFT = 5;
-const unsigned short PIXEL_MASK = 0xff000000;
+const unsigned int PIXEL_MASK = 0xff000000;
 
 static const int MUL_TABLE[] = {512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
                                 454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512,

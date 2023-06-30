@@ -10,7 +10,7 @@ using namespace blurManager;
 static jmethodID onWindowDetachListenerMethodId;
 static jmethodID onBlurredMethodId;
 
-void initBlur(JNIEnv *env, jobject blur_manager, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio) {
+void ::blurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
     blurManagerClass = env->GetObjectClass(blur_manager);
     blurManagerObject = env->NewGlobalRef(blur_manager);
 
@@ -42,7 +42,7 @@ void sendBitmap(JNIEnv *env, jobject bitmap) {
     env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
 }
 
-void blur(JNIEnv *env, jobject srcBitmap) {
+void ::blurManager::blur(JNIEnv *env, jobject srcBitmap) {
     void *pixels = nullptr;
 
     if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return;

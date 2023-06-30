@@ -22,7 +22,7 @@ namespace blurManager {
 
     void blur(JNIEnv *env, jobject srcBitmap);
 
-    void initBlur(JNIEnv *env, jobject blur_manager, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio);
+    void initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio);
 }
 
 #endif //TESTBED_BLUR_MANAGER_H

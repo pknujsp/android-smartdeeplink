@@ -107,24 +107,24 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height,
                                                           jint radius, jdouble resize_ratio) {
-    blurManager::initBlur(env, blur_manager, width, height, radius, resize_ratio);
+    ::blurManager::initBlur(env, thiz, blur_manager, width, height, radius, resize_ratio);
 
-    blurManager::bitmapClass = env->FindClass("android/graphics/Bitmap");
+    ::blurManager::bitmapClass = env->FindClass("android/graphics/Bitmap");
 
-    blurManager::createBitmapMethod = env->GetStaticMethodID(blurManager::bitmapClass, "createBitmap",
-                                                             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    ::blurManager::createBitmapMethod = env->GetStaticMethodID(::blurManager::bitmapClass, "createBitmap",
+                                                               "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
 
-    blurManager::createScaledBitmapMethod = env->GetStaticMethodID(blurManager::bitmapClass, "createScaledBitmap",
-                                                                   "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
+    ::blurManager::createScaledBitmapMethod = env->GetStaticMethodID(::blurManager::bitmapClass, "createScaledBitmap",
+                                                                     "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz, jobject src_bitmap) {
     jobject src = src_bitmap;
-    if (blurManager::sharedValues->isResized) {
-        src = resize(env, blurManager::sharedValues->targetWidth, blurManager::sharedValues->targetHeight, src, blurManager::bitmapClass,
-                     blurManager::createScaledBitmapMethod);
+    if (::blurManager::sharedValues->isResized) {
+        src = resize(env, ::blurManager::sharedValues->targetWidth, ::blurManager::sharedValues->targetHeight, src, ::blurManager::bitmapClass,
+                     ::blurManager::createScaledBitmapMethod);
     }
-    blurManager::blur(env, thiz, src);
+    ::blurManager::blur(env, src);
 }
