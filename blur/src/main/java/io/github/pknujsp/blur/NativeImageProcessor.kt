@@ -3,11 +3,11 @@ package io.github.pknujsp.blur
 import android.graphics.Bitmap
 
 class NativeImageProcessor : IBlurRequest {
-
-  init {
-    System.loadLibrary("image-processor")
+  private companion object {
+    init {
+      System.loadLibrary("image-processor")
+    }
   }
-
 
   fun blur(
     bitmap: Bitmap, radius: Int, resizeRatio: Double,

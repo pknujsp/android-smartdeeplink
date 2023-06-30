@@ -4,35 +4,27 @@
 
 #include "blur-manager.h"
 #include "blur.h"
+#include <android/log.h>
 
-static BlurManager &blurManager = BlurManager::getInstance();
+#define TAG "blur-manager.cpp"
+#define ANDROID_LOG_DEBUG 3
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
 
 void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
+    LOGD("initBlur() called");
     blurManagerClass = env->GetObjectClass(blur_manager);
-    //blurManagerObject = env->NewGlobalRef(blur_manager);
+    blurManagerObject = env->NewGlobalRef(blur_manager);
+    onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
 
-    jint srcBitmapWidth = width;
-    jint srcBitmapHeight = height;
+    const bool isResized = resize_ratio > 1.0;
 
-    jint targetBitmapWidth = width;
-    jint targetBitmapHeight = height;
-
-    if (resize_ratio > 1.0) {
-        targetBitmapWidth = (jint) (srcBitmapWidth / resize_ratio);
-        targetBitmapHeight = (jint) (srcBitmapHeight / resize_ratio);
-    }
+    jint targetBitmapWidth = isResized ? (jint) (width / resize_ratio) : width;
+    jint targetBitmapHeight = isResized ? (jint) (height / resize_ratio) : height;
 
     if (targetBitmapWidth % 2 != 0) targetBitmapWidth--;
     if (targetBitmapHeight % 2 != 0) targetBitmapHeight--;
 
-    auto *cv = init(targetBitmapWidth, targetBitmapHeight, radius, resize_ratio > 1.0);
-    sharedValues = cv;
-
-    onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
-
-    // fun onBlurred(bitmap: Bitmap)
-    // override var onWindowAttachListener: ViewTreeObserver.OnWindowAttachListener? = null
-    // override var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener? = null
+    sharedValues = init(targetBitmapWidth, targetBitmapHeight, radius, isResized);
 }
 
 SharedValues *BlurManager::getSharedValues() const {
@@ -40,9 +32,10 @@ SharedValues *BlurManager::getSharedValues() const {
 }
 
 void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) {
+    LOGD("startBlur() called");
+
     void *pixels = nullptr;
 
-    if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return;
     if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return;
 
     blur((unsigned short *) &pixels, sharedValues);
@@ -53,12 +46,13 @@ void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) {
 }
 
 void BlurManager::sendBitmap(JNIEnv *env, jobject bitmap) const {
+    LOGD("sendBitmap() called");
     env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
 }
 
-BlurManager* BlurManager::instance = nullptr;
+BlurManager *BlurManager::instance = nullptr;
 
- BlurManager &BlurManager::getInstance() {
+BlurManager &BlurManager::getInstance() {
     if (instance == nullptr) instance = new BlurManager();
     return *instance;
 }
@@ -66,6 +60,9 @@ BlurManager* BlurManager::instance = nullptr;
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_onDetachedFromWindow(JNIEnv *env, jobject thiz) {
+    LOGD("onDetachedFromWindow() called");
+    BlurManager &blurManager = BlurManager::getInstance();
+
     delete blurManager.sharedValues;
     delete blurManager.bitmapClass;
 

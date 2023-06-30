@@ -14,7 +14,7 @@ const unsigned short BLUE_MASK = 0x1f;
 
 const unsigned short RED_SHIFT = 11;
 const unsigned short GREEN_SHIFT = 5;
-const unsigned short PIXEL_MASK = 0xff000000;
+const unsigned int PIXEL_MASK = 0xff;
 
 static const int MUL_TABLE[] = {512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
                                 454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512,
@@ -56,8 +56,6 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
 void processingColumn(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startColumn, const int endColumn);
 
 void blur(unsigned short *imagePixels, const SharedValues *sharedValues);
-
-void dim(unsigned short *imagePixels, const int width, const int height, const int dimFactor);
 
 SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized);
 

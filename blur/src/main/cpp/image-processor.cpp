@@ -94,7 +94,7 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
             jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
             jmethodID createScaledBitmapMethod = env->GetStaticMethodID(bitmapClass, "createScaledBitmap",
                                                                         "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
-           // src = resize(env, newWidth, newHeight, srcBitmap, bitmapClass, createScaledBitmapMethod);
+            // src = resize(env, newWidth, newHeight, srcBitmap, bitmapClass, createScaledBitmapMethod);
         }
 
         AndroidBitmapInfo info;
@@ -125,10 +125,8 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_initBlur(JNIEnv *env, jobject t
     blurManager.initBlur(env, thiz, blur_manager, width, height, radius, resize_ratio);
 
     blurManager.bitmapClass = env->FindClass("android/graphics/Bitmap");
-
     blurManager.createBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createBitmap",
                                                             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-
     blurManager.createScaledBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createScaledBitmap",
                                                                   "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
 }
@@ -137,8 +135,10 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz, jobject src_bitmap) {
     BlurManager &blurManager = BlurManager::getInstance();
+    jobject bitmap = src_bitmap;
+
     if (blurManager.sharedValues->isResized) {
-        src_bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);
+        bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);
     }
-    blurManager.startBlur(env, src_bitmap);
+    blurManager.startBlur(env, bitmap);
 }

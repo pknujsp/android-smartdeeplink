@@ -27,77 +27,16 @@ using namespace std;
 
 static const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
-namespace ThreadPool {
-    class ThreadPool {
-    public:
-        explicit ThreadPool(size_t num_threads);
 
-        ~ThreadPool();
+class ThreadPool {
+public:
+    explicit ThreadPool(size_t num_threads);
 
-        // job 을 추가한다.
-        template<class F, class... Args>
-        std::future<typename std::result_of<F(Args...)>::type> EnqueueJob(
-                F &&f, Args &&... args);
-
-    private:
-        // 총 Worker 쓰레드의 개수.
-        size_t num_threads_;
-        // Worker 쓰레드를 보관하는 벡터.
-        std::vector<std::thread> worker_threads_;
-        // 할일들을 보관하는 job 큐.
-        std::queue<std::function<void()>> jobs_;
-        // 위의 job 큐를 위한 cv 와 m.
-        std::condition_variable cv_job_q_;
-        std::mutex m_job_q_;
-
-        // 모든 쓰레드 종료
-        bool stop_all;
-
-        // Worker 쓰레드
-        void WorkerThread();
-    };
-
-    ThreadPool::ThreadPool(size_t num_threads)
-            : num_threads_(num_threads), stop_all(false) {
-        worker_threads_.reserve(num_threads_);
-        for (size_t i = 0; i < num_threads_; ++i) {
-            worker_threads_.emplace_back([this]() { this->WorkerThread(); });
-        }
-    }
-
-    void ThreadPool::WorkerThread() {
-        while (true) {
-            std::unique_lock<std::mutex> lock(m_job_q_);
-            cv_job_q_.wait(lock, [this]() { return !this->jobs_.empty() || stop_all; });
-            if (stop_all && this->jobs_.empty()) {
-                return;
-            }
-
-            // 맨 앞의 job 을 뺀다.
-            std::function<void()> job = std::move(jobs_.front());
-            jobs_.pop();
-            lock.unlock();
-
-            // 해당 job 을 수행한다 :)
-            job();
-        }
-    }
-
-    ThreadPool::~ThreadPool() {
-        stop_all = true;
-        cv_job_q_.notify_all();
-
-        for (auto &t: worker_threads_) {
-            t.join();
-        }
-    }
+    ~ThreadPool();
 
     template<class F, class... Args>
-    std::future<typename std::result_of<F(Args...)>::type> ThreadPool::EnqueueJob(
-            F &&f, Args &&... args) {
-        if (stop_all) {
-            throw std::runtime_error("ThreadPool 사용 중지됨");
-        }
+    std::future<typename std::result_of<F(Args...)>::type> enqueueJob(F &&f, Args &&... args) {
+        if (stop_all) throw std::runtime_error("ThreadPool 사용 중지됨");
 
         using return_type = typename std::result_of<F(Args...)>::type;
         auto job = std::make_shared<std::packaged_task<return_type()>>(
@@ -111,7 +50,51 @@ namespace ThreadPool {
 
         return job_result_future;
     }
+
+private:
+    size_t num_threads_;
+    std::vector<std::thread> worker_threads_;
+    std::queue<std::function<void()>> jobs_;
+    std::condition_variable cv_job_q_;
+    std::mutex m_job_q_;
+    bool stop_all;
+
+    void WorkerThread();
+};
+
+ThreadPool::ThreadPool(size_t num_threads)
+        : num_threads_(num_threads), stop_all(false) {
+    worker_threads_.reserve(num_threads_);
+    for (size_t i = 0; i < num_threads_; ++i) {
+        worker_threads_.emplace_back([this]() { this->WorkerThread(); });
+    }
 }
+
+void ThreadPool::WorkerThread() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(m_job_q_);
+        cv_job_q_.wait(lock, [this]() { return !this->jobs_.empty() || stop_all; });
+        if (stop_all && this->jobs_.empty())return;
+
+        std::function<void()> job = std::move(jobs_.front());
+        jobs_.pop();
+        lock.unlock();
+
+        job();
+    }
+}
+
+ThreadPool::~ThreadPool() {
+    stop_all = true;
+    cv_job_q_.notify_all();
+
+    for (auto &t: worker_threads_) {
+        t.join();
+    }
+}
+
+
+static ThreadPool threadPool(availableThreads);
 
 
 SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized) {
@@ -124,49 +107,6 @@ SharedValues *init(const int targetWidth, const int targetHeight, const int radi
                             targetHeight, newRadius, availableThreads, isResized};
 }
 
-void dim(u_short *imagePixels, const int width, const int height, const int dimFactor) {
-    // const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
-
-    const int rowWorksCount = height / availableThreads;
-    vector<function<void()>> rowWorks;
-
-    const double factor = 1.0 - dimFactor / 100.0;
-
-    for (int i = 0; i < availableThreads; i++) {
-        const int startRow = i * rowWorksCount;
-        int endRow = (i + 1) * rowWorksCount - 1;
-        if (i == availableThreads - 1) endRow = height - 1;
-
-        rowWorks.emplace_back([factor, imagePixels, width, startRow, endRow] {
-            unsigned short pixel, red, green, blue;
-
-            for (int i = width * startRow; i < width * endRow + width; i++) {
-                pixel = imagePixels[i];
-
-                red = (unsigned short) (((pixel >> RED_SHIFT) & RED_MASK) * factor);
-                green = (unsigned short) (((pixel >> GREEN_SHIFT) & GREEN_MASK) * factor);
-                blue = (unsigned short) ((pixel & BLUE_MASK) * factor);
-
-                imagePixels[i] =
-                        (unsigned short) (((red bitand RED_SHIFT) << RED_MASK)
-                                          bitor ((green bitand GREEN_SHIFT) << GREEN_MASK)
-                                          bitor (blue bitand BLUE_MASK));
-            }
-            return;
-        });
-    }
-
-    ThreadPool::ThreadPool pool(availableThreads);
-    std::vector<std::future<void>> futures;
-
-    for (const auto &row: rowWorks) {
-        futures.emplace_back(pool.EnqueueJob(row));
-    }
-
-    for (auto &f: futures) {
-        f.wait();
-    }
-}
 
 void processingRow(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startRow, const int endRow) {
     LOGD("Starting processingRow endRow=%d", endRow);
@@ -446,9 +386,7 @@ void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
         int endRow = (i + 1) * rowWorksCount - 1;
         if (i == availableThreads - 1) endRow = heightMax;
         rowWorks.emplace_back([sharedValues, imagePixels, startRow, endRow] { return processingRow(sharedValues, imagePixels, startRow, endRow); });
-    }
 
-    for (int i = 0; i < availableThreads; i++) {
         int startColumn = i * columnWorksCount;
         int endColumn = (i + 1) * columnWorksCount - 1;
         if (i == availableThreads - 1) endColumn = widthMax;
@@ -456,19 +394,18 @@ void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
                 [sharedValues, imagePixels, startColumn, endColumn] { return processingColumn(sharedValues, imagePixels, startColumn, endColumn); });
     }
 
-    ThreadPool::ThreadPool pool(availableThreads);
     std::vector<std::future<void>> futures;
 
-    for (const auto &row: rowWorks) {
-        futures.emplace_back(pool.EnqueueJob(row));
+    for (auto &row: rowWorks) {
+        futures.emplace_back(threadPool.enqueueJob(row));
     }
 
     for (auto &f: futures) {
         f.wait();
     }
 
-    for (const auto &column: columnWorks) {
-        futures.emplace_back(pool.EnqueueJob(column));
+    for (auto &column: columnWorks) {
+        futures.emplace_back(threadPool.enqueueJob(column));
     }
 
     for (auto &f: futures) {

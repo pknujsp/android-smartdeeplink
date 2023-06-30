@@ -19,11 +19,11 @@ public:
     jclass bitmapClass = nullptr;
     jclass blurManagerClass = nullptr;
     jobject blurManagerObject = nullptr;
+
     AndroidBitmapInfo info;
 
     jmethodID createBitmapMethod = nullptr;
     jmethodID createScaledBitmapMethod = nullptr;
-
     jmethodID onWindowDetachListenerMethodId = nullptr;
     jmethodID onBlurredMethodId = nullptr;
 
@@ -43,8 +43,6 @@ public:
     SharedValues *getSharedValues() const;
 
     void sendBitmap(JNIEnv *env, jobject bitmap) const;
-
-
 };
 
 #endif //TESTBED_BLUR_MANAGER_H

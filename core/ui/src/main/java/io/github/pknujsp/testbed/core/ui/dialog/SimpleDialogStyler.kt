@@ -16,6 +16,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.allViews
 import androidx.core.view.children
@@ -24,8 +25,6 @@ import io.github.pknujsp.blur.BlurProcessor
 import io.github.pknujsp.blur.BlurringView
 import io.github.pknujsp.blur.NativeImageProcessor
 import io.github.pknujsp.testbed.core.ui.R
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
 
 
 internal class SimpleDialogStyler(
@@ -61,14 +60,7 @@ internal class SimpleDialogStyler(
 
     dialog.window?.apply {
       val contentView = getContentView(this)
-
-      (decorView as ViewGroup).also { decorView ->
-        //decorView.foregroundGravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        (decorView.children.first() as LinearLayout).apply {
-          //foregroundGravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-          gravity = Gravity.CENTER
-        }
-      }
+      ((decorView as ViewGroup).children.first() as LinearLayout).gravity = Gravity.CENTER
 
       setBackgroundAndModal(contentView)
       setContentViewLayout(contentView)
@@ -82,51 +74,40 @@ internal class SimpleDialogStyler(
     }
   }
 
+  @RequiresApi(Build.VERSION_CODES.S)
   private fun setBlur(attributes: WindowManager.LayoutParams) {
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (simpleDialogStyleAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius =
-      (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100f)).toInt()
+    if (simpleDialogStyleAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100f)).toInt()
   }
 
   private fun setBlur(dialog: Dialog) {
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    /**
-    window.apply {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && simpleDialogAttributes.blur) addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-    else clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-    }
-     */
-
-    // new
     if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
         val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
+        val blurringView = BlurringView(window.context, NativeImageProcessor(), 2.0, radius)
+        window.addContentView(blurringView, blurringView.layoutParams)
 
-        MainScope().launch {
-          val blurringView = BlurringView(window.context, NativeImageProcessor(), 2.5, radius)
-          window.addContentView(blurringView, blurringView.layoutParams)
-
-          val start = System.currentTimeMillis()
-          /**
-          blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
-          if (dialog.isShowing) {
-          val view = View(window.context).apply {
-          id = R.id.dialog_custom_background
-          background = it.toDrawable(resources)
-          }
-          withContext(Dispatchers.Main) {
-          window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-          val end = System.currentTimeMillis()
-          println("Total Blurring time: ${end - start}ms")
-          }
-          }
-          }.onFailure {
-
-          }
-           */
+        val start = System.currentTimeMillis()
+        /**
+        blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
+        if (dialog.isShowing) {
+        val view = View(window.context).apply {
+        id = R.id.dialog_custom_background
+        background = it.toDrawable(resources)
         }
+        withContext(Dispatchers.Main) {
+        window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        val end = System.currentTimeMillis()
+        println("Total Blurring time: ${end - start}ms")
+        }
+        }
+        }.onFailure {
+
+        }
+         */
       }
     }
   }
