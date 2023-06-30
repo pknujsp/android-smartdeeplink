@@ -8,6 +8,4 @@ interface BlurManager {
   var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener?
   fun onBlurred(bitmap: Bitmap)
   fun onCleared()
-
-  fun onDetach()
 }

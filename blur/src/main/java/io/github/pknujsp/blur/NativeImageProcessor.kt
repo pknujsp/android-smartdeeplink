@@ -2,7 +2,7 @@ package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
 
-object NativeImageProcessor {
+object NativeImageProcessor : IBlurRequest {
 
   init {
     System.loadLibrary("image-processor")
@@ -27,9 +27,9 @@ object NativeImageProcessor {
     srcBitmap: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double,
   ): Any?
 
-  external fun initBlur(blurManager: BlurManager, width: Int, height: Int, radius: Int, resizeRatio: Double)
+  external override fun initBlur(blurManager: BlurManager, width: Int, height: Int, radius: Int, resizeRatio: Double)
 
-  external fun blur(srcBitmap: Bitmap)
+  external override fun blur(srcBitmap: Bitmap)
 
-  external fun onDetachedFromWindow()
+  external override fun onDetachedFromWindow()
 }

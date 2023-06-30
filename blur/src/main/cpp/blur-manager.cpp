@@ -28,7 +28,6 @@ void initBlur(JNIEnv *env, jobject blur_manager, jobject thiz, jint width, jint 
     if (targetBitmapWidth % 2 != 0) targetBitmapWidth--;
     if (targetBitmapHeight % 2 != 0) targetBitmapHeight--;
 
-
     sharedValues = init(targetBitmapWidth, targetBitmapHeight, radius, resize_ratio > 1.0);
 
     onWindowDetachListenerMethodId = env->GetMethodID(blurManagerClass, "onWindowDetachListener", "()V");
@@ -60,7 +59,8 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_onDetachedFromWindow(JNIEnv *env, jobject thiz) {
     delete sharedValues;
+    delete bitmapClass;
+
     env->DeleteGlobalRef(blurManagerClass);
     env->DeleteGlobalRef(blurManagerObject);
-    delete bitmapClass;
 }

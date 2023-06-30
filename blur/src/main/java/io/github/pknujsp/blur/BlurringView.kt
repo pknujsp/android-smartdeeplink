@@ -75,6 +75,7 @@ class BlurringView(context: Context) : View(context), BlurManager {
 
   override fun onDetachedFromWindow() {
     onCleared()
+    iBlurRequest.onDetachedFromWindow()
     super.onDetachedFromWindow()
   }
 
@@ -107,6 +108,7 @@ class BlurringView(context: Context) : View(context), BlurManager {
     recycleBitmap()
     mainScope.cancel()
   }
+
 
   private fun recycleBitmap() {
     _blurredBitmap?.recycle()
