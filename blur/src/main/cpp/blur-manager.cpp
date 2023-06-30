@@ -5,14 +5,11 @@
 #include "blur-manager.h"
 #include "blur.h"
 
-using namespace blurManager;
+static BlurManager &blurManager = BlurManager::getInstance();
 
-static jmethodID onWindowDetachListenerMethodId;
-static jmethodID onBlurredMethodId;
-
-void ::blurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
+void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
     blurManagerClass = env->GetObjectClass(blur_manager);
-    blurManagerObject = env->NewGlobalRef(blur_manager);
+    //blurManagerObject = env->NewGlobalRef(blur_manager);
 
     jint srcBitmapWidth = width;
     jint srcBitmapHeight = height;
@@ -28,9 +25,9 @@ void ::blurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, ji
     if (targetBitmapWidth % 2 != 0) targetBitmapWidth--;
     if (targetBitmapHeight % 2 != 0) targetBitmapHeight--;
 
-    sharedValues = init(targetBitmapWidth, targetBitmapHeight, radius, resize_ratio > 1.0);
+    auto *cv = init(targetBitmapWidth, targetBitmapHeight, radius, resize_ratio > 1.0);
+    sharedValues = cv;
 
-    onWindowDetachListenerMethodId = env->GetMethodID(blurManagerClass, "onWindowDetachListener", "()V");
     onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
 
     // fun onBlurred(bitmap: Bitmap)
@@ -38,11 +35,11 @@ void ::blurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, ji
     // override var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener? = null
 }
 
-void sendBitmap(JNIEnv *env, jobject bitmap) {
-    env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
+SharedValues *BlurManager::getSharedValues() const {
+    return sharedValues;
 }
 
-void ::blurManager::blur(JNIEnv *env, jobject srcBitmap) {
+void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) {
     void *pixels = nullptr;
 
     if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return;
@@ -55,12 +52,23 @@ void ::blurManager::blur(JNIEnv *env, jobject srcBitmap) {
     sendBitmap(env, srcBitmap);
 }
 
+void BlurManager::sendBitmap(JNIEnv *env, jobject bitmap) const {
+    env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
+}
+
+BlurManager* BlurManager::instance = nullptr;
+
+ BlurManager &BlurManager::getInstance() {
+    if (instance == nullptr) instance = new BlurManager();
+    return *instance;
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_NativeImageProcessor_onDetachedFromWindow(JNIEnv *env, jobject thiz) {
-    delete sharedValues;
-    delete bitmapClass;
+    delete blurManager.sharedValues;
+    delete blurManager.bitmapClass;
 
-    env->DeleteGlobalRef(blurManagerClass);
-    env->DeleteGlobalRef(blurManagerObject);
+    env->DeleteGlobalRef(blurManager.blurManagerClass);
+    env->DeleteGlobalRef(blurManager.blurManagerObject);
 }

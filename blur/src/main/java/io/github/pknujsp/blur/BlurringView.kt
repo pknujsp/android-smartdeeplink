@@ -13,24 +13,48 @@ import android.view.Window
 import io.github.pknujsp.blur.BitmapUtils.getLocationRectInWindow
 import io.github.pknujsp.blur.BitmapUtils.toBitmap
 import io.github.pknujsp.coroutineext.launchSafely
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.withContext
+import kotlin.properties.Delegates
 
-class BlurringView(context: Context) : View(context), BlurManager {
+class BlurringView private constructor(context: Context) : View(context), BlurManager {
 
   private lateinit var iBlurRequest: IBlurRequest
-
+  private var resizeRatio by Delegates.notNull<Double>()
+  private var radius by Delegates.notNull<Int>()
   private var initialized = false
 
-  constructor(context: Context, iBlurRequest: IBlurRequest) : this(context) {
-    this.iBlurRequest = iBlurRequest
-  }
 
   override var onWindowAttachListener: ViewTreeObserver.OnWindowAttachListener? = null
   override var onWindowDetachListener: ViewTreeObserver.OnWindowAttachListener? = null
 
   private var _sizeRect: Rect? = null
   private val sizeRect: Rect get() = _sizeRect!!
+
+  private val scope = MainScope()
+
+  private val onPreDrawListener: ViewTreeObserver.OnPreDrawListener = ViewTreeObserver.OnPreDrawListener {
+    if (initialized) {
+      scope.launchSafely(Dispatchers.Default) {
+        contentView.toBitmap(window, sizeRect).onSuccess { bitmap ->
+          withContext(Dispatchers.Main) {
+            iBlurRequest.blur(bitmap)
+          }
+        }
+      }.onException { _, throwable ->
+        throwable.printStackTrace()
+      }
+    }
+    true
+  }
+
+  constructor(context: Context, iBlurRequest: IBlurRequest, resizeRatio: Double, radius: Int) : this(context) {
+    this.iBlurRequest = iBlurRequest
+    this.resizeRatio = resizeRatio
+    this.radius = radius
+  }
 
   private companion object {
     @SuppressLint("StaticFieldLeak") private var _contentView: View? = null
@@ -52,16 +76,11 @@ class BlurringView(context: Context) : View(context), BlurManager {
     )
   }
 
-  private val onPreDrawListener: ViewTreeObserver.OnPreDrawListener = ViewTreeObserver.OnPreDrawListener {
-    if (initialized) contentView.toBitmap(window, sizeRect).onSuccess { bitmap ->
-      iBlurRequest.blur(bitmap)
-    }
-    true
-  }
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     (context as Activity).window?.let { window ->
+      _window = window
       window.decorView.let { decorView ->
         _contentView = decorView.findViewById(android.R.id.content)
         contentView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
@@ -69,6 +88,9 @@ class BlurringView(context: Context) : View(context), BlurManager {
 
         onWindowAttachListener?.onWindowAttached()
         initialized = true
+
+        iBlurRequest.initBlur(this, sizeRect.width(), sizeRect.height(), radius, resizeRatio)
+
         contentView.invalidate()
       }
     }
@@ -91,7 +113,7 @@ class BlurringView(context: Context) : View(context), BlurManager {
   }
 
   override fun onDraw(canvas: Canvas) {
-    canvas.setBitmap(blurredBitmap)
+    if (_blurredBitmap != null) canvas.setBitmap(blurredBitmap)
     super.onDraw(canvas)
   }
 
@@ -104,6 +126,7 @@ class BlurringView(context: Context) : View(context), BlurManager {
     _contentView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
     _contentView = null
     _sizeRect = null
+    _window = null
     initialized = false
 
     recycleBitmap()

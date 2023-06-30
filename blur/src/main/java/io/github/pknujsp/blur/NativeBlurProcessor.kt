@@ -7,12 +7,13 @@ import io.github.pknujsp.blur.BitmapUtils.toBitmap
 
 class NativeBlurProcessor : Workers(), IWorkers {
   private companion object {
-    private var _nativeImageProcessor: NativeImageProcessor = NativeImageProcessor
+    private var _nativeImageProcessor: NativeImageProcessor? = null
     private val nativeImageProcessor: NativeImageProcessor
       get() = _nativeImageProcessor!!
 
 
     init {
+      _nativeImageProcessor = NativeImageProcessor()
       BitmapUtils.init()
     }
   }

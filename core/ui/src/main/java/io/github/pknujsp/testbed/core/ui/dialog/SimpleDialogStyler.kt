@@ -24,7 +24,6 @@ import io.github.pknujsp.blur.BlurProcessor
 import io.github.pknujsp.blur.BlurringView
 import io.github.pknujsp.blur.NativeImageProcessor
 import io.github.pknujsp.testbed.core.ui.R
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
@@ -103,22 +102,13 @@ internal class SimpleDialogStyler(
     // new
     if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
-        /** Only available on Android 12 and above!
-        window.addContentView(
-        View(window.context).apply {
-        id = R.id.dialog_custom_background
-        background = reducedBitmap.toDrawable(window.context.resources)
-        },
-        ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-        )
-         */
+        val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
 
-        val blurringView = BlurringView(window.context, NativeImageProcessor)
-        window.addContentView(blurringView, blurringView.layoutParams)
-        
-        MainScope().launch(Dispatchers.Default) {
+        MainScope().launch {
+          val blurringView = BlurringView(window.context, NativeImageProcessor(), 2.5, radius)
+          window.addContentView(blurringView, blurringView.layoutParams)
+
           val start = System.currentTimeMillis()
-          val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
           /**
           blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
           if (dialog.isShowing) {

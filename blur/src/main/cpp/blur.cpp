@@ -25,6 +25,8 @@
 
 using namespace std;
 
+static const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
+
 namespace ThreadPool {
     class ThreadPool {
     public:
@@ -109,27 +111,21 @@ namespace ThreadPool {
 
         return job_result_future;
     }
-
 }
 
 
 SharedValues *init(const int targetWidth, const int targetHeight, const int radius, const bool isResized) {
-
     const int widthMax = targetWidth - 1;
     const int heightMax = targetHeight - 1;
     const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
-    const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
-
-    auto *sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
-                                          targetWidth,
-                                          targetHeight, newRadius, availableThreads, isResized};
-    return
-            sharedValues;
+    return new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
+                            targetWidth,
+                            targetHeight, newRadius, availableThreads, isResized};
 }
 
 void dim(u_short *imagePixels, const int width, const int height, const int dimFactor) {
-    const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
+    // const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
     const int rowWorksCount = height / availableThreads;
     vector<function<void()>> rowWorks;
@@ -439,7 +435,6 @@ void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
     const int widthMax = sharedValues->widthMax;
     const int heightMax = sharedValues->heightMax;
 
-    const int availableThreads = sharedValues->availableThreads;
     const int rowWorksCount = sharedValues->targetHeight / availableThreads;
     const int columnWorksCount = sharedValues->targetWidth / availableThreads;
 
@@ -472,7 +467,6 @@ void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
         f.wait();
     }
 
-    futures.clear();
     for (const auto &column: columnWorks) {
         futures.emplace_back(pool.EnqueueJob(column));
     }

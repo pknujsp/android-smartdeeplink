@@ -2,7 +2,7 @@ package io.github.pknujsp.blur
 
 import android.graphics.Bitmap
 
-object NativeImageProcessor : IBlurRequest {
+class NativeImageProcessor : IBlurRequest {
 
   init {
     System.loadLibrary("image-processor")
