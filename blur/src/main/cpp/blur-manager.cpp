@@ -31,14 +31,14 @@ SharedValues *BlurManager::getSharedValues() const {
     return sharedValues;
 }
 
-void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) {
+void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) const {
     LOGD("startBlur() called");
 
     void *pixels = nullptr;
 
     if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return;
 
-    blur((unsigned short *) &pixels, sharedValues);
+    blur((short *) &pixels, sharedValues);
 
     AndroidBitmap_unlockPixels(env, srcBitmap);
 

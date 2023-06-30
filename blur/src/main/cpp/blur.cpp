@@ -18,6 +18,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_android.h>
 #include <vulkan/vulkan_core.h>
+#include <mutex>
 
 #define LOG_TAG "Native Blur"
 #define ANDROID_LOG_DEBUG 3
@@ -27,6 +28,7 @@ using namespace std;
 
 static const long availableThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
+static mutex MUTEX;
 
 class ThreadPool {
 public:
@@ -36,7 +38,10 @@ public:
 
     template<class F, class... Args>
     std::future<typename std::result_of<F(Args...)>::type> enqueueJob(F &&f, Args &&... args) {
-        if (stop_all) throw std::runtime_error("ThreadPool 사용 중지됨");
+        if (stop_all) {
+            LOGD("ThreadPool 사용 중지됨");
+            throw std::runtime_error("ThreadPool 사용 중지됨");
+        }
 
         using return_type = typename std::result_of<F(Args...)>::type;
         auto job = std::make_shared<std::packaged_task<return_type()>>(
@@ -103,12 +108,11 @@ SharedValues *init(const int targetWidth, const int targetHeight, const int radi
     const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
     return new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
-                            targetWidth,
-                            targetHeight, newRadius, availableThreads, isResized};
+                            targetWidth, targetHeight, newRadius, availableThreads, isResized};
 }
 
 
-void processingRow(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startRow, const int endRow) {
+void processingRow(const SharedValues *const sharedValues, short *imagePixels, const int startRow, const int endRow) {
     LOGD("Starting processingRow endRow=%d", endRow);
     long sumRed, sumGreen, sumBlue;
     long sumInputRed, sumInputGreen, sumInputBlue;
@@ -117,7 +121,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
     int stackStart, stackPointer, stackIndex;
     int colOffset;
 
-    unsigned short red, green, blue;
+    short red, green, blue;
     int multiplier;
 
     const int widthMax = sharedValues->widthMax;
@@ -127,8 +131,8 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
     const int multiplySum = sharedValues->multiplySum;
     const int shiftSum = sharedValues->shiftSum;
 
-    unsigned short blurStack[divisor];
-    unsigned short pixel;
+    short blurStack[divisor];
+    //short pixel;
 
     // RGB565 short color = (R & 0x1f) << 11 | (G & 0x3f) << 5 | (B & 0x1f);
     // ARGB8888  int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff);
@@ -143,11 +147,11 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
             pixel = imagePixels[startPixelIndex];
             blurStack[stackIndex] = pixel;
 
-            red = ((pixel >> RED_SHIFT) & RED_MASK);
-            green = ((pixel >> GREEN_SHIFT) & GREEN_MASK);
-            blue = (pixel & BLUE_MASK);
+            red = ((pixel >> RED_SHIFT) bitand RED_MASK);
+            green = ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+            blue = (pixel bitand BLUE_MASK);
 
-            multiplier = rad - 1;
+            multiplier = rad + 1;
             sumRed += red * multiplier;
             sumGreen += green * multiplier;
             sumBlue += blue * multiplier;
@@ -159,14 +163,15 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
             if (rad >= 1) {
                 if (rad <= widthMax) inPixelIndex++;
                 stackIndex = rad + blurRadius;
+
                 pixel = imagePixels[inPixelIndex];
                 blurStack[stackIndex] = pixel;
 
                 multiplier = blurRadius + 1 - rad;
 
-                red = ((pixel >> RED_SHIFT) & RED_MASK);
-                green = ((pixel >> GREEN_SHIFT) & GREEN_MASK);
-                blue = (pixel & BLUE_MASK);
+                red = ((pixel >> RED_SHIFT) bitand RED_MASK);
+                green = ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+                blue = (pixel bitand BLUE_MASK);
 
                 sumRed += red * multiplier;
                 sumGreen += green * multiplier;
@@ -186,12 +191,12 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
         outputPixelIndex = startPixelIndex;
 
         for (int col = 0; col < targetWidth; col++) {
+            MUTEX.lock();
             imagePixels[outputPixelIndex] =
-                    (unsigned short) ((imagePixels[outputPixelIndex] bitand PIXEL_MASK) bitor
-                                      ((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor
-                                      ((((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
-                                      (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
-
+                    (short) (((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor
+                             ((((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
+                             (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
+            MUTEX.unlock();
             outputPixelIndex++;
             sumRed -= sumOutputRed;
             sumGreen -= sumOutputGreen;
@@ -211,6 +216,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
             }
 
             pixel = imagePixels[inPixelIndex];
+
             blurStack[stackIndex] = pixel;
 
             red = ((pixel >> RED_SHIFT) bitand RED_MASK);
@@ -246,7 +252,7 @@ void processingRow(const SharedValues *const sharedValues, unsigned short *image
     LOGD("Ended processingRow endRow=%d", endRow);
 }
 
-void processingColumn(const SharedValues *const sharedValues, unsigned short *imagePixels, const int startColumn, const int endColumn) {
+void processingColumn(const SharedValues *const sharedValues, short *imagePixels, const int startColumn, const int endColumn) {
     LOGD("Starting processingColumn endColumn=%d", endColumn);
     const int heightMax = sharedValues->heightMax;
     const int blurRadius = sharedValues->blurRadius;
@@ -256,13 +262,13 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
     const int multiplySum = sharedValues->multiplySum;
     const int shiftSum = sharedValues->shiftSum;
 
-    int xOffset, yOffset, blurStackIndex, stackStart, stackIndex, stackPointer, sourceIndex, destinationIndex;
+    int yOffset, stackStart, stackIndex, stackPointer, sourceIndex, destinationIndex;
 
     long sumRed, sumGreen, sumBlue, sumInputRed, sumInputGreen, sumInputBlue, sumOutputRed, sumOutputGreen, sumOutputBlue;
 
-    unsigned short red, green, blue;
-    unsigned short blurStack[divisor];
-    unsigned short pixel;
+    short red, green, blue;
+    short blurStack[divisor];
+    short pixel;
 
     for (int col = startColumn; col <= endColumn; col++) {
         sumOutputBlue = sumOutputGreen = sumOutputRed = sumInputBlue = sumInputGreen = sumInputRed = sumBlue = sumGreen = sumRed = 0;
@@ -316,11 +322,13 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
         destinationIndex = col;
 
         for (int y = 0; y < targetHeight; y++) {
+            MUTEX.lock();
+
             imagePixels[destinationIndex] =
-                    (unsigned short) ((imagePixels[destinationIndex] bitand PIXEL_MASK) bitor
-                                      ((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor (
-                                              (((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
-                                      (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
+                    (short) (((((sumRed * multiplySum) >> shiftSum) bitand RED_MASK) << RED_SHIFT) bitor (
+                            (((sumGreen * multiplySum) >> shiftSum) bitand GREEN_MASK) << GREEN_SHIFT) bitor
+                             (((sumBlue * multiplySum) >> shiftSum) bitand BLUE_MASK));
+            MUTEX.unlock();
 
             destinationIndex += targetWidth;
             sumRed -= sumOutputRed;
@@ -331,9 +339,11 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
             if (stackStart >= divisor) stackStart -= divisor;
             stackIndex = stackStart;
 
-            sumOutputRed -= ((blurStack[stackIndex] >> RED_SHIFT) bitand RED_MASK);
-            sumOutputGreen -= ((blurStack[stackIndex] >> GREEN_SHIFT) bitand GREEN_MASK);
-            sumOutputBlue -= (blurStack[stackIndex] bitand BLUE_MASK);
+            pixel = blurStack[stackIndex];
+
+            sumOutputRed -= ((pixel >> RED_SHIFT) bitand RED_MASK);
+            sumOutputGreen -= ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+            sumOutputBlue -= (pixel bitand BLUE_MASK);
 
             if (yOffset < heightMax) {
                 sourceIndex += targetWidth;
@@ -342,9 +352,11 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
 
             blurStack[stackIndex] = imagePixels[sourceIndex];
 
-            sumInputRed += ((imagePixels[sourceIndex] >> RED_SHIFT) bitand RED_MASK);
-            sumInputGreen += ((imagePixels[sourceIndex] >> GREEN_SHIFT) bitand GREEN_MASK);
-            sumInputBlue += (imagePixels[sourceIndex] bitand BLUE_MASK);
+            pixel = imagePixels[sourceIndex];
+
+            sumInputRed += ((pixel >> RED_SHIFT) bitand RED_MASK);
+            sumInputGreen += ((pixel >> GREEN_SHIFT) bitand GREEN_MASK);
+            sumInputBlue += (pixel bitand BLUE_MASK);
 
             sumRed += sumInputRed;
             sumGreen += sumInputGreen;
@@ -371,7 +383,7 @@ void processingColumn(const SharedValues *const sharedValues, unsigned short *im
     LOGD("Ended processingColumn endColumn=%d", endColumn);
 }
 
-void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
+void blur(short *imagePixels, const SharedValues *sharedValues) {
     const int widthMax = sharedValues->widthMax;
     const int heightMax = sharedValues->heightMax;
 
@@ -382,33 +394,35 @@ void blur(unsigned short *imagePixels, const SharedValues *sharedValues) {
     vector<function<void()>> columnWorks;
 
     for (int i = 0; i < availableThreads; i++) {
-        const int startRow = i * rowWorksCount;
+        int startRow = i * rowWorksCount;
         int endRow = (i + 1) * rowWorksCount - 1;
         if (i == availableThreads - 1) endRow = heightMax;
+
         rowWorks.emplace_back([sharedValues, imagePixels, startRow, endRow] { return processingRow(sharedValues, imagePixels, startRow, endRow); });
 
         int startColumn = i * columnWorksCount;
         int endColumn = (i + 1) * columnWorksCount - 1;
         if (i == availableThreads - 1) endColumn = widthMax;
+
         columnWorks.emplace_back(
                 [sharedValues, imagePixels, startColumn, endColumn] { return processingColumn(sharedValues, imagePixels, startColumn, endColumn); });
     }
 
     std::vector<std::future<void>> futures;
 
-    for (auto &row: rowWorks) {
+    for (function<void()> &row: rowWorks) {
         futures.emplace_back(threadPool.enqueueJob(row));
     }
 
-    for (auto &f: futures) {
-        f.wait();
+    for (future<void> &func: futures) {
+        func.wait();
     }
 
-    for (auto &column: columnWorks) {
+    for (function<void()> &column: columnWorks) {
         futures.emplace_back(threadPool.enqueueJob(column));
     }
 
-    for (auto &f: futures) {
-        f.wait();
+    for (future<void> &func: futures) {
+        func.wait();
     }
 }

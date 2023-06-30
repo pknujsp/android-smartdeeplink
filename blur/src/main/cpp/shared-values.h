@@ -6,19 +6,18 @@
 #define TESTBED_SHARED_VALUES_H
 
 struct SharedValues {
-
     const int widthMax;
     const int heightMax;
     const int divisor;
-    const int multiplySum;
-    const int shiftSum;
+    const short multiplySum;
+    const short shiftSum;
     const int targetWidth;
     const int targetHeight;
     const int blurRadius;
     const long availableThreads;
     const bool isResized;
 
-    SharedValues(int widthMax, int heightMax, int divisor, int multiplySum, int shiftSum, int targetWidth, int targetHeight, int blurRadius,
+    SharedValues(int widthMax, int heightMax, int divisor, short multiplySum, short shiftSum, int targetWidth, int targetHeight, int blurRadius,
                  long availableThreads, bool isResized) :
             widthMax(widthMax),
             heightMax(heightMax),

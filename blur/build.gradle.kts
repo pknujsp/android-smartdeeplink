@@ -14,18 +14,6 @@ android {
     }
   }
 
-  defaultConfig {
-    externalNativeBuild {
-      cmake {
-        //arguments.add("-DANDROID_STL=c++_shared")
-      }
-    }
-  }
-
-  buildFeatures {
-    //prefab = true
-  }
-
   externalNativeBuild {
     cmake {
       path("src/main/cpp/CMakeLists.txt")

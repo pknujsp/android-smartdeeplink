@@ -38,7 +38,7 @@ public:
 
     void initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio);
 
-    void startBlur(JNIEnv *env, jobject srcBitmap);
+    void startBlur(JNIEnv *env, jobject srcBitmap) const;
 
     SharedValues *getSharedValues() const;
 
