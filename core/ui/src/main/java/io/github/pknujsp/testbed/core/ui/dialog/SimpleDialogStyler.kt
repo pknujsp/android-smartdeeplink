@@ -21,9 +21,8 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
-import io.github.pknujsp.blur.BlurProcessor
 import io.github.pknujsp.blur.BlurringView
-import io.github.pknujsp.blur.NativeImageProcessor
+import io.github.pknujsp.blur.GlobalBlurProcessorImpl
 import io.github.pknujsp.testbed.core.ui.R
 
 
@@ -39,7 +38,7 @@ internal class SimpleDialogStyler(
 
     private val maxBlurRadius: Float = 16 * density
 
-    private val blurProcessor = BlurProcessor()
+    private val blurProcessor = GlobalBlurProcessorImpl()
 
     private val drawableCache = LruCache<BackgroundDrawableInfo, Drawable>(10)
   }
@@ -57,11 +56,9 @@ internal class SimpleDialogStyler(
   fun applyStyle(dialog: Dialog) {
     setOnDismissDialogListener(dialog)
     setBlur(dialog)
-
     dialog.window?.apply {
       val contentView = getContentView(this)
       ((decorView as ViewGroup).children.first() as LinearLayout).gravity = Gravity.CENTER
-
       setBackgroundAndModal(contentView)
       setContentViewLayout(contentView)
       setDim(this)
@@ -78,7 +75,8 @@ internal class SimpleDialogStyler(
   private fun setBlur(attributes: WindowManager.LayoutParams) {
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
-    if (simpleDialogStyleAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100f)).toInt()
+    if (simpleDialogStyleAttributes.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) attributes.blurBehindRadius =
+      (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100f)).toInt()
   }
 
   private fun setBlur(dialog: Dialog) {
@@ -87,7 +85,9 @@ internal class SimpleDialogStyler(
     if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
         val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-        val blurringView = BlurringView(window.context, NativeImageProcessor(), 2.0, radius)
+        val blurringView = BlurringView(window.context, NativeImageProcessorImpl(), 2.0, radius).apply {
+          id = R.id.dialog_custom_background
+        }
         window.addContentView(blurringView, blurringView.layoutParams)
 
         val start = System.currentTimeMillis()
@@ -114,7 +114,6 @@ internal class SimpleDialogStyler(
 
   private fun setDim(window: Window) {
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
-
     window.apply {
       if (simpleDialogStyleAttributes.dim) addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
       else clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)

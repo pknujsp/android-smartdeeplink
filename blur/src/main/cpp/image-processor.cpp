@@ -74,8 +74,8 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject thiz, jobject srcBitmap, jint width, jint height, jint radius,
-                                                           jdouble resizeRatio) {
+Java_io_github_pknujsp_blur_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2IIID(JNIEnv *env, jobject thiz, jobject srcBitmap, jint width, jint height, jint radius,
+                                                                                   jdouble resizeRatio) {
     try {
         const SharedValues *sharedValues = init(width, height, radius, resizeRatio);
 
@@ -102,8 +102,8 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_applyBlur(JNIEnv *env, jobject 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessor_initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height,
-                                                          jint radius, jdouble resize_ratio) {
+Java_io_github_pknujsp_blur_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height,
+                                                       jint radius, jdouble resize_ratio) {
     BlurManager &blurManager = BlurManager::getInstance();
     blurManager.initBlur(env, thiz, blur_manager, width, height, radius, resize_ratio);
 
@@ -116,7 +116,7 @@ Java_io_github_pknujsp_blur_NativeImageProcessor_initBlur(JNIEnv *env, jobject t
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessor_blur(JNIEnv *env, jobject thiz, jobject src_bitmap) {
+Java_io_github_pknujsp_blur_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2(JNIEnv *env, jobject thiz, jobject src_bitmap) {
     BlurManager &blurManager = BlurManager::getInstance();
     if (blurManager.sharedValues->isResized) {
         src_bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);

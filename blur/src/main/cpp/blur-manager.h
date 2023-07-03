@@ -20,8 +20,6 @@ public:
     jclass blurManagerClass = nullptr;
     jobject blurManagerObject = nullptr;
 
-    AndroidBitmapInfo info;
-
     jmethodID createBitmapMethod = nullptr;
     jmethodID createScaledBitmapMethod = nullptr;
     jmethodID onWindowDetachListenerMethodId = nullptr;

@@ -50,16 +50,12 @@ BlurManager &BlurManager::getInstance() {
     if (instance == nullptr) instance = new BlurManager();
     return *instance;
 }
-
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessor_onDetachedFromWindow(JNIEnv *env, jobject thiz) {
+Java_io_github_pknujsp_blur_NativeImageProcessorImpl_onClear(JNIEnv *env, jobject thiz) {
     LOGD("onDetachedFromWindow() called");
     BlurManager &blurManager = BlurManager::getInstance();
 
     delete blurManager.sharedValues;
     delete blurManager.bitmapClass;
-
-    env->DeleteGlobalRef(blurManager.blurManagerClass);
-    env->DeleteGlobalRef(blurManager.blurManagerObject);
 }
