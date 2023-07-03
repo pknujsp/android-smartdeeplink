@@ -1,4 +1,4 @@
-package io.github.pknujsp.blur.processor
+package io.github.pknujsp.blur.renderscript
 
 import android.content.Context
 import android.graphics.Bitmap

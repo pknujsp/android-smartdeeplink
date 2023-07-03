@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.Size
+import android.view.SurfaceHolder
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -62,12 +63,15 @@ class BlurringView private constructor(context: Context) : View(context), Direct
 
   private val onPreDrawListener: ViewTreeObserver.OnPreDrawListener = ViewTreeObserver.OnPreDrawListener {
     if (initialized) {
-      mainScope.launch(dispatcher) {
-        val start = System.currentTimeMillis()
+
+      mainScope.launchSafely(dispatcher) {
         contentView?.toBitmap(window!!, originalCoordinatesRect)?.run {
-          blurProcessor.blur(this)
+          blurredBitmap = this
+          blurProcessor.blur(this@run)
         }
       }
+
+
     }
     true
   }
@@ -82,6 +86,26 @@ class BlurringView private constructor(context: Context) : View(context), Direct
         contentView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
         originalCoordinatesRect.set(contentView.getCoordinatesInWindow(window))
         dstCoordinatesRect.set(0, 0, originalCoordinatesRect.width(), originalCoordinatesRect.height())
+
+        window.takeSurface(
+          object : SurfaceHolder.Callback2 {
+            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+              println("surfaceChanged")
+            }
+
+            override fun surfaceCreated(holder: SurfaceHolder) {
+              println("surfaceCreated")
+            }
+
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
+              println("surfaceDestroyed")
+            }
+
+            override fun surfaceRedrawNeeded(holder: SurfaceHolder) {
+              println("surfaceRedrawNeeded")
+            }
+          },
+        )
 
         blurProcessor.initBlur(
           context,
@@ -103,16 +127,14 @@ class BlurringView private constructor(context: Context) : View(context), Direct
     contentView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
 
     blurredBitmap = null
+    blurProcessor.onClear()
 
     super.onDetachedFromWindow()
   }
 
   override fun onBlurred(bitmap: Bitmap?) {
-    mainScope.launchSafely {
-      blurredBitmap = bitmap
+    mainScope.launch {
       invalidate()
-    }.onException { _, t ->
-      t.printStackTrace()
     }
   }
 

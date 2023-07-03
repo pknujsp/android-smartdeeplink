@@ -14,6 +14,11 @@ android {
     }
   }
 
+  defaultConfig {
+    renderscriptTargetApi = 19
+    renderscriptSupportModeEnabled = true
+  }
+
   externalNativeBuild {
     cmake {
       path("src/main/cpp/CMakeLists.txt")

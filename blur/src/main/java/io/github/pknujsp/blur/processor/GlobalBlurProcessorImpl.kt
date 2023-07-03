@@ -9,6 +9,7 @@ import io.github.pknujsp.blur.DirectBlurListener
 import io.github.pknujsp.blur.kotlin.KotlinBlurProcessor
 import io.github.pknujsp.blur.natives.NativeBlurProcessor
 import io.github.pknujsp.blur.natives.NativeImageProcessorImpl
+import io.github.pknujsp.blur.renderscript.BlurScript
 import io.github.pknujsp.blur.view.BlurringViewProcessor
 
 internal object GlobalBlurProcessorImpl : BlurringViewProcessor {
