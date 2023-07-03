@@ -1,4 +1,4 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.processor
 
 import io.github.pknujsp.coroutineext.SafetyJob
 import kotlinx.coroutines.CoroutineScope

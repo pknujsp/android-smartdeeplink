@@ -1,8 +1,8 @@
 package io.github.pknujsp.coroutineext
 
 import androidx.annotation.IntRange
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlin.coroutines.CoroutineContext
@@ -14,7 +14,7 @@ import kotlin.coroutines.CoroutineContext
  * @return Dispatchers
  */
 @OptIn(DelicateCoroutinesApi::class)
-fun CoroutineDispatcher.pool(
+fun Dispatchers.pool(
   @IntRange(from = 1, to = 50) threadCount: Int = Runtime.getRuntime().availableProcessors(),
   poolName: String,
 ): ExecutorCoroutineDispatcher {

@@ -1,6 +1,8 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.natives
 
 import android.graphics.Bitmap
+import io.github.pknujsp.blur.DirectBlurListener
+import io.github.pknujsp.blur.processor.DirectBlurProcessor
 
 object NativeImageProcessorImpl : DirectBlurProcessor, NativeBlurProcessor {
 

@@ -1,4 +1,4 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.natives
 
 import android.graphics.Bitmap
 

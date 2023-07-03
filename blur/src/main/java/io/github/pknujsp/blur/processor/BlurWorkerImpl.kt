@@ -1,4 +1,4 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.processor
 
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.CancellationException

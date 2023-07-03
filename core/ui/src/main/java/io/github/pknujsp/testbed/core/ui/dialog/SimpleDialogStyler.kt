@@ -21,7 +21,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
-import io.github.pknujsp.blur.BlurringView
+import io.github.pknujsp.blur.view.BlurringView
 import io.github.pknujsp.testbed.core.ui.R
 
 
@@ -82,7 +82,7 @@ internal class SimpleDialogStyler(
     if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
         val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-        val blurringView = BlurringView(window.context, 2.0, radius).apply {
+        val blurringView = BlurringView(window.context, 2.5, radius).apply {
           id = R.id.dialog_custom_background
         }
         window.addContentView(blurringView, blurringView.layoutParams)

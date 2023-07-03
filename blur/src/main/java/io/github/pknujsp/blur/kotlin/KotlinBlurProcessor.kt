@@ -1,8 +1,9 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.kotlin
 
 import android.graphics.Bitmap
 import android.util.Size
-import io.github.pknujsp.blur.BlurWorkerImpl.launch
+import io.github.pknujsp.blur.SharedBlurAttrs
+import io.github.pknujsp.blur.processor.BlurWorkerImpl.launch
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

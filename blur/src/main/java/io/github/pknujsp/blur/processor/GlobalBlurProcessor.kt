@@ -1,4 +1,4 @@
-package io.github.pknujsp.blur
+package io.github.pknujsp.blur.processor
 
 import android.graphics.Bitmap
 import android.view.Window
@@ -28,4 +28,5 @@ interface GlobalBlurProcessor {
     @FloatRange(from = 1.0, to = 6.0) resizeRatio: Double = 1.0,
   ): Bitmap?
 
+  fun onClear()
 }

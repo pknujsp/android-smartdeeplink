@@ -9,12 +9,11 @@ import android.view.View
 import android.view.Window
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
 internal object BlurUtils {
 
-  private val bitmapConfig = Bitmap.Config.RGB_565
+  private val bitmapConfig = Bitmap.Config.ARGB_8888
 
   fun View.toBitmap(window: Window, coordinatesInWindow: Rect? = null, resizeRatio: Double = 1.0): Bitmap? = toBitmap(
     window,
@@ -41,7 +40,7 @@ internal object BlurUtils {
   fun View.getContentView() = findViewById<View>(android.R.id.content)
 
   private fun View.toBitmap(window: Window, coordinatesInWindow: Rect): Bitmap? = try {
-    WeakReference(Bitmap.createBitmap(coordinatesInWindow.width(), coordinatesInWindow.height(), bitmapConfig)).get()?.let { bitmap ->
+    Bitmap.createBitmap(coordinatesInWindow.width(), coordinatesInWindow.height(), bitmapConfig).let { bitmap ->
       when (val copySuccess = runBlocking {
         suspendCancellableCoroutine {
           PixelCopy.request(
@@ -66,7 +65,7 @@ internal object BlurUtils {
 
   private fun Bitmap.resize(resizeRatio: Double): Bitmap? = run {
     try {
-      WeakReference(Bitmap.createScaledBitmap(this, (width / resizeRatio).toInt(), (height / resizeRatio).toInt(), true)).get()
+      Bitmap.createScaledBitmap(this, (width / resizeRatio).toInt(), (height / resizeRatio).toInt(), true)
     } catch (e: Exception) {
       null
     }
