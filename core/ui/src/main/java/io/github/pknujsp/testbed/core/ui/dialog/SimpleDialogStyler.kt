@@ -22,7 +22,6 @@ import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.BlurringView
-import io.github.pknujsp.blur.GlobalBlurProcessorImpl
 import io.github.pknujsp.testbed.core.ui.R
 
 
@@ -37,8 +36,6 @@ internal class SimpleDialogStyler(
     private val density: Float = Resources.getSystem().displayMetrics.density
 
     private val maxBlurRadius: Float = 16 * density
-
-    private val blurProcessor = GlobalBlurProcessorImpl()
 
     private val drawableCache = LruCache<BackgroundDrawableInfo, Drawable>(10)
   }
@@ -85,29 +82,10 @@ internal class SimpleDialogStyler(
     if (simpleDialogStyleAttributes.blur) {
       activityWindow.also { window ->
         val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-        val blurringView = BlurringView(window.context, NativeImageProcessorImpl(), 2.0, radius).apply {
+        val blurringView = BlurringView(window.context, 2.0, radius).apply {
           id = R.id.dialog_custom_background
         }
         window.addContentView(blurringView, blurringView.layoutParams)
-
-        val start = System.currentTimeMillis()
-        /**
-        blurProcessor.nativeBlur(window, radius, 2.5).onSuccess {
-        if (dialog.isShowing) {
-        val view = View(window.context).apply {
-        id = R.id.dialog_custom_background
-        background = it.toDrawable(resources)
-        }
-        withContext(Dispatchers.Main) {
-        window.addContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        val end = System.currentTimeMillis()
-        println("Total Blurring time: ${end - start}ms")
-        }
-        }
-        }.onFailure {
-
-        }
-         */
       }
     }
   }
@@ -171,9 +149,7 @@ internal class SimpleDialogStyler(
           }
 
           background = LayerDrawable(drawables.toTypedArray()).apply {
-            if (simpleDialogStyleAttributes.isShowModalPoint) {
-              setLayerGravity(1, Gravity.CENTER_HORIZONTAL or Gravity.TOP)
-            }
+            if (simpleDialogStyleAttributes.isShowModalPoint) setLayerGravity(1, Gravity.CENTER_HORIZONTAL or Gravity.TOP)
             setLayerInsetTop(0, iconHeight)
             drawableCache.put(backgroundDrawableInfo, this)
           }
@@ -215,7 +191,6 @@ internal class SimpleDialogStyler(
   private fun setOnDismissDialogListener(dialog: Dialog) {
     dialog.setOnDismissListener {
       if (simpleDialogStyleAttributes.blur && simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
-        blurProcessor.cancel()
         val actionBarRoot = activityWindow.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup
         actionBarRoot?.removeView(actionBarRoot.findViewById(R.id.dialog_custom_background))
       }
