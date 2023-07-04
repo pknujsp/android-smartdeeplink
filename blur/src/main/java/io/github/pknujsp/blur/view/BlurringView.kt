@@ -264,7 +264,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     glCompileShader(shader)
   }
 
-
   @Suppress("DEPRECATION")
   override fun onPause() {
     contentView?.destroyDrawingCache()
