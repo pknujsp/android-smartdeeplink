@@ -29,17 +29,19 @@ class BlurScript(context: Context) {
     blurScript?.setRadius(radius.toFloat())
   }
 
-  fun blur(srcBitmap: Bitmap) = blurScript?.run {
-    srcAllocation = Allocation.createFromBitmap(renderScript, srcBitmap)
+  fun blur(srcBitmap: Bitmap): Bitmap? =
+    blurScript?.run {
+      srcAllocation = Allocation.createFromBitmap(renderScript, srcBitmap)
+      outAllocation = Allocation.createTyped(renderScript, srcAllocation?.type)
+      
+      setInput(srcAllocation)
+      forEach(outAllocation)
 
-    outAllocation = Allocation.createTyped(renderScript, srcAllocation?.type)
-    setInput(srcAllocation)
-    forEach(outAllocation)
-    outAllocation?.copyTo(srcBitmap)
+      outAllocation?.copyTo(srcBitmap)
+      srcAllocation?.destroy()
 
-    srcAllocation?.destroy()
-    srcBitmap
-  }
+      srcBitmap
+    }
 
 
   fun onClear() {

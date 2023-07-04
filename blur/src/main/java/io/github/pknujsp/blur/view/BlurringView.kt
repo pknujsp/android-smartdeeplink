@@ -3,6 +3,7 @@ package io.github.pknujsp.blur.view
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
@@ -44,7 +45,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private var window: Window? = null
 
   private var renderNum = 0L
-  private var lastRenderNum = 0L
 
   private val originalCoordinatesRect: Rect = Rect(0, 0, 0, 0)
   private val dstCoordinatesRect: Rect = Rect(0, 0, 0, 0)
@@ -55,19 +55,34 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   private companion object {
     val mainScope = MainScope()
-    @OptIn(DelicateCoroutinesApi::class) private val dispatcher = newFixedThreadPoolContext(3, "BlurringView")
+    @OptIn(DelicateCoroutinesApi::class) private val dispatcher = newFixedThreadPoolContext(2, "BlurringThreadPool")
 
     val blurProcessor: BlurringViewProcessor = GlobalBlurProcessorImpl
 
-    const val vertexShader =
-      "uniform mat4 uMVPMatrix;" + "attribute vec4 vPosition;" + "attribute vec2 a_texCoord;" + "varying vec2 v_texCoord;" + "void main() {" + "  gl_Position = uMVPMatrix * vPosition;" + "  v_texCoord = a_texCoord;" + "}"
-    const val fragmentShader =
-      "precision mediump float;" + "varying vec2 v_texCoord;" + "uniform sampler2D s_texture;" + "void main() {" + "  gl_FragColor = texture2D(s_texture, v_texCoord);" + "}"
+    const val vertexShader = """
+        uniform mat4 uMVPMatrix;
+        attribute vec4 vPosition;
+        attribute vec2 a_texCoord;
+        varying vec2 v_texCoord;
+        void main() {
+          gl_Position = uMVPMatrix * vPosition;
+          v_texCoord = a_texCoord;
+        }
+        """
+
+    const val fragmentShader = """
+        precision mediump float;
+        varying vec2 v_texCoord;
+        uniform sampler2D s_texture;
+        void main() {
+          gl_FragColor = texture2D(s_texture, v_texCoord);
+        }
+        """
 
     val vertices = floatArrayOf(
-      -0.5f, -0.5f, 0f,  //bottom left
-      0.5f, -0.5f, 0f,  //bottom right
-      0.5f, 0.5f, 0f,  // top right
+      -0.5f, -0.5f, 0f,
+      0.5f, -0.5f, 0f,
+      0.5f, 0.5f, 0f,
       -0.5f, 0.5f, 0f,
     )
 
@@ -96,25 +111,29 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     val textures = IntArray(1)
     var mvpMatrixHandle: Int = 0
 
-    val projectionMatrix: FloatArray = FloatArray(16)
-    val viewMatrix: FloatArray = FloatArray(16)
+    //val projectionMatrix: FloatArray = FloatArray(16)
+    //val viewMatrix: FloatArray = FloatArray(16)
     val vpMatrix: FloatArray = FloatArray(16)
     val modelMatrix = FloatArray(16)
     val mvpMatrix = FloatArray(16)
-
   }
 
-  private val onDrawListener = ViewTreeObserver.OnPreDrawListener {
+  private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
     if (initialized) {
       mainScope.launchSafely(dispatcher) {
-        contentView?.drawingCache?.run {
+        ++renderNum
+        lastStartTime = System.currentTimeMillis()
+
+        contentView?.getDrawingCache(true)?.run {
           mutex.withLock {
-            ++renderNum
-            lastStartTime = System.currentTimeMillis()
-            blurredBitmap = blurProcessor.blur(this)
-            requestRender()
+            blurProcessor.blur(this)?.let { blurred ->
+              blurredBitmap = blurred
+              requestRender()
+            }
           }
         }
+      }.onException { _, t ->
+        t.printStackTrace()
       }
     }
     true
@@ -129,14 +148,14 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       ViewGroup.LayoutParams.MATCH_PARENT,
       ViewGroup.LayoutParams.MATCH_PARENT,
     )
-    alpha = 0.4f
+    alpha = 0.3f
 
     setEGLContextClientVersion(3)
     setRenderer(this)
     renderMode = RENDERMODE_WHEN_DIRTY
 
-    Matrix.setIdentityM(projectionMatrix, 0)
-    Matrix.setIdentityM(viewMatrix, 0)
+    //Matrix.setIdentityM(projectionMatrix, 0)
+    //Matrix.setIdentityM(viewMatrix, 0)
     Matrix.setIdentityM(vpMatrix, 0)
   }
 
@@ -149,8 +168,10 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
         this.contentView = contentView
         contentView.isDrawingCacheEnabled = true
         contentView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_HIGH
+        contentView.drawingCacheBackgroundColor = Color.WHITE
+        contentView.setWillNotCacheDrawing(false)
 
-        contentView.viewTreeObserver.addOnPreDrawListener(onDrawListener)
+        contentView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
         originalCoordinatesRect.set(contentView.getCoordinatesInWindow(window))
         dstCoordinatesRect.set(0, 0, originalCoordinatesRect.width(), originalCoordinatesRect.height())
 
@@ -168,56 +189,25 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
 
-  override suspend fun onBlurred(bitmap: Bitmap?) {
-    mutex.withLock {
-      if (lastRenderNum == renderNum) {
-        blurredBitmap = bitmap
-        requestRender()
-      }
-    }
-  }
-
-
   override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
     program = glCreateProgram().also {
-      val vertexShader = loadShader(GL_VERTEX_SHADER, vertexShader.trimIndent())
-      val fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentShader.trimIndent())
+      glAttachShader(it, loadShader(GL_VERTEX_SHADER, vertexShader.trimIndent()))
+      glAttachShader(it, loadShader(GL_FRAGMENT_SHADER, fragmentShader.trimIndent()))
 
-      glAttachShader(it, vertexShader)
-      glAttachShader(it, fragmentShader)
       glLinkProgram(it)
       val linkStatus = IntArray(1)
       glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
     }
 
-    glClearColor(255f, 255f, 255f, 1.0f)
+    glClearColor(0f, 0f, 0f, 1f)
+    glClearDepthf(1.0f)
     glEnable(GL_DEPTH_TEST)
     glDepthFunc(GL_LEQUAL)
-
-    println("onSurfaceCreated : ${glGetError()}")
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
     dstCoordinatesRect.run {
       glViewport(0, 0, width(), height())
-
-      /**
-      val aspectRatio = width().toFloat() / height()
-      Matrix.frustumM(
-      projectionMatrix, 0,
-      -aspectRatio, aspectRatio,
-      -1.0f, 1.0f,
-      3.0f, 7.0f,
-      )
-      Matrix.setLookAtM(
-      viewMatrix, 0,
-      0.0f, 0.0f, 4.0f,
-      0.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f,
-      )
-
-      Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-       */
 
       positionHandle = glGetAttribLocation(program, "vPosition")
       mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix")
@@ -233,6 +223,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   override fun onDrawFrame(gl: GL10?) {
     blurredBitmap?.run {
       glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+
       glUseProgram(program)
       glEnableVertexAttribArray(positionHandle)
       glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
@@ -253,9 +244,10 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       GLUtils.texImage2D(GL_TEXTURE_2D, 0, this, 0)
 
       glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_BYTE, indexBuffer)
-      glBindTexture(GL_TEXTURE_2D, 0)
+      glDeleteTextures(1, textures, 0)
+
+      println("onDrawFrame : ${renderNum}, ${System.currentTimeMillis() - lastStartTime}ms")
     }
-    println("onDrawFrame : ${renderNum}, ${System.currentTimeMillis() - lastStartTime}ms")
   }
 
   private fun loadShader(type: Int, shaderCode: String): Int = glCreateShader(type).also { shader ->
@@ -265,12 +257,16 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   @Suppress("DEPRECATION")
   override fun onPause() {
-    contentView?.destroyDrawingCache()
-    contentView?.isDrawingCacheEnabled = false
-    blurProcessor.onClear()
     super.onPause()
+    contentView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
+    blurProcessor.onClear()
+    contentView?.isDrawingCacheEnabled = false
+    contentView?.destroyDrawingCache()
   }
 
+  override fun onBlurred(bitmap: Bitmap?) {
+    TODO("Not yet implemented")
+  }
 }
 
 private fun FloatArray.createBuffer(capacity: Int): FloatBuffer = ByteBuffer.allocateDirect(size * capacity).run {

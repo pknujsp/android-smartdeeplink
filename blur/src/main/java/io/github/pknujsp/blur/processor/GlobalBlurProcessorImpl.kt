@@ -21,14 +21,12 @@ internal object GlobalBlurProcessorImpl : BlurringViewProcessor {
   private val kotlinBlurProcessor by lazy { KotlinBlurProcessor }
   private var blurScriptProcessor: BlurScript? = null
 
-
   override fun initBlur(context: Context, directBlurListener: DirectBlurListener, size: Size, radius: Int, resizeRatio: Double) {
     blurScriptProcessor = BlurScript(context)
     blurScriptProcessor?.initBlur(directBlurListener, size.width, size.height, radius, resizeRatio)
   }
 
-  override fun blur(srcBitmap: Bitmap) =
-    blurScriptProcessor?.blur(srcBitmap)
+  override fun blur(srcBitmap: Bitmap): Bitmap? = blurScriptProcessor?.blur(srcBitmap)
 
 
   override suspend fun nativeBlur(window: Window, radius: Int, resizeRatio: Double): Bitmap? = window.toBitmap()?.run {

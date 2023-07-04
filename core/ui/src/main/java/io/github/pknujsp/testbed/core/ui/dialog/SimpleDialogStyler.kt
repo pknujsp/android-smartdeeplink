@@ -88,7 +88,7 @@ internal class SimpleDialogStyler(
 
     if (simpleDialogStyleAttributes.blur) {
       val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-      val blurringView = BlurringView(activityWindow.context, 2.5, radius)
+      val blurringView = BlurringView(activityWindow.context, 1.0, radius)
       dialog.setOnShowListener {
         blurringView.onResume()
       }
