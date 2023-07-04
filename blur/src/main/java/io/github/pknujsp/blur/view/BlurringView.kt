@@ -3,7 +3,6 @@ package io.github.pknujsp.blur.view
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Rect
 import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
@@ -15,6 +14,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.Window
 import android.widget.FrameLayout
+import androidx.core.view.drawToBitmap
 import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
 import io.github.pknujsp.blur.DirectBlurListener
 import io.github.pknujsp.blur.R
@@ -80,11 +80,12 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
         """
 
     val vertices = floatArrayOf(
-      -0.5f, -0.5f, 0f,
-      0.5f, -0.5f, 0f,
-      0.5f, 0.5f, 0f,
-      -0.5f, 0.5f, 0f,
+      -1.0f, -1.0f, 0f,  // bottom left
+      1.0f, -1.0f, 0f,  // bottom right
+      1.0f, 1.0f, 0f,  // top right
+      -1.0f, 1.0f, 0f,  // top left
     )
+
 
     val uvs = floatArrayOf(
       0f, 1f,
@@ -111,32 +112,29 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     val textures = IntArray(1)
     var mvpMatrixHandle: Int = 0
 
-    //val projectionMatrix: FloatArray = FloatArray(16)
-    //val viewMatrix: FloatArray = FloatArray(16)
     val vpMatrix: FloatArray = FloatArray(16)
     val modelMatrix = FloatArray(16)
     val mvpMatrix = FloatArray(16)
   }
 
-  private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
+  private val onPreDrawListener = ViewTreeObserver.OnDrawListener {
     if (initialized) {
       mainScope.launchSafely(dispatcher) {
-        ++renderNum
-        lastStartTime = System.currentTimeMillis()
-
-        contentView?.getDrawingCache(true)?.run {
+        contentView?.drawToBitmap()?.let { bitmap ->
+          println(
+            "getDrawingCache,${bitmap.generationId} $bitmap ${bitmap.isRecycled} ${bitmap.colorSpace} ${bitmap.isMutable} ${bitmap.byteCount} " + "${bitmap.rowBytes}",
+          )
           mutex.withLock {
-            blurProcessor.blur(this)?.let { blurred ->
-              blurredBitmap = blurred
-              requestRender()
-            }
+            ++renderNum
+            lastStartTime = System.currentTimeMillis()
+            blurredBitmap = bitmap
+            requestRender()
           }
         }
       }.onException { _, t ->
         t.printStackTrace()
       }
     }
-    true
   }
 
   constructor(context: Context, resizeRatio: Double, radius: Int) : this(context) {
@@ -154,8 +152,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     setRenderer(this)
     renderMode = RENDERMODE_WHEN_DIRTY
 
-    //Matrix.setIdentityM(projectionMatrix, 0)
-    //Matrix.setIdentityM(viewMatrix, 0)
     Matrix.setIdentityM(vpMatrix, 0)
   }
 
@@ -166,12 +162,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
       window.decorView.findViewById<View>(android.R.id.content).let { contentView ->
         this.contentView = contentView
-        contentView.isDrawingCacheEnabled = true
-        contentView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_HIGH
-        contentView.drawingCacheBackgroundColor = Color.WHITE
-        contentView.setWillNotCacheDrawing(false)
-
-        contentView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
+        contentView.viewTreeObserver.addOnDrawListener(onPreDrawListener)
         originalCoordinatesRect.set(contentView.getCoordinatesInWindow(window))
         dstCoordinatesRect.set(0, 0, originalCoordinatesRect.width(), originalCoordinatesRect.height())
 
@@ -206,8 +197,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-    dstCoordinatesRect.run {
-      glViewport(0, 0, width(), height())
+    glViewport(0, 0, width, height)
 
       positionHandle = glGetAttribLocation(program, "vPosition")
       mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix")
@@ -217,7 +207,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       Matrix.setIdentityM(mvpMatrix, 0)
 
       uvHandle = glGetAttribLocation(program, "a_texCoord")
-    }
   }
 
   override fun onDrawFrame(gl: GL10?) {
@@ -258,10 +247,8 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   @Suppress("DEPRECATION")
   override fun onPause() {
     super.onPause()
-    contentView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
+    contentView?.viewTreeObserver?.removeOnDrawListener(onPreDrawListener)
     blurProcessor.onClear()
-    contentView?.isDrawingCacheEnabled = false
-    contentView?.destroyDrawingCache()
   }
 
   override fun onBlurred(bitmap: Bitmap?) {
