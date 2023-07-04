@@ -43,8 +43,8 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private var blurredBitmap: Bitmap? = null
   private var window: Window? = null
 
-  private val originalCoordinatesRect: Rect = Rect(0, 0, 0, 0)
-  private val dstCoordinatesRect: Rect = Rect(0, 0, 0, 0)
+  private val collectingViewCoordinatesRect: Rect = Rect(0, 0, 0, 0)
+  private val windowRect: Rect = Rect(0, 0, 0, 0)
 
   private val mutex = Mutex()
 
@@ -82,21 +82,12 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       -1.0f, 1.0f, 0f,  // top left
     )
 
-
-    val uvs = floatArrayOf(
-      0f, 1f,
-      1f, 1f,
-      1f, 0f,
-      0f, 0f,
-    )
-
     val indices = byteArrayOf(
       0, 1, 2,
       2, 3, 0,
     )
 
     val vertexBuffer = vertices.createBuffer(4)
-    var uvBuffer = uvs.createBuffer(4)
     val indexBuffer: ByteBuffer = ByteBuffer.allocateDirect(indices.size).apply {
       put(indices)
       position(0)
@@ -118,7 +109,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       mainScope.launchSafely(dispatcher) {
         mutex.withLock {
           collectingView?.drawToBitmap()?.let { bitmap ->
-            blurredBitmap = bitmap
+            blurredBitmap = blurProcessor.blur(bitmap)
             requestRender()
           }
         }
@@ -151,16 +142,18 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     (context as Activity).window.let { window ->
       this.window = window
 
-      window.decorView.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root).let { collectingView ->
-        this.collectingView = collectingView
-        collectingView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
-        originalCoordinatesRect.set(collectingView.getCoordinatesInWindow(window))
-        dstCoordinatesRect.set(0, 0, originalCoordinatesRect.width(), originalCoordinatesRect.height())
+      window.decorView.findViewById<View>(androidx.appcompat.R.id.action_bar_root).let { actionBarRoot ->
+        collectingView = window.decorView
+        collectingView!!.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
+        collectingViewCoordinatesRect.set(actionBarRoot.getCoordinatesInWindow(window))
+
+        windowRect.right = window.decorView.width
+        windowRect.bottom = window.decorView.height
 
         blurProcessor.initBlur(
           context,
           this@BlurringView,
-          Size(dstCoordinatesRect.width(), dstCoordinatesRect.height()),
+          Size(collectingViewCoordinatesRect.width(), collectingViewCoordinatesRect.height()),
           radius,
           resizeRatio,
         )
@@ -180,10 +173,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       val linkStatus = IntArray(1)
       glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
     }
-
-    glDisable(GL_DEPTH_TEST)
-    glDisable(GL_BLEND)
-    //glDepthFunc(GL_LEQUAL)
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -197,25 +187,36 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     Matrix.setIdentityM(mvpMatrix, 0)
 
     uvHandle = glGetAttribLocation(program, "a_texCoord")
+
+    glUseProgram(program)
+    glEnableVertexAttribArray(positionHandle)
+    glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
+
+    val statusBarRatio = collectingViewCoordinatesRect.top / windowRect.bottom.toFloat()
+    val navigationBarRatio = (windowRect.bottom - collectingViewCoordinatesRect.bottom) / windowRect.bottom.toFloat()
+
+    val uvs = floatArrayOf(
+      0f, 1f - navigationBarRatio,
+      1f, 1f - navigationBarRatio,
+      1f, statusBarRatio,
+      0f, statusBarRatio,
+    )
+    val uvBuffer = uvs.createBuffer(4)
+
+    glEnableVertexAttribArray(uvHandle)
+    glVertexAttribPointer(uvHandle, 2, GL_FLOAT, false, 0, uvBuffer)
+
+    Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0)
+    glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
+
+    glGenTextures(1, textures, 0)
+    glActiveTexture(GL_TEXTURE0)
   }
 
   override fun onDrawFrame(gl: GL10?) {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
     blurredBitmap?.run {
-      glUseProgram(program)
-      glEnableVertexAttribArray(positionHandle)
-      glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
-
-      glEnableVertexAttribArray(uvHandle)
-      glVertexAttribPointer(uvHandle, 2, GL_FLOAT, false, 0, uvBuffer)
-
-      Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0)
-      glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-
-      glGenTextures(1, textures, 0)
-      glActiveTexture(GL_TEXTURE0)
       glBindTexture(GL_TEXTURE_2D, textures[0])
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
