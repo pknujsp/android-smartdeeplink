@@ -10,11 +10,9 @@
 #define ANDROID_LOG_DEBUG 3
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
 
-void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height, jint radius, jdouble resize_ratio) {
-    LOGD("initBlur() called");
-    blurManagerClass = env->GetObjectClass(blur_manager);
-    blurManagerObject = env->NewGlobalRef(blur_manager);
-    onBlurredMethodId = env->GetMethodID(blurManagerClass, "onBlurred", "(Landroid/graphics/Bitmap;)V");
+void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_listener, jint width, jint height, jint radius, jdouble resize_ratio) {
+    blurListenerObject = env->NewGlobalRef(blur_listener);
+    onBlurredMethodId = env->GetMethodID(env->GetObjectClass(blur_listener), "onBlurred", "(Landroid/graphics/Bitmap;)V");
 
     sharedValues = init(width, height, radius, resize_ratio);
 }
@@ -24,12 +22,8 @@ SharedValues *BlurManager::getSharedValues() const {
 }
 
 void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) const {
-    LOGD("startBlur() called");
-
-    AndroidBitmapInfo info;
     void *pixels = nullptr;
 
-    if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return;
     if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return;
 
     blur((short *) pixels, sharedValues);
@@ -40,8 +34,7 @@ void BlurManager::startBlur(JNIEnv *env, jobject srcBitmap) const {
 }
 
 void BlurManager::sendBitmap(JNIEnv *env, jobject bitmap) const {
-    LOGD("sendBitmap() called");
-    env->CallVoidMethod(blurManagerObject, onBlurredMethodId, bitmap);
+    env->CallVoidMethod(blurListenerObject, onBlurredMethodId, bitmap);
 }
 
 BlurManager *BlurManager::instance = nullptr;
@@ -50,10 +43,10 @@ BlurManager &BlurManager::getInstance() {
     if (instance == nullptr) instance = new BlurManager();
     return *instance;
 }
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessorImpl_onClear(JNIEnv *env, jobject thiz) {
-    LOGD("onDetachedFromWindow() called");
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_onClear(JNIEnv *env, jobject thiz) {
     BlurManager &blurManager = BlurManager::getInstance();
 
     delete blurManager.sharedValues;

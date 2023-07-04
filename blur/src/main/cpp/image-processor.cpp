@@ -73,39 +73,11 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
 }
 
 extern "C"
-JNIEXPORT jobject JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2IIID(JNIEnv *env, jobject thiz, jobject srcBitmap, jint width, jint height, jint radius,
-                                                                                   jdouble resizeRatio) {
-    try {
-        const SharedValues *sharedValues = init(width, height, radius, resizeRatio);
-
-        if (sharedValues->isResized) {
-            srcBitmap = resize(env, sharedValues->targetWidth, sharedValues->targetHeight, srcBitmap);
-        }
-
-        AndroidBitmapInfo info;
-        void *pixels = nullptr;
-
-        if ((AndroidBitmap_getInfo(env, srcBitmap, &info)) < 0) return nullptr;
-        if ((AndroidBitmap_lockPixels(env, srcBitmap, (void **) &pixels)) < 0) return nullptr;
-        blur((short *) pixels, sharedValues);
-
-        AndroidBitmap_unlockPixels(env, srcBitmap);
-
-        delete sharedValues;
-        return srcBitmap;
-    } catch (const char *e) {
-        jthrowable throwable = env->ExceptionOccurred();
-        return throwable;
-    }
-}
-
-extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobject thiz, jobject blur_manager, jint width, jint height,
-                                                       jint radius, jdouble resize_ratio) {
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobject thiz, jobject blur_listener, jint width,
+                                                                      jint height, jint radius, jdouble resize_ratio) {
     BlurManager &blurManager = BlurManager::getInstance();
-    blurManager.initBlur(env, thiz, blur_manager, width, height, radius, resize_ratio);
+    blurManager.initBlur(env, thiz, blur_listener, width, height, radius, resize_ratio);
 
     blurManager.bitmapClass = env->FindClass("android/graphics/Bitmap");
     blurManager.createBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createBitmap",
@@ -113,27 +85,42 @@ Java_io_github_pknujsp_blur_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobje
     blurManager.createScaledBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createScaledBitmap",
                                                                   "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
 }
-
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2(JNIEnv *env, jobject thiz, jobject src_bitmap) {
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2(JNIEnv *env, jobject thiz,
+                                                                                              jobject src_bitmap) {
     BlurManager &blurManager = BlurManager::getInstance();
     if (blurManager.sharedValues->isResized) {
         src_bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);
     }
     blurManager.startBlur(env, src_bitmap);
 }
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2IIID(JNIEnv *env, jobject thiz,
+                                                                                                  jobject src_bitmap, jint width,
+                                                                                                  jint height, jint radius,
+                                                                                                  jdouble resize_ratio) {
+    try {
+        const SharedValues *sharedValues = init(width, height, radius, resize_ratio);
 
-/*
-Each pixel is stored on 2 bytes and only the RGB channels are encoded:
-red is stored with 5 bits of precision (32 possible values),
-green is stored with 6 bits of precision (64 possible values) and
-blue is stored with 5 bits of precision.
-This configuration can produce slight visual artifacts depending on the configuration of the source.
+        if (sharedValues->isResized) {
+            src_bitmap = resize(env, sharedValues->targetWidth, sharedValues->targetHeight, src_bitmap);
+        }
 
-For instance, without dithering, the result might show a greenish tint.
-To get better results dithering should be applied.
-This configuration may be useful when using opaque bitmaps that do not require high color fidelity.
-Use this formula to pack into 16 bits:
-short color = (R & 0x1f) << 11 | (G & 0x3f) << 5 | (B & 0x1f);
- */
+        AndroidBitmapInfo info;
+        void *pixels = nullptr;
+
+        if ((AndroidBitmap_getInfo(env, src_bitmap, &info)) < 0) return nullptr;
+        if ((AndroidBitmap_lockPixels(env, src_bitmap, (void **) &pixels)) < 0) return nullptr;
+        blur((short *) pixels, sharedValues);
+
+        AndroidBitmap_unlockPixels(env, src_bitmap);
+
+        delete sharedValues;
+        return src_bitmap;
+    } catch (const char *e) {
+        jthrowable throwable = env->ExceptionOccurred();
+        return throwable;
+    }
+}

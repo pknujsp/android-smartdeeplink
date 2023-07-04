@@ -1,5 +1,5 @@
 #pragma version(1)
-#pragma rs java_package_name(io.github.pknujsp.blur)
+#pragma rs java_package_name(io.github.pknujsp.blur.renderscript)
 
 rs_allocation gIn;
 rs_allocation gOut;

@@ -15,8 +15,9 @@ android {
   }
 
   defaultConfig {
-    renderscriptTargetApi = 19
+    renderscriptTargetApi = 23
     renderscriptSupportModeEnabled = true
+    renderscriptNdkModeEnabled = true
   }
 
   externalNativeBuild {

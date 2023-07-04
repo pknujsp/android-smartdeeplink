@@ -9,6 +9,7 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.util.LruCache
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -84,6 +85,9 @@ internal class SimpleDialogStyler(
         val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
         val blurringView = BlurringView(window.context, 2.5, radius).apply {
           id = R.id.dialog_custom_background
+        }
+        dialog.setOnShowListener {
+          blurringView.onResume()
         }
         window.addContentView(blurringView, blurringView.layoutParams)
       }
@@ -192,7 +196,12 @@ internal class SimpleDialogStyler(
     dialog.setOnDismissListener {
       if (simpleDialogStyleAttributes.blur && simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
         val actionBarRoot = activityWindow.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup
-        actionBarRoot?.removeView(actionBarRoot.findViewById(R.id.dialog_custom_background))
+        actionBarRoot?.findViewById<View>(R.id.dialog_custom_background).let { view ->
+          if (view != null) {
+            (view as BlurringView).onPause()
+            actionBarRoot?.removeView(view)
+          }
+        }
       }
     }
   }

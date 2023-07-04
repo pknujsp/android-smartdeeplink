@@ -32,20 +32,20 @@ class BlurScript(context: Context) {
   fun blur(srcBitmap: Bitmap) {
     blurScript?.run {
       srcAllocation = Allocation.createFromBitmap(renderScript, srcBitmap)
-      setInput(srcAllocation)
 
       outAllocation = Allocation.createTyped(renderScript, srcAllocation?.type)
+      setInput(srcAllocation)
       forEach(outAllocation)
       outAllocation?.copyTo(srcBitmap)
 
-      srcAllocation?.destroy()
       listener?.onBlurred(srcBitmap)
+      srcAllocation?.destroy()
     }
   }
 
   fun onClear() {
-    outAllocation?.destroy()
     blurScript?.destroy()
     renderScript?.destroy()
+    outAllocation?.destroy()
   }
 }
