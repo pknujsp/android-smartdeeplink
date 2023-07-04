@@ -4,10 +4,10 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.opengl.GLES20.glGetAttribLocation
-import android.opengl.GLES30
-import android.opengl.GLES30.glGetError
+import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
+import android.opengl.GLUtils
+import android.opengl.Matrix
 import android.util.Size
 import android.view.View
 import android.view.ViewGroup
@@ -21,8 +21,9 @@ import io.github.pknujsp.blur.processor.GlobalBlurProcessorImpl
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.newSingleThreadContext
-import java.nio.Buffer
+import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -31,6 +32,7 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
+@Suppress("DEPRECATION")
 class BlurringView private constructor(context: Context) : GLSurfaceView(context), DirectBlurListener, GLSurfaceView.Renderer {
   private var resizeRatio by Delegates.notNull<Double>()
   private var radius by Delegates.notNull<Int>()
@@ -42,40 +44,76 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private var window: Window? = null
 
   private var renderNum = 0L
+  private var lastRenderNum = 0L
 
   private val originalCoordinatesRect: Rect = Rect(0, 0, 0, 0)
   private val dstCoordinatesRect: Rect = Rect(0, 0, 0, 0)
 
   private var lastStartTime = System.currentTimeMillis()
 
+  private val mutex = Mutex()
+
   private companion object {
     val mainScope = MainScope()
-    @OptIn(DelicateCoroutinesApi::class) private val dispatcher = newSingleThreadContext("BlurringView")
+    @OptIn(DelicateCoroutinesApi::class) private val dispatcher = newFixedThreadPoolContext(3, "BlurringView")
 
     val blurProcessor: BlurringViewProcessor = GlobalBlurProcessorImpl
 
-    val vertexShader = "" + "attribute vec4 vPosition;" + "void main() {" + "  gl_Position = vPosition;" + "}"
+    const val vertexShader =
+      "uniform mat4 uMVPMatrix;" + "attribute vec4 vPosition;" + "attribute vec2 a_texCoord;" + "varying vec2 v_texCoord;" + "void main() {" + "  gl_Position = uMVPMatrix * vPosition;" + "  v_texCoord = a_texCoord;" + "}"
+    const val fragmentShader =
+      "precision mediump float;" + "varying vec2 v_texCoord;" + "uniform sampler2D s_texture;" + "void main() {" + "  gl_FragColor = texture2D(s_texture, v_texCoord);" + "}"
 
-    val fragmentShader = "" + "precision mediump float;" + "void main() {" + "  gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);" + "}"
+    val vertices = floatArrayOf(
+      -0.5f, -0.5f, 0f,  //bottom left
+      0.5f, -0.5f, 0f,  //bottom right
+      0.5f, 0.5f, 0f,  // top right
+      -0.5f, 0.5f, 0f,
+    )
 
-    val triangleVertices: Buffer = floatArrayOf(
-      0.0f, 0.5f,
-      -0.5f, -0.5f,
-      0.5f, -0.5f,
-    ).createBuffer()
+    val uvs = floatArrayOf(
+      0f, 1f,
+      1f, 1f,
+      1f, 0f,
+      0f, 0f,
+    )
 
-    var vPositionHandle: Int = 0
+    val indices = byteArrayOf(
+      0, 1, 2,
+      2, 3, 0,
+    )
+
+    val vertexBuffer = vertices.createBuffer(4)
+    var uvBuffer = uvs.createBuffer(4)
+    val indexBuffer: ByteBuffer = ByteBuffer.allocateDirect(indices.size).apply {
+      put(indices)
+      position(0)
+    }
+
+    var positionHandle: Int = 0
+    var uvHandle: Int = 0
     var program: Int = 0
-    var grey = 0f
-    var flag = false
+    val textures = IntArray(1)
+    var mvpMatrixHandle: Int = 0
+
+    val projectionMatrix: FloatArray = FloatArray(16)
+    val viewMatrix: FloatArray = FloatArray(16)
+    val vpMatrix: FloatArray = FloatArray(16)
+    val modelMatrix = FloatArray(16)
+    val mvpMatrix = FloatArray(16)
+
   }
 
   private val onDrawListener = ViewTreeObserver.OnPreDrawListener {
     if (initialized) {
       mainScope.launchSafely(dispatcher) {
         contentView?.drawingCache?.run {
-          renderNum++
-          blurProcessor.blur(this)
+          mutex.withLock {
+            ++renderNum
+            lastStartTime = System.currentTimeMillis()
+            blurredBitmap = blurProcessor.blur(this)
+            requestRender()
+          }
         }
       }
     }
@@ -96,6 +134,10 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     setEGLContextClientVersion(3)
     setRenderer(this)
     renderMode = RENDERMODE_WHEN_DIRTY
+
+    Matrix.setIdentityM(projectionMatrix, 0)
+    Matrix.setIdentityM(viewMatrix, 0)
+    Matrix.setIdentityM(vpMatrix, 0)
   }
 
   override fun onAttachedToWindow() {
@@ -126,67 +168,104 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
 
-  override fun onBlurred(bitmap: Bitmap?) {
-    println("onBlurred : $renderNum, ${System.currentTimeMillis() - lastStartTime}MS")
-    lastStartTime = System.currentTimeMillis()
-    blurredBitmap = bitmap
-    requestRender()
+  override suspend fun onBlurred(bitmap: Bitmap?) {
+    mutex.withLock {
+      if (lastRenderNum == renderNum) {
+        blurredBitmap = bitmap
+        requestRender()
+      }
+    }
   }
 
 
   override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-    program = GLES30.glCreateProgram().also {
-      val vertexShader = loadShader(GLES30.GL_VERTEX_SHADER, vertexShader.trimIndent())
-      val fragmentShader = loadShader(GLES30.GL_FRAGMENT_SHADER, fragmentShader.trimIndent())
+    program = glCreateProgram().also {
+      val vertexShader = loadShader(GL_VERTEX_SHADER, vertexShader.trimIndent())
+      val fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentShader.trimIndent())
 
-      GLES30.glAttachShader(it, vertexShader)
-      GLES30.glAttachShader(it, fragmentShader)
-      GLES30.glLinkProgram(it)
+      glAttachShader(it, vertexShader)
+      glAttachShader(it, fragmentShader)
+      glLinkProgram(it)
       val linkStatus = IntArray(1)
-      GLES30.glGetProgramiv(it, GLES30.GL_LINK_STATUS, linkStatus, 0)
+      glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
     }
 
-    vPositionHandle = glGetAttribLocation(program, "vPosition")
+
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+    glClearDepthf(1.0f)
+    glEnable(GL_DEPTH_TEST)
+    glDepthFunc(GL_LEQUAL)
 
     println("onSurfaceCreated : ${glGetError()}")
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-    GLES30.glViewport(0, 0, dstCoordinatesRect.width(), dstCoordinatesRect.height())
+    dstCoordinatesRect.run {
+      glViewport(0, 0, width(), height())
+
+      val aspectRatio = width().toFloat() / height()
+      Matrix.frustumM(
+        projectionMatrix, 0,
+        -aspectRatio, aspectRatio,
+        -1.0f, 1.0f,
+        3.0f, 7.0f,
+      )
+      Matrix.setLookAtM(
+        viewMatrix, 0,
+        0.0f, 0.0f, 4.0f,
+        0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+      )
+
+      Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+
+      positionHandle = glGetAttribLocation(program, "vPosition")
+      mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix")
+
+      glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
+      Matrix.setIdentityM(modelMatrix, 0)
+      Matrix.setIdentityM(mvpMatrix, 0)
+
+      uvHandle = glGetAttribLocation(program, "a_texCoord")
+    }
   }
 
   override fun onDrawFrame(gl: GL10?) {
     blurredBitmap?.run {
-      if (grey > 1.0f || grey < 0.0f) {
-        flag = !flag
-      }
-      if (flag) {
-        grey += 0.01f
-      } else {
-        grey -= 0.01f
-      }
+      glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+      glUseProgram(program)
+      glEnableVertexAttribArray(positionHandle)
+      glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
 
-      GLES30.glClearColor(grey, grey, grey, 1.0f)
+      glEnableVertexAttribArray(uvHandle)
+      glVertexAttribPointer(uvHandle, 2, GL_FLOAT, false, 0, uvBuffer)
 
-      GLES30.glClear(GLES30.GL_DEPTH_BUFFER_BIT or GLES30.GL_COLOR_BUFFER_BIT)
+      Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0)
+      glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
 
-      GLES30.glUseProgram(program)
+      glGenTextures(1, textures, 0)
+      glActiveTexture(GL_TEXTURE0)
+      glBindTexture(GL_TEXTURE_2D, textures[0])
 
-      GLES30.glVertexAttribPointer(vPositionHandle, 2, GLES30.GL_FLOAT, false, 0, triangleVertices)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
-      GLES30.glEnableVertexAttribArray(vPositionHandle)
+      GLUtils.texImage2D(GL_TEXTURE_2D, 0, this, 0)
 
-      GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3)
+      glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_BYTE, indexBuffer)
+      glBindTexture(GL_TEXTURE_2D, 0)
     }
-    println("onDrawFrame : ${glGetError()}")
+    println("onDrawFrame : ${renderNum}, ${System.currentTimeMillis() - lastStartTime}ms")
   }
 
-  private fun loadShader(type: Int, shaderCode: String): Int = GLES30.glCreateShader(type).also { shader ->
-    GLES30.glShaderSource(shader, shaderCode)
-    GLES30.glCompileShader(shader)
+  private fun loadShader(type: Int, shaderCode: String): Int = glCreateShader(type).also { shader ->
+    glShaderSource(shader, shaderCode)
+    glCompileShader(shader)
   }
 
 
+  @Suppress("DEPRECATION")
   override fun onPause() {
     contentView?.destroyDrawingCache()
     contentView?.isDrawingCacheEnabled = false
@@ -194,10 +273,9 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     super.onPause()
   }
 
-
 }
 
-private fun FloatArray.createBuffer(): FloatBuffer = ByteBuffer.allocateDirect(size * 4).run {
+private fun FloatArray.createBuffer(capacity: Int): FloatBuffer = ByteBuffer.allocateDirect(size * capacity).run {
   order(ByteOrder.nativeOrder())
   asFloatBuffer().apply {
     put(this@createBuffer)
