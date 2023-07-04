@@ -33,14 +33,13 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
-@Suppress("DEPRECATION")
 class BlurringView private constructor(context: Context) : GLSurfaceView(context), DirectBlurListener, GLSurfaceView.Renderer {
   private var resizeRatio by Delegates.notNull<Double>()
   private var radius by Delegates.notNull<Int>()
 
   private var initialized = false
 
-  private var contentView: View? = null
+  private var collectingView: View? = null
   private var blurredBitmap: Bitmap? = null
   private var window: Window? = null
 
@@ -118,7 +117,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     if (initialized) {
       mainScope.launchSafely(dispatcher) {
         mutex.withLock {
-          contentView?.drawToBitmap()?.let { bitmap ->
+          collectingView?.drawToBitmap()?.let { bitmap ->
             blurredBitmap = bitmap
             requestRender()
           }
@@ -152,16 +151,16 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     (context as Activity).window.let { window ->
       this.window = window
 
-      window.decorView.findViewById<View>(android.R.id.content).let { contentView ->
-        this.contentView = contentView
-        contentView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
-        originalCoordinatesRect.set(contentView.getCoordinatesInWindow(window))
+      window.decorView.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root).let { collectingView ->
+        this.collectingView = collectingView
+        collectingView.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
+        originalCoordinatesRect.set(collectingView.getCoordinatesInWindow(window))
         dstCoordinatesRect.set(0, 0, originalCoordinatesRect.width(), originalCoordinatesRect.height())
 
         blurProcessor.initBlur(
           context,
           this@BlurringView,
-          Size(originalCoordinatesRect.width(), originalCoordinatesRect.height()),
+          Size(dstCoordinatesRect.width(), dstCoordinatesRect.height()),
           radius,
           resizeRatio,
         )
@@ -182,10 +181,9 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
     }
 
-    glClearColor(255f, 255f, 255f, 1f)
-    glClearDepthf(1.0f)
-    glEnable(GL_DEPTH_TEST)
-    glDepthFunc(GL_LEQUAL)
+    glDisable(GL_DEPTH_TEST)
+    glDisable(GL_BLEND)
+    //glDepthFunc(GL_LEQUAL)
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -202,9 +200,10 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   override fun onDrawFrame(gl: GL10?) {
-    blurredBitmap?.run {
-      glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
+    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
+    blurredBitmap?.run {
       glUseProgram(program)
       glEnableVertexAttribArray(positionHandle)
       glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
@@ -236,7 +235,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   override fun onPause() {
     super.onPause()
-    contentView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
+    collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
     blurProcessor.onClear()
   }
 
