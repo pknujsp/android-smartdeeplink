@@ -4,10 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.opengl.GLES20
-import android.opengl.GLES20.glGetError
+import android.opengl.GLES30
+import android.opengl.GLES30.glGetError
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
+import android.opengl.Matrix
 import android.util.Size
 import android.view.View
 import android.view.ViewGroup
@@ -50,8 +51,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     val mainScope = MainScope()
     @OptIn(DelicateCoroutinesApi::class) private val dispatcher = newSingleThreadContext("BlurringView")
 
-    val rgbBitSize = Triple(5, 6, 5)
-
     val blurProcessor: BlurringViewProcessor = GlobalBlurProcessorImpl
 
     val quadVertices = floatArrayOf(
@@ -84,13 +83,18 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       }
     }
 
+    val mMVPMatrix = FloatArray(16)
+    val mProjMatrix = FloatArray(16)
+    val mMMatrix = FloatArray(16)
+    val mVMatrix = FloatArray(16)
 
     const val vertexShaderCode = """
+    uniform mat4 uMVPMatrix;
     attribute vec4 vPosition;
     attribute vec2 inputTextureCoordinate;
     varying vec2 textureCoordinate;
     void main() {
-      gl_Position = vPosition;
+      gl_Position = uMVPMatrix * vPosition;
       textureCoordinate = inputTextureCoordinate;
     }
     """
@@ -178,57 +182,64 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
 
   override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-    glProgram = GLES20.glCreateProgram().also {
-      val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
-      val fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
+    glProgram = GLES30.glCreateProgram().also {
+      val vertexShader = loadShader(GLES30.GL_VERTEX_SHADER, vertexShaderCode.trimIndent())
+      val fragmentShader = loadShader(GLES30.GL_FRAGMENT_SHADER, fragmentShaderCode.trimIndent())
 
-      GLES20.glAttachShader(it, vertexShader)
-      GLES20.glAttachShader(it, fragmentShader)
-      GLES20.glLinkProgram(it)
+      GLES30.glAttachShader(it, vertexShader)
+      GLES30.glAttachShader(it, fragmentShader)
+      GLES30.glLinkProgram(it)
 
-      positionHandle = GLES20.glGetAttribLocation(it, "vPosition")
-      textureHandle = GLES20.glGetUniformLocation(it, "sTexture")
-      textureCoordinateHandle = GLES20.glGetAttribLocation(it, "inputTextureCoordinate")
+      val linkStatus = IntArray(1)
+      GLES30.glGetProgramiv(it, GLES30.GL_LINK_STATUS, linkStatus, 0)
     }
-    GLES20.glUseProgram(glProgram)
 
-    GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+    positionHandle = GLES30.glGetAttribLocation(glProgram, "vPosition")
+    textureHandle = GLES30.glGetUniformLocation(glProgram, "sTexture")
+    textureCoordinateHandle = GLES30.glGetAttribLocation(glProgram, "inputTextureCoordinate")
 
-    GLES20.glEnable(GLES20.GL_TEXTURE_2D)
-    GLES20.glGenTextures(1, textures, 0)
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0])
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+    GLES30.glClearColor(255f, 255f, 255f, 1.0f)
+
+    GLES30.glGenTextures(1, textures, 0)
+    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textures[0])
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_NEAREST)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
+
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_REPEAT)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_REPEAT)
+
+    Matrix.setLookAtM(mVMatrix, 0, 0f, 0f, -5f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
 
     println("onSurfaceCreated : ${glGetError()}")
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-    GLES20.glViewport(0, 0, dstCoordinatesRect.width(), dstCoordinatesRect.height())
+    GLES30.glViewport(0, 0, dstCoordinatesRect.width(), dstCoordinatesRect.height())
   }
 
   override fun onDrawFrame(gl: GL10?) {
     blurredBitmap?.run {
-      GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+      GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT or GLES30.GL_DEPTH_BUFFER_BIT)
+      GLES30.glUseProgram(glProgram)
 
-      GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-      GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0])
-      GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, this, 0)
+      GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+      GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textures[0])
+      GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, this, 0)
 
-      GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
-      GLES20.glEnableVertexAttribArray(positionHandle)
-      GLES20.glVertexAttribPointer(textureCoordinateHandle, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
-      GLES20.glEnableVertexAttribArray(textureCoordinateHandle)
-      GLES20.glUniform1i(textureHandle, 0)
-      GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+      GLES30.glVertexAttribPointer(positionHandle, 2, GLES30.GL_FLOAT, false, 0, vertexBuffer)
+      GLES30.glEnableVertexAttribArray(positionHandle)
+      GLES30.glVertexAttribPointer(textureCoordinateHandle, 2, GLES30.GL_FLOAT, false, 0, textureBuffer)
+      GLES30.glEnableVertexAttribArray(textureCoordinateHandle)
+      GLES30.glUniform1i(textureHandle, 0)
+      GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
 
     }
     println("onDrawFrame : ${glGetError()}")
   }
 
-  private fun loadShader(type: Int, shaderCode: String): Int = GLES20.glCreateShader(type).also { shader ->
-    GLES20.glShaderSource(shader, shaderCode)
-    GLES20.glCompileShader(shader)
+  private fun loadShader(type: Int, shaderCode: String): Int = GLES30.glCreateShader(type).also { shader ->
+    GLES30.glShaderSource(shader, shaderCode)
+    GLES30.glCompileShader(shader)
   }
 
 

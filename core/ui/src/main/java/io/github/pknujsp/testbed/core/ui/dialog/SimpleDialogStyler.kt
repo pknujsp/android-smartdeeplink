@@ -89,7 +89,7 @@ internal class SimpleDialogStyler(
         dialog.setOnShowListener {
           blurringView.onResume()
         }
-        window.addContentView(blurringView, blurringView.layoutParams)
+        dialog.window?.addContentView(blurringView, blurringView.layoutParams)
       }
     }
   }
@@ -195,7 +195,7 @@ internal class SimpleDialogStyler(
   private fun setOnDismissDialogListener(dialog: Dialog) {
     dialog.setOnDismissListener {
       if (simpleDialogStyleAttributes.blur && simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
-        val actionBarRoot = activityWindow.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup
+        val actionBarRoot = dialog.window?.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup
         actionBarRoot?.findViewById<View>(R.id.dialog_custom_background).let { view ->
           if (view != null) {
             (view as BlurringView).onPause()
