@@ -190,10 +190,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
     }
 
-
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-    glClearDepthf(1.0f)
+    glClearColor(255f, 255f, 255f, 1.0f)
     glEnable(GL_DEPTH_TEST)
     glDepthFunc(GL_LEQUAL)
 
@@ -204,21 +201,23 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     dstCoordinatesRect.run {
       glViewport(0, 0, width(), height())
 
+      /**
       val aspectRatio = width().toFloat() / height()
       Matrix.frustumM(
-        projectionMatrix, 0,
-        -aspectRatio, aspectRatio,
-        -1.0f, 1.0f,
-        3.0f, 7.0f,
+      projectionMatrix, 0,
+      -aspectRatio, aspectRatio,
+      -1.0f, 1.0f,
+      3.0f, 7.0f,
       )
       Matrix.setLookAtM(
-        viewMatrix, 0,
-        0.0f, 0.0f, 4.0f,
-        0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
+      viewMatrix, 0,
+      0.0f, 0.0f, 4.0f,
+      0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f,
       )
 
       Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+       */
 
       positionHandle = glGetAttribLocation(program, "vPosition")
       mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix")
