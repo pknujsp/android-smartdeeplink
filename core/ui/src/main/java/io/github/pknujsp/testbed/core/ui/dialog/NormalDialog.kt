@@ -1,10 +1,10 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
-import androidx.appcompat.app.AlertDialog
+import android.app.Dialog
 
 class NormalDialog(
-  alertDialog: AlertDialog, attributes: SimpleDialogGeneralAttributes,
+  dialog: Dialog, attributes: SimpleDialogGeneralAttributes,
   styleAttributes: SimpleDialogStyleAttributes,
-) : SimpleDialog(alertDialog, attributes, styleAttributes) {
+) : SimpleDialog(dialog, attributes, styleAttributes) {
 
 }

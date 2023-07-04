@@ -1,12 +1,12 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import android.app.Dialog
 import android.content.DialogInterface
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.children
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginBottom
@@ -15,9 +15,9 @@ import androidx.core.view.marginRight
 import androidx.core.view.marginTop
 
 abstract class SimpleDialog(
-  val alertDialog: AlertDialog,
+  val dialog: Dialog,
   val attributes: SimpleDialogGeneralAttributes, val styleAttributes: SimpleDialogStyleAttributes,
-) : DialogInterface by alertDialog, IDialogMover {
+) : DialogInterface by dialog, IDialogMover {
 
   private var _draggablePixelsRangeRect: RectF? = null
   private val draggablePixelsRangeRect: RectF get() = _draggablePixelsRangeRect!!
@@ -33,16 +33,16 @@ abstract class SimpleDialog(
   }
 
   override fun cancel() {
-    alertDialog.cancel()
+    dialog.cancel()
   }
 
   override fun dismiss() {
-    alertDialog.dismiss()
+    dialog.dismiss()
   }
 
   protected open fun initDrag() {
-    alertDialog.window?.decorView?.doOnPreDraw {
-      (alertDialog.window?.decorView as? ViewGroup)?.also { decorView ->
+    dialog.window?.decorView?.doOnPreDraw {
+      (dialog.window?.decorView as? ViewGroup)?.also { decorView ->
         (decorView.children.first() as? ViewGroup)?.children?.filter { it is FrameLayout }?.first()?.also { dialogView ->
 
           _dialogView = dialogView
@@ -94,7 +94,7 @@ abstract class SimpleDialog(
   }
 
   private fun init() {
-    alertDialog.run {
+    dialog.run {
       setCancelable(attributes.isCancelable)
       setCanceledOnTouchOutside(attributes.isCancelable)
     }

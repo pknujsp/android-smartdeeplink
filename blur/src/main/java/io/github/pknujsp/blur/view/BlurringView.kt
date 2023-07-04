@@ -17,6 +17,7 @@ import android.view.Window
 import android.widget.FrameLayout
 import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
 import io.github.pknujsp.blur.DirectBlurListener
+import io.github.pknujsp.blur.R
 import io.github.pknujsp.blur.processor.GlobalBlurProcessorImpl
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -134,6 +135,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     this.resizeRatio = resizeRatio
     this.radius = radius
 
+    id = R.id.blurring_view
     layoutParams = FrameLayout.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
       ViewGroup.LayoutParams.MATCH_PARENT,

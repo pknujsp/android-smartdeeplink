@@ -1,14 +1,16 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import android.app.Dialog
 import android.content.Context
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.annotation.DrawableRes
 import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
-import androidx.appcompat.app.AlertDialog
 import io.github.pknujsp.testbed.core.ui.R
 
 
@@ -21,7 +23,7 @@ class SimpleDialogBuilder private constructor(
 
   private val generalAttributes: SimpleDialogGeneralAttributes = SimpleDialogGeneralAttributes()
 
-  private val alertDialogBuilder = AlertDialog.Builder(context, theme(dialogType))
+  private val dialogBuilder = Dialog(context, theme(dialogType))
 
   companion object {
 
@@ -221,14 +223,23 @@ class SimpleDialogBuilder private constructor(
   }
 
   fun setContentView(view: View): SimpleDialogBuilder {
-    alertDialogBuilder.setView(view)
+    dialogBuilder.setContentView(
+      FrameLayout(view.context).apply {
+        addView(view)
+        id = R.id.dialog_custom_background
+      },
+      FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+        gravity = Gravity.CENTER
+      },
+    )
     return this
   }
 
   /**
    * Build and show dialog.(다이얼로그를 생성하고 보여줍니다.)
    */
-  fun buildAndShow(): SimpleDialog = alertDialogBuilder.create().run {
+  fun buildAndShow(): SimpleDialog = dialogBuilder.run {
+    create()
     dialogStyler.applyStyle(this)
     show()
 

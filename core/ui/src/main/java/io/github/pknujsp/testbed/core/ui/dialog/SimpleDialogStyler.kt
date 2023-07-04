@@ -9,7 +9,6 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.util.LruCache
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -17,6 +16,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.allViews
@@ -24,6 +24,7 @@ import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.blur.view.BlurringView
 import io.github.pknujsp.testbed.core.ui.R
+import kotlin.properties.Delegates
 
 
 internal class SimpleDialogStyler(
@@ -32,6 +33,8 @@ internal class SimpleDialogStyler(
 ) {
 
   private val activityWindow = (context as Activity).window
+  private var mainContentView: FrameLayout by Delegates.notNull()
+  private var compatContentView: FrameLayout by Delegates.notNull()
 
   private companion object {
     private val density: Float = Resources.getSystem().displayMetrics.density
@@ -53,12 +56,15 @@ internal class SimpleDialogStyler(
 
   fun applyStyle(dialog: Dialog) {
     setOnDismissDialogListener(dialog)
-    setBlur(dialog)
     dialog.window?.apply {
-      val contentView = getContentView(this)
+      compatContentView = getContentView(this, R.id.dialog_custom_background)
+      mainContentView = getContentView(this, android.R.id.content)
+      setBlur(dialog)
+
       ((decorView as ViewGroup).children.first() as LinearLayout).gravity = Gravity.CENTER
-      setBackgroundAndModal(contentView)
-      setContentViewLayout(contentView)
+      setBackgroundAndModal(compatContentView)
+      setMainContentViewLayout()
+      setCompatContentViewLayout()
       setDim(this)
 
       attributes = attributes.also { attr ->
@@ -81,25 +87,20 @@ internal class SimpleDialogStyler(
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
 
     if (simpleDialogStyleAttributes.blur) {
-      activityWindow.also { window ->
-        val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-        val blurringView = BlurringView(window.context, 2.5, radius).apply {
-          id = R.id.dialog_custom_background
-        }
-        dialog.setOnShowListener {
-          blurringView.onResume()
-        }
-        dialog.window?.addContentView(blurringView, blurringView.layoutParams)
+      val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
+      val blurringView = BlurringView(activityWindow.context, 2.5, radius)
+      dialog.setOnShowListener {
+        blurringView.onResume()
       }
+
+      mainContentView.addView(blurringView, 0, blurringView.layoutParams)
+
     }
   }
 
   private fun setDim(window: Window) {
     if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) return
-    window.apply {
-      if (simpleDialogStyleAttributes.dim) addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-      else clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-    }
+    if (simpleDialogStyleAttributes.dim) window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
   }
 
   private fun setDim(attributes: WindowManager.LayoutParams) {
@@ -107,8 +108,8 @@ internal class SimpleDialogStyler(
     if (simpleDialogStyleAttributes.dim) attributes.dimAmount = simpleDialogStyleAttributes.dimIndensity / 100f
   }
 
-  private fun getContentView(window: Window): FrameLayout = window.decorView.allViews.filter {
-    it.id == android.R.id.content
+  private fun getContentView(window: Window, @IdRes id: Int): FrameLayout = window.decorView.allViews.filter {
+    it.id == id
   }.first() as FrameLayout
 
 
@@ -168,8 +169,20 @@ internal class SimpleDialogStyler(
     }
   }
 
-  private fun setContentViewLayout(contentView: FrameLayout) {
-    contentView.apply {
+  private fun setMainContentViewLayout() {
+    mainContentView.apply {
+      updateLayoutParams<ViewGroup.MarginLayoutParams> {
+        width = ViewGroup.LayoutParams.MATCH_PARENT
+        height = ViewGroup.LayoutParams.MATCH_PARENT
+      }
+      updateLayoutParams<LinearLayout.LayoutParams> {
+        gravity = Gravity.CENTER
+      }
+    }
+  }
+
+  private fun setCompatContentViewLayout() {
+    compatContentView.apply {
       updateLayoutParams<ViewGroup.MarginLayoutParams> {
         if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
           if (simpleDialogStyleAttributes.dialogType == DialogType.BottomSheet) bottomMargin =
@@ -193,17 +206,7 @@ internal class SimpleDialogStyler(
 
 
   private fun setOnDismissDialogListener(dialog: Dialog) {
-    dialog.setOnDismissListener {
-      if (simpleDialogStyleAttributes.blur && simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
-        val actionBarRoot = dialog.window?.findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)?.parent as? ViewGroup
-        actionBarRoot?.findViewById<View>(R.id.dialog_custom_background).let { view ->
-          if (view != null) {
-            (view as BlurringView).onPause()
-            actionBarRoot?.removeView(view)
-          }
-        }
-      }
-    }
+
   }
 
 
