@@ -24,6 +24,6 @@ uchar4 RS_KERNEL invert(uchar4 in, uint32_t x, uint32_t y) { //9
   return out;
 }
 
-void init(){ //8
+void prepare(){ //8
     width = width_default;
 }

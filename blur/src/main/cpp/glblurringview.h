@@ -12,8 +12,10 @@
 #include <android/surface_control.h>
 #include <android/hardware_buffer.h>
 #include <android/native_window.h>
-#include "shared-values.h"
+#include "stackblur/abgr-stackblur.h"
 
 #define BUFFER_OFFSET(offset)   ((GLvoid*) (offset))
+
+static ABGRStackBlur *stackBlur = new ABGRStackBlur();
 
 #endif //TESTBED_GLBLURRINGVIEW_H

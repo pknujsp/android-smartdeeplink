@@ -3,8 +3,9 @@ package io.github.pknujsp.blur.natives
 import android.graphics.Bitmap
 
 interface NativeBlurProcessor {
-  fun blur(
-    srcBitmap: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double,
-  ): Bitmap?
+  fun prepareBlur(width: Int, height: Int, radius: Int, resizeRatio: Double)
 
+  fun blur(srcBitmap: Bitmap): Bitmap?
+
+  fun onClear()
 }

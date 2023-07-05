@@ -7,6 +7,8 @@
 #include <string>
 #include <cstring>
 #include <android/log.h>
+#include <mutex>
+#include <queue>
 
 #define LOG_TAG "GLBlurringView"
 #define ANDROID_LOG_DEBUG 3
@@ -34,9 +36,15 @@ static const char *fragmentShaderCode = R"(
 
 static const unsigned int indices[] = {0, 1, 2, 2, 3, 0};
 
-static GLuint verticesBufferObj;
-static GLuint uvsBufferObj;
-static GLuint indexBufferObj;
+std::queue<std::pair<jobject, void *>> mQueue;
+std::mutex mMutex;
+
+jmethodID requestRenderMethodId = nullptr;
+jobject glSurfaceView = nullptr;
+
+GLuint verticesBufferObj;
+GLuint uvsBufferObj;
+GLuint indexBufferObj;
 
 static GLint positionHandle = 0;
 static GLint uvHandle = 0;
@@ -48,8 +56,8 @@ static GLfloat vpMatrix[16];
 static GLfloat modelMatrix[16];
 static GLfloat mvpMatrix[16];
 
-static GLint bitmapWidth = 0;
-static GLint bitmapHeight = 0;
+GLint bitmapWidth = 0;
+GLint bitmapHeight = 0;
 
 static GLuint loadShader(GLenum type, const char *shaderCode);
 
@@ -76,7 +84,7 @@ static void printError(const char *msg) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfaceCreated(JNIEnv *env, jobject thiz) {
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfaceCreated(JNIEnv *env, jobject thiz, jobject blurring_view) {
     program = glCreateProgram();
     glAttachShader(program, loadShader(GL_VERTEX_SHADER, vertexShaderCode));
     glAttachShader(program, loadShader(GL_FRAGMENT_SHADER, fragmentShaderCode));
@@ -86,6 +94,10 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
     setIdentityM(vpMatrix, 0);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glSurfaceView = env->NewGlobalRef(blurring_view);
+    jclass glSurfaceViewClass = env->GetObjectClass(glSurfaceView);
+    requestRenderMethodId = env->GetMethodID(glSurfaceViewClass, "requestRender", "()V");
 }
 
 static GLuint loadShader(GLenum type, const char *shaderCode) {
@@ -96,14 +108,18 @@ static GLuint loadShader(GLenum type, const char *shaderCode) {
     return shader;
 }
 
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz, jobject bitmap) {
-    if (bitmap == nullptr) return;
-    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz) {
+    std::unique_lock<std::recursive_mutex> lock(mMutex);
+    if (mQueue.empty()) return;
+    std::pair<jobject, void *> pair = mQueue.front();
 
-    void *pixels = nullptr;
-    if (AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels) != 0) return;
+    void *tPixels = pair.second;
+    jobject tBitmap = pair.first;
+
+    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, textures);
 
@@ -111,12 +127,13 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmapWidth, bitmapHeight, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                 GL_RGBA, GL_UNSIGNED_BYTE, tPixels);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-    AndroidBitmap_unlockPixels(env, bitmap);
+    AndroidBitmap_unlockPixels(env, tBitmap);
 }
+
 
 static void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset) {
     if (overlap(result, resultOffset, 16, lhs, lhsOffset, 16)
@@ -236,10 +253,7 @@ static void initIndicies() {
 }
 
 static void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
-    const GLfloat statusBarRatio = statusBarHeight / windowHeight;
-    const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
-
-    static const GLfloat vertices[] = {
+    const GLfloat vertices[] = {
             -1.0f, -1.0f, 0.0f,  // bottom left
             1.0f, -1.0f, 0.0f,  // bottom right
             1.0f, 1.0f, 0.0f,  // top right
@@ -292,4 +306,26 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onPause(
     glDeleteBuffers(1, &uvsBufferObj);
     glDeleteBuffers(1, &indexBufferObj);
     glDeleteProgram(program);
+
+    env->DeleteGlobalRef(glSurfaceView);
+    requestRenderMethodId = nullptr;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_blurAndDrawFrame(JNIEnv *env, jobject thiz, jobject src_bitmap) {
+    void *tPixels;
+    AndroidBitmap_lockPixels(env, src_bitmap, (void **) &tPixels);
+    stackBlur->blur((unsigned int *) tPixels);
+
+    std::unique_lock<std::mutex> lock(mMutex);
+    mQueue.push(std::pair(src_bitmap, tPixels));
+    //env->CallVoidMethod(glSurfaceView, requestRenderMethodId);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_prepareBlur(JNIEnv *env, jobject thiz, jint width, jint height,
+                                                                                    jint radius, jdouble resize_ratio) {
+    stackBlur->prepare(width, height, radius, resize_ratio);
 }

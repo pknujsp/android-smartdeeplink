@@ -45,17 +45,15 @@ struct SharedValues {
 #define RGB_RED_SHIFT  11
 #define RGB_GREEN_SHIFT  5
 
-// ARGB8888
-#define ARGB_PIXEL_MASK 0xff
-
-#define ARGB_ALPHA_MASK 0xff
-#define ARGB_GREEN_MASK 0xff
-#define ARGB_BLUE_MASK 0xff
-#define ARGB_RED_MASK 0xff
+#define ARGB_PIXEL_MASK  0xff000000
+#define ARGB_BLUE_MASK 0x0000ff
+#define ARGB_GREEN_MASK 0x00ff00
+#define ARGB_RED_MASK 0xff0000
 
 #define ARGB_ALPHA_SHIFT 24
 #define ARGB_BLUE_SHIFT 16
 #define ARGB_GREEN_SHIFT 8
+
 
 static const unsigned short MUL_TABLE[] = {512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512,
                                            454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512,

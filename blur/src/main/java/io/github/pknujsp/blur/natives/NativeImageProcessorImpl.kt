@@ -1,17 +1,15 @@
 package io.github.pknujsp.blur.natives
 
 import android.graphics.Bitmap
-import io.github.pknujsp.blur.processor.DirectBlurProcessor
 
-object NativeImageProcessorImpl : DirectBlurProcessor, NativeBlurProcessor {
+object NativeImageProcessorImpl : NativeBlurProcessor {
 
   init {
-    System.loadLibrary("image-processor")
+    System.loadLibrary("stack-blur")
   }
 
-  external override fun blur(srcBitmap: Bitmap, width: Int, height: Int, radius: Int, resizeRatio: Double): Bitmap?
 
-  external override fun initBlur(width: Int, height: Int, radius: Int, resizeRatio: Double)
+  external override fun prepareBlur(width: Int, height: Int, radius: Int, resizeRatio: Double)
 
   external override fun blur(srcBitmap: Bitmap): Bitmap?
 

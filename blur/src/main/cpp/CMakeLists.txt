@@ -1,6 +1,4 @@
-
 cmake_minimum_required(VERSION 3.22.1)
-
 
 project("image-processor")
 
@@ -8,22 +6,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
 add_definitions(-DVK_USE_PLATFORM_ANDROID_KHR=1)
 
-
 add_library(
-        image-processor
+        stack-blur
 
         SHARED
 
-        image-processor.cpp
-        blur.h
-        stack-blur-rgb565.cpp
-        blur-manager.h
-        blur-manager.cpp
-        shared-values.h
-        stack-blur-argb8888.cpp
-        threadpool.cpp
-        threadpool.h
+        stackblur/blur.h
+        stackblur/ABGR-StackBlur.cpp
+        stackblur/abgr-stackblur.h
+        stackblur/shared-values.h
+        stackblur/threadpool.cpp
+        stackblur/threadpool.h
+        stackblur/RGB-StackBlur.cpp
+        BlurManager.cpp
+        BlurManager.h
 )
+
 
 add_library(
         gl-blurring
@@ -32,15 +30,7 @@ add_library(
 
         glblurringview.cpp
         glblurringview.h
-)
-
-add_library(
-        render-toolkit
-
-        SHARED
-
-        toolkit/render-toolkit.cpp
-        toolkit/render-toolkit.h
+        stackblur/shared-values.h
 )
 
 find_library(
@@ -55,35 +45,24 @@ find_library(
 
 find_library(EGL-lib EGL)
 find_library(GLESv3-lib GLESv3)
-
 find_library(ANDROID_LIB android)
 
 target_link_libraries( # Specifies the target library.
-        image-processor
+        stack-blur
 
-        vulkan
         ${log-lib}
         ${jnigraphics-lib}
         ${EGL-lib}
         ${GLESv3-lib}
         ${ANDROID_LIB}
         )
+
 
 target_link_libraries( # Specifies the target library.
         gl-blurring
 
         vulkan
-        ${log-lib}
-        ${jnigraphics-lib}
-        ${EGL-lib}
-        ${GLESv3-lib}
-        ${ANDROID_LIB}
-        )
-
-target_link_libraries( # Specifies the target library.
-        render-toolkit
-
-        vulkan
+        stack-blur
         ${log-lib}
         ${jnigraphics-lib}
         ${EGL-lib}

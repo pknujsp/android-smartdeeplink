@@ -2,12 +2,9 @@ package io.github.pknujsp.blur.view
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Rect
 import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
-import android.opengl.Matrix
-import android.util.Size
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -17,16 +14,11 @@ import androidx.core.view.drawToBitmap
 import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
 import io.github.pknujsp.blur.R
 import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
-import io.github.pknujsp.blur.processor.GlobalBlurProcessorImpl
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -39,81 +31,24 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private var initialized = false
 
   private var collectingView: View? = null
-  private var blurredBitmap: Bitmap? = null
   private var window: Window? = null
 
   private val collectingViewCoordinatesRect: Rect = Rect(0, 0, 0, 0)
   private val windowRect: Rect = Rect(0, 0, 0, 0)
 
-  private val mutex = Mutex()
-
-  private val nativeGLBlurringImpl = NativeGLBlurringImpl()
 
   private companion object {
 
     val mainScope = MainScope()
-    @OptIn(DelicateCoroutinesApi::class) private val dispatcher =
-      newFixedThreadPoolContext(Runtime.getRuntime().availableProcessors(), "BlurringThreadPool")
-
-    val blurProcessor: BlurringViewProcessor = GlobalBlurProcessorImpl
-
-    const val vertexShader = """
-        uniform mat4 uMVPMatrix;
-        attribute vec4 vPosition;
-        attribute vec2 a_texCoord;
-        varying vec2 v_texCoord;
-        void main() {
-          gl_Position = uMVPMatrix * vPosition;
-          v_texCoord = a_texCoord;
-        }
-        """
-
-    const val fragmentShader = """
-        precision mediump float;
-        varying vec2 v_texCoord;
-        uniform sampler2D s_texture;
-        void main() {
-          gl_FragColor = texture2D(s_texture, v_texCoord);
-        }
-        """
-
-    val vertices = floatArrayOf(
-      -1.0f, -1.0f, 0f,  // bottom left
-      1.0f, -1.0f, 0f,  // bottom right
-      1.0f, 1.0f, 0f,  // top right
-      -1.0f, 1.0f, 0f,  // top left
-    )
-
-    val indices = byteArrayOf(
-      0, 1, 2,
-      2, 3, 0,
-    )
-
-    val vertexBuffer = vertices.createBuffer(4)
-    val indexBuffer: ByteBuffer = ByteBuffer.allocateDirect(indices.size).apply {
-      put(indices)
-      position(0)
-    }
-
-    var positionHandle: Int = 0
-    var uvHandle: Int = 0
-    var program: Int = 0
-    val textures = IntArray(1)
-    var mvpMatrixHandle: Int = 0
-
-    val vpMatrix: FloatArray = FloatArray(16)
-    val modelMatrix = FloatArray(16)
-    val mvpMatrix = FloatArray(16)
+    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(Runtime.getRuntime().availableProcessors(), "BlurringThreadPool")
   }
 
   private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
     if (initialized) {
-      mainScope.launchSafely(dispatcher) {
-        mutex.withLock {
-          collectingView?.drawToBitmap()?.let { bitmap ->
-            blurredBitmap = blurProcessor.blur(bitmap)
-            if (blurredBitmap != null) requestRender()
-          }
+      mainScope.launchSafely(Dispatchers.Default) {
+        collectingView?.drawToBitmap()?.let { bitmap ->
+          NativeGLBlurringImpl.blurAndDrawFrame(bitmap)
+          requestRender()
         }
       }.onException { _, t ->
         t.printStackTrace()
@@ -135,8 +70,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     setEGLContextClientVersion(3)
     setRenderer(this)
     renderMode = RENDERMODE_WHEN_DIRTY
-
-    Matrix.setIdentityM(vpMatrix, 0)
   }
 
   override fun onAttachedToWindow() {
@@ -152,9 +85,9 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
         windowRect.right = window.decorView.width
         windowRect.bottom = window.decorView.height
 
-        blurProcessor.initBlur(
-          context,
-          Size(collectingViewCoordinatesRect.width(), collectingViewCoordinatesRect.height()),
+        NativeGLBlurringImpl.prepareBlur(
+          collectingViewCoordinatesRect.width(),
+          collectingViewCoordinatesRect.height(),
           radius,
           resizeRatio,
         )
@@ -166,7 +99,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
 
   override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-    NativeGLBlurringImpl.onSurfaceCreated()
+    NativeGLBlurringImpl.onSurfaceCreated(this)
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -182,27 +115,13 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   override fun onDrawFrame(gl: GL10?) {
-    NativeGLBlurringImpl.onDrawFrame(blurredBitmap)
+    NativeGLBlurringImpl.onDrawFrame()
   }
 
-  private fun loadShader(type: Int, shaderCode: String): Int = glCreateShader(type).also { shader ->
-    glShaderSource(shader, shaderCode)
-    glCompileShader(shader)
-  }
 
   override fun onPause() {
     super.onPause()
-    collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
-    blurProcessor.onClear()
     NativeGLBlurringImpl.onPause()
-  }
-
-}
-
-private fun FloatArray.createBuffer(capacity: Int): FloatBuffer = ByteBuffer.allocateDirect(size * capacity).run {
-  order(ByteOrder.nativeOrder())
-  asFloatBuffer().apply {
-    put(this@createBuffer)
-    position(0)
+    collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
   }
 }
