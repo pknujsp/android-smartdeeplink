@@ -74,10 +74,10 @@ jobject toBitmap(JNIEnv *env, jobject decorView, _jclass *decorViewClass, _jclas
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobject thiz, jobject blur_listener, jint width,
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_initBlur(JNIEnv *env, jobject thiz, jint width,
                                                                       jint height, jint radius, jdouble resize_ratio) {
     BlurManager &blurManager = BlurManager::getInstance();
-    blurManager.initBlur(env, thiz, blur_listener, width, height, radius, resize_ratio);
+    blurManager.initBlur(env, thiz, width, height, radius, resize_ratio);
 
     blurManager.bitmapClass = env->FindClass("android/graphics/Bitmap");
     blurManager.createBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createBitmap",

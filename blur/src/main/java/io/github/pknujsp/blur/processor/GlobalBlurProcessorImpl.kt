@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.util.Size
 import android.view.Window
 import io.github.pknujsp.blur.BlurUtils.toBitmap
-import io.github.pknujsp.blur.DirectBlurListener
 import io.github.pknujsp.blur.kotlin.KotlinBlurProcessor
 import io.github.pknujsp.blur.natives.NativeBlurProcessor
 import io.github.pknujsp.blur.natives.NativeImageProcessorImpl

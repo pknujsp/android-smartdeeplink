@@ -10,10 +10,7 @@
 #define ANDROID_LOG_DEBUG 3
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
 
-void BlurManager::initBlur(JNIEnv *env, jobject thiz, jobject blur_listener, jint width, jint height, jint radius, jdouble resize_ratio) {
-    blurListenerObject = env->NewGlobalRef(blur_listener);
-    onBlurredMethodId = env->GetMethodID(env->GetObjectClass(blur_listener), "onBlurred", "(Landroid/graphics/Bitmap;)V");
-
+void BlurManager::initBlur(JNIEnv *env, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio) {
     sharedValues = init(width, height, radius, resize_ratio);
 }
 

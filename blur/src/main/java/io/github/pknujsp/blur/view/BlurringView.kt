@@ -15,7 +15,6 @@ import android.view.Window
 import android.widget.FrameLayout
 import androidx.core.view.drawToBitmap
 import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
-import io.github.pknujsp.blur.DirectBlurListener
 import io.github.pknujsp.blur.R
 import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
 import io.github.pknujsp.blur.processor.GlobalBlurProcessorImpl
@@ -196,6 +195,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     super.onPause()
     collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
     blurProcessor.onClear()
+    NativeGLBlurringImpl.onPause()
   }
 
   override fun onBlurred(bitmap: Bitmap?) {

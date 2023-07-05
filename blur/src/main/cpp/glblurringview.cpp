@@ -51,23 +51,23 @@ static GLfloat mvpMatrix[16];
 static GLint bitmapWidth = 0;
 static GLint bitmapHeight = 0;
 
-GLuint loadShader(GLenum type, const char *shaderCode);
+static GLuint loadShader(GLenum type, const char *shaderCode);
 
-void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset);
+static void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset);
 
-bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bStart, int bLength);
+static bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bStart, int bLength);
 
-void setIdentityM(GLfloat sm[16], int smOffset);
+static void setIdentityM(GLfloat sm[16], int smOffset);
 
-void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
+static void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
 
-void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
+static void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
 
-void initIndicies();
+static void initIndicies();
 
-void printError(const std::string &msg);
+static void printError(const std::string &msg);
 
-void printError(const char *msg) {
+static void printError(const char *msg) {
     auto error = glGetError();
     if (error != GL_NO_ERROR) {
         LOGD("%s Err: %d", msg, error);
@@ -88,7 +88,7 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-GLuint loadShader(GLenum type, const char *shaderCode) {
+static GLuint loadShader(GLenum type, const char *shaderCode) {
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &shaderCode, nullptr);
     glShaderSource(shader, 1, &shaderCode, nullptr);
@@ -118,7 +118,7 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFr
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset) {
+static void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset) {
     if (overlap(result, resultOffset, 16, lhs, lhsOffset, 16)
         || overlap(result, resultOffset, 16, rhs, rhsOffset, 16)) {
         float tmp[16];
@@ -141,11 +141,9 @@ void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, 
             tmp[4 * i + 3] = ri3;
         }
 
-        // copy from tmp to result
         for (int i = 0; i < 16; i++) {
             result[i + resultOffset] = tmp[i];
         }
-
     } else {
         for (int i = 0; i < 4; i++) {
             float rhs_i0 = rhs[4 * i + 0 + rhsOffset];
@@ -168,7 +166,7 @@ void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, 
     }
 }
 
-bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bStart, int bLength) {
+static bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bStart, int bLength) {
     if (a != b)
         return false;
     if (aStart == bStart)
@@ -214,7 +212,7 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
     positionHandle = glGetAttribLocation(program, "vPosition");
     mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix");
 
-    glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix);
+    //glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix);
     setIdentityM(mvpMatrix, 0);
 
     glUseProgram(program);
@@ -223,7 +221,7 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
     initVerticies(statusBarHeight, navigationBarHeight, windowHeight);
     initUvs(statusBarHeight, navigationBarHeight, windowHeight);
 
-    multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0);
+    //multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0);
     glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix);
 
     glGenTextures(1, &textures);
@@ -231,13 +229,13 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
 
 }
 
-void initIndicies() {
+static void initIndicies() {
     glGenBuffers(1, &indexBufferObj);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObj);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 }
 
-void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
+static void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
     const GLfloat statusBarRatio = statusBarHeight / windowHeight;
     const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
 
@@ -257,7 +255,7 @@ void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat
     glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 3 * sizeof(GLfloat), nullptr);
 }
 
-void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
+static void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
     const GLfloat statusBarRatio = statusBarHeight / windowHeight;
     const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
 
@@ -277,7 +275,7 @@ void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windo
     glVertexAttribPointer(uvHandle, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
-void setIdentityM(GLfloat *sm, int smOffset) {
+static void setIdentityM(GLfloat *sm, int smOffset) {
     for (int i = 0; i < 16; i++) {
         sm[smOffset + i] = 0;
     }

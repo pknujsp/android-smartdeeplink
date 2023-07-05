@@ -17,8 +17,6 @@ private:
 
 public:
     jclass bitmapClass = nullptr;
-    jclass blurListener = nullptr;
-    jobject blurListenerObject = nullptr;
 
     jmethodID createBitmapMethod = nullptr;
     jmethodID createScaledBitmapMethod = nullptr;
@@ -34,7 +32,7 @@ public:
     BlurManager(BlurManager const &) = delete;  // 복사 생성자
     void operator=(BlurManager const &) = delete;  // 복사 대입 연산자
 
-    void initBlur(JNIEnv *env, jobject thiz, jobject blur_listener, jint width, jint height, jint radius, jdouble resize_ratio);
+    void initBlur(JNIEnv *env, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio);
 
     void startBlur(JNIEnv *env, jobject srcBitmap) const;
 
