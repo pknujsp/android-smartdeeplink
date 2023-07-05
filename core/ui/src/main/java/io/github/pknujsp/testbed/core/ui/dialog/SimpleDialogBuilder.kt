@@ -240,8 +240,8 @@ class SimpleDialogBuilder private constructor(
    */
   fun buildAndShow(): SimpleDialog = dialogBuilder.run {
     create()
-    dialogStyler.applyStyle(this)
     show()
+    dialogStyler.applyStyle(this)
 
     when (dialogStyler.simpleDialogStyleAttributes.dialogType) {
       DialogType.BottomSheet -> BottomSheetDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)

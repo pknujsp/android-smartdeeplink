@@ -28,4 +28,5 @@ Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur(JNIEnv *env, j
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_onClear(JNIEnv *env, jobject thiz) {
+    stackBlur->onDestroy();
 }

@@ -35,6 +35,7 @@ internal class SimpleDialogStyler(
   private val activityWindow = (context as Activity).window
   private var mainContentView: FrameLayout by Delegates.notNull()
   private var compatContentView: FrameLayout by Delegates.notNull()
+  private var blurringView: BlurringView? = null
 
   private companion object {
     private val density: Float = Resources.getSystem().displayMetrics.density
@@ -65,12 +66,20 @@ internal class SimpleDialogStyler(
       setBackgroundAndModal(compatContentView)
       setMainContentViewLayout()
       setCompatContentViewLayout()
-      setDim(this)
+      //setDim(this)
+
+      if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
+        if (simpleDialogStyleAttributes.dim) {
+          val dim = (simpleDialogStyleAttributes.dimIndensity / 100f * 255).toInt()
+          if (blurringView == null) mainContentView.setBackgroundColor(dim shl 24)
+          else blurringView!!.setBackgroundColor(dim shl 24)
+        }
+      }
 
       attributes = attributes.also { attr ->
         attr.copyFrom(attr)
         setWindowLayout(attr)
-        setDim(attr)
+        //setDim(attr)
       }
     }
   }
@@ -88,12 +97,18 @@ internal class SimpleDialogStyler(
 
     if (simpleDialogStyleAttributes.blur) {
       val radius = (maxBlurRadius * (simpleDialogStyleAttributes.blurIndensity / 100.0)).toInt()
-      val blurringView = BlurringView(activityWindow.context, 1.0, radius)
-      dialog.setOnShowListener {
-        blurringView.onResume()
+      blurringView = BlurringView(activityWindow.context, radius).also { view ->
+        dialog.setOnShowListener {
+          view.onResume()
+        }
+        dialog.setOnDismissListener {
+          view.onPause()
+          mainContentView.removeView(view)
+        }
+        mainContentView.addView(view, 0, view.layoutParams)
+
       }
 
-      mainContentView.addView(blurringView, 0, blurringView.layoutParams)
 
     }
   }
@@ -161,10 +176,6 @@ internal class SimpleDialogStyler(
         } else {
           setBackgroundResource(simpleDialogStyleAttributes.backgroundResourceId!!)
         }
-      }
-
-      if (simpleDialogStyleAttributes.dialogType != DialogType.Fullscreen) {
-        elevation = simpleDialogStyleAttributes.elevation * density
       }
     }
   }

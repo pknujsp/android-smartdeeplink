@@ -20,6 +20,10 @@
 
 using namespace std;
 
+#define TAG "Blur"
+#define ANDROID_LOG_DEBUG 3
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
+
 // RGB565 or ARGB8888
 template<typename T>
 class Blur {
@@ -36,6 +40,10 @@ public:
 
     ~Blur() {
         delete threadPool;
+        delete sharedValues;
+    }
+
+    void onDestroy() {
         delete sharedValues;
     }
 
@@ -97,8 +105,10 @@ public:
         const int heightMax = targetHeight - 1;
         const int newRadius = radius % 2 == 0 ? radius + 1 : radius;
 
-        long threads = get_nprocs();
+
+        long threads = sysconf(_SC_NPROCESSORS_ONLN);
         threadPool = new ThreadPool(threads);
+        LOGD("threads : %ld", threads);
 
         sharedValues = new SharedValues{widthMax, heightMax, newRadius * 2 + 1, MUL_TABLE[newRadius], SHR_TABLE[newRadius],
                                         targetWidth, targetHeight, newRadius, threads, resize};

@@ -11,7 +11,7 @@ class NativeGLBlurringImpl {
 
     external fun onSurfaceCreated(blurringView: GLSurfaceView)
     external fun onSurfaceChanged(width: Int, height: Int, collectingViewRect: IntArray, windowRect: IntArray)
-    external fun onDrawFrame()
+    external fun onDrawFrame(bitmap: Bitmap)
 
     external fun blurAndDrawFrame(srcBitmap: Bitmap)
 

@@ -63,7 +63,7 @@ internal object BlurUtils {
   }
 
 
-  private fun Bitmap.resize(resizeRatio: Double): Bitmap? = run {
+  fun Bitmap.resize(resizeRatio: Double): Bitmap? = run {
     try {
       Bitmap.createScaledBitmap(this, (width / resizeRatio).toInt(), (height / resizeRatio).toInt(), true)
     } catch (e: Exception) {

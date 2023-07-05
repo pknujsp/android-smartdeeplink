@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginBottom
@@ -40,65 +41,72 @@ abstract class SimpleDialog(
     dialog.dismiss()
   }
 
-  protected open fun initDrag() {
-    dialog.window?.decorView?.doOnPreDraw {
-      (dialog.window?.decorView as? ViewGroup)?.also { decorView ->
-        (decorView.children.first() as? ViewGroup)?.children?.filter { it is FrameLayout }?.first()?.also { dialogView ->
-
-          _dialogView = dialogView
-
-          _draggablePixelsRangeRect = RectF().apply {
-            left = (decorView.left + dialogView.marginLeft).toFloat()
-            top = (decorView.top - dialogView.marginTop).toFloat()
-            right = (decorView.right - dialogView.width - dialogView.marginRight).toFloat()
-            bottom = (decorView.bottom - dialogView.height - dialogView.marginBottom).toFloat()
-          }
-          _dialogViewFirstPixels = Pair(dialogView.x, dialogView.y)
-
-          if (!attributes.isDraggable) return@doOnPreDraw
-
-          val decorViewWidth = decorView.width
-          val decorViewHeight = decorView.height
-
-          dialogView.isClickable = true
-
-          var firstDownX: Float = 0f
-          var firstDownY: Float = 0f
-          var firstDialogViewX = 0f
-          var firstDialogViewY = 0f
-
-          var newX: Float = 0f
-          var newY: Float = 0f
-
-          dialogView.setOnTouchListener(
-            fun(view: View, event: MotionEvent): Boolean {
+  protected open fun initTouchEvent() {
+    (dialog.window?.decorView as? ViewGroup)?.let { decorView ->
+      decorView.doOnPreDraw {
+        decorView.allViews.filter { it.id == android.R.id.content }.first().apply {
+          setOnTouchListener(
+            fun(_: View, event: MotionEvent): Boolean {
               when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                  firstDownX = event.rawX
-                  firstDownY = event.rawY
-                  firstDialogViewX = view.x
-                  firstDialogViewY = view.y
+                  dialog.dismiss()
                 }
 
-                MotionEvent.ACTION_MOVE -> {
-                  val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
-                  view.animate().x(xy.first).y(xy.second).setDuration(0).start()
-                }
               }
               return true
             },
           )
         }
+
+        _dialogView = (decorView.children.first() as? ViewGroup)?.children?.filter { it is FrameLayout }?.first()
+        _draggablePixelsRangeRect = RectF().apply {
+          left = (decorView.left + dialogView.marginLeft).toFloat()
+          top = (decorView.top - dialogView.marginTop).toFloat()
+          right = (decorView.right - dialogView.width - dialogView.marginRight).toFloat()
+          bottom = (decorView.bottom - dialogView.height - dialogView.marginBottom).toFloat()
+        }
+        _dialogViewFirstPixels = Pair(dialogView.x, dialogView.y)
+
+        if (!attributes.isDraggable) return@doOnPreDraw
+
+        val decorViewWidth = decorView.width
+        val decorViewHeight = decorView.height
+
+        dialogView.isClickable = true
+
+        var firstDownX: Float = 0f
+        var firstDownY: Float = 0f
+        var firstDialogViewX = 0f
+        var firstDialogViewY = 0f
+
+        var newX: Float = 0f
+        var newY: Float = 0f
+
+        dialogView.setOnTouchListener(
+          fun(view: View, event: MotionEvent): Boolean {
+            when (event.action) {
+              MotionEvent.ACTION_DOWN -> {
+                firstDownX = event.rawX
+                firstDownY = event.rawY
+                firstDialogViewX = view.x
+                firstDialogViewY = view.y
+              }
+
+              MotionEvent.ACTION_MOVE -> {
+                val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
+                view.animate().x(xy.first).y(xy.second).setDuration(0).start()
+              }
+            }
+            return true
+          },
+        )
       }
+
     }
   }
 
   private fun init() {
-    dialog.run {
-      setCancelable(attributes.isCancelable)
-      setCanceledOnTouchOutside(attributes.isCancelable)
-    }
-    initDrag()
+    initTouchEvent()
   }
 
   private fun filter(newX: Float, newY: Float): Pair<Float, Float> = when (attributes.dragDirection) {

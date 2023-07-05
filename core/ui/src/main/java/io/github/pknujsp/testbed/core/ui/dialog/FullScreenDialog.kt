@@ -8,5 +8,5 @@ class FullScreenDialog(
 ) : SimpleDialog(dialog, attributes, styleAttributes) {
 
 
-  override fun initDrag() {}
+  override fun initTouchEvent() {}
 }
