@@ -11,5 +11,7 @@ class NativeGLBlurringImpl {
     external fun onSurfaceCreated()
     external fun onSurfaceChanged(width: Int, height: Int, collectingViewRect: IntArray, windowRect: IntArray)
     external fun onDrawFrame(bitmap: Bitmap?)
+
+    external fun onPause()
   }
 }

@@ -12,7 +12,6 @@
 #define ANDROID_LOG_DEBUG 3
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
-
 static const char *vertexShaderCode = R"(
     uniform mat4 uMVPMatrix;
     attribute vec4 vPosition;
@@ -32,7 +31,6 @@ static const char *fragmentShaderCode = R"(
       gl_FragColor = texture2D(s_texture, v_texCoord);
     }
 )";
-
 
 static const unsigned int indices[] = {0, 1, 2, 2, 3, 0};
 
@@ -101,9 +99,8 @@ GLuint loadShader(GLenum type, const char *shaderCode) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz, jobject bitmap) {
-    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
-
     if (bitmap == nullptr) return;
+    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
 
     void *pixels = nullptr;
     if (AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels) != 0) return;
@@ -117,7 +114,6 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFr
                  GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    //glDeleteTextures(1, &textures);
 
     AndroidBitmap_unlockPixels(env, bitmap);
 }
@@ -200,8 +196,6 @@ JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfaceChanged(JNIEnv *env, jobject thiz, jint width, jint height,
                                                                                          jintArray collecting_view_rect, jintArray window_rect) {
     glViewport(0, 0, width, height);
-    bitmapWidth = width;
-    bitmapHeight = height;
 
     jint *collecting_view_rect_array = env->GetIntArrayElements(collecting_view_rect, nullptr);
     jint *window_rect_array = env->GetIntArrayElements(window_rect, nullptr);
@@ -209,6 +203,9 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfac
     const auto statusBarHeight = (GLfloat) collecting_view_rect_array[1];
     const auto navigationBarHeight = (GLfloat) (window_rect_array[3] - collecting_view_rect_array[3]);
     const auto windowHeight = (GLfloat) window_rect_array[3];
+
+    bitmapWidth = width;
+    bitmapHeight = (GLint) windowHeight;
 
     delete[] collecting_view_rect_array;
     delete[] window_rect_array;
@@ -265,10 +262,10 @@ void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windo
     const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
 
     const GLfloat uvs[] = {
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f,
+            0.0f, 1.0f - navigationBarRatio,
+            1.0f, 1.0f - navigationBarRatio,
+            1.0f, statusBarRatio,
+            0.0f, statusBarRatio,
     };
 
     glGenBuffers(1, &uvsBufferObj);
@@ -287,4 +284,14 @@ void setIdentityM(GLfloat *sm, int smOffset) {
     for (int i = 0; i < 16; i += 5) {
         sm[smOffset + i] = 1.0f;
     }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onPause(JNIEnv *env, jobject thiz) {
+    glDeleteTextures(1, &textures);
+    glDeleteBuffers(1, &verticesBufferObj);
+    glDeleteBuffers(1, &uvsBufferObj);
+    glDeleteBuffers(1, &indexBufferObj);
+    glDeleteProgram(program);
 }
