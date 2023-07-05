@@ -16,7 +16,6 @@ import io.github.pknujsp.blur.R
 import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.newFixedThreadPoolContext
 import javax.microedition.khronos.egl.EGLConfig
@@ -40,15 +39,17 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private companion object {
 
     val mainScope = MainScope()
-    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(Runtime.getRuntime().availableProcessors(), "BlurringThreadPool")
+    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(1, "BlurringThreadPool")
   }
 
   private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
     if (initialized) {
-      mainScope.launchSafely(Dispatchers.Default) {
+      mainScope.launchSafely(dispatcher) {
         collectingView?.drawToBitmap()?.let { bitmap ->
+          val start = System.currentTimeMillis()
           NativeGLBlurringImpl.blurAndDrawFrame(bitmap)
-          requestRender()
+          println("onPreDrawListener : ${System.currentTimeMillis() - start}ms")
+          //requestRender()
         }
       }.onException { _, t ->
         t.printStackTrace()

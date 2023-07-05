@@ -21,7 +21,7 @@ public:
         int colOffset;
 
         unsigned int red, green, blue;
-        unsigned int multiplier;
+        int multiplier;
 
         const int widthMax = sharedValues->widthMax;
         const int blurRadius = sharedValues->blurRadius;
@@ -47,9 +47,9 @@ public:
                 pixel = imagePixels[startPixelIndex];
                 blurStack[stackIndex] = pixel;
 
-                blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                red = (pixel bitand ARGB_RED_MASK);
+                blue = (pixel bitand ARGB_BLUE_MASK);
 
                 multiplier = rad + 1;
                 sumRed += red * multiplier;
@@ -69,9 +69,9 @@ public:
 
                     multiplier = blurRadius + 1 - rad;
 
-                    blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                    red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                     green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                    red = (pixel bitand ARGB_RED_MASK);
+                    blue = (pixel bitand ARGB_BLUE_MASK);
 
                     sumRed += red * multiplier;
                     sumGreen += green * multiplier;
@@ -92,10 +92,11 @@ public:
 
             for (int col = 0; col < targetWidth; col++) {
                 imagePixels[outputPixelIndex] =
-                        ((imagePixels[outputPixelIndex] bitand ARGB_PIXEL_MASK) bitor
-                         (((sumBlue * multiplySum) >> shiftSum) bitand ARGB_BLUE_MASK) bitor
-                         ((((sumGreen * multiplySum) >> shiftSum) bitand ARGB_GREEN_MASK) << ARGB_GREEN_SHIFT) bitor
-                         ((((sumRed * multiplySum) >> shiftSum) bitand ARGB_RED_MASK)));
+                        (unsigned int) ((imagePixels[outputPixelIndex] bitand ARGB_PIXEL_MASK) bitor
+                                        ((((sumRed * multiplySum) >> shiftSum) bitand ARGB_RED_MASK) << ARGB_RED_SHIFT) bitor
+                                        ((((sumGreen * multiplySum) >> shiftSum) bitand ARGB_GREEN_MASK) << ARGB_GREEN_SHIFT) bitor
+                                        (((sumBlue * multiplySum) >> shiftSum) bitand ARGB_BLUE_MASK));
+
                 outputPixelIndex++;
                 sumRed -= sumOutputRed;
                 sumGreen -= sumOutputGreen;
@@ -105,9 +106,9 @@ public:
                 if (stackStart >= divisor) stackStart -= divisor;
                 stackIndex = stackStart;
 
-                sumOutputRed -= (blurStack[stackIndex] bitand ARGB_RED_MASK);
+                sumOutputRed -= ((blurStack[stackIndex] >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 sumOutputGreen -= ((blurStack[stackIndex] >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                sumOutputBlue -= ((blurStack[stackIndex] >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                sumOutputBlue -= (blurStack[stackIndex] bitand ARGB_BLUE_MASK);
 
                 if (colOffset < widthMax) {
                     inPixelIndex++;
@@ -118,9 +119,9 @@ public:
 
                 blurStack[stackIndex] = pixel;
 
-                red = (pixel bitand ARGB_RED_MASK);
+                red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                blue = (pixel bitand ARGB_BLUE_MASK);
 
                 sumInputRed += red;
                 sumInputGreen += green;
@@ -135,9 +136,9 @@ public:
 
                 pixel = blurStack[stackIndex];
 
-                red = (pixel bitand ARGB_RED_MASK);
+                red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                blue = (pixel bitand ARGB_BLUE_MASK);
 
                 sumOutputRed += red;
                 sumOutputGreen += green;
@@ -176,9 +177,9 @@ public:
                 pixel = imagePixels[sourceIndex];
                 blurStack[stackIndex] = pixel;
 
-                red = (pixel bitand ARGB_RED_MASK);
+                red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                blue = (pixel bitand ARGB_BLUE_MASK);
 
                 int multiplier = rad + 1;
 
@@ -199,9 +200,9 @@ public:
 
                     multiplier = blurRadius + 1 - rad;
 
-                    red = (pixel bitand ARGB_RED_MASK);
+                    red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                     green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                    blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                    blue = (pixel bitand ARGB_BLUE_MASK);
 
                     sumRed += red * multiplier;
                     sumGreen += green * multiplier;
@@ -220,10 +221,10 @@ public:
 
             for (int y = 0; y < targetHeight; y++) {
                 imagePixels[destinationIndex] =
-                        ((imagePixels[destinationIndex] bitand ARGB_PIXEL_MASK) bitor
-                         (((sumBlue * multiplySum) >> shiftSum) bitand ARGB_BLUE_MASK) bitor
-                         ((((sumGreen * multiplySum) >> shiftSum) bitand ARGB_GREEN_MASK) << ARGB_GREEN_SHIFT) bitor
-                         ((((sumRed * multiplySum) >> shiftSum) bitand ARGB_RED_MASK)));
+                        (unsigned int) ((imagePixels[destinationIndex] bitand ARGB_PIXEL_MASK) bitor
+                                        ((((sumRed * multiplySum) >> shiftSum) bitand ARGB_RED_MASK) << ARGB_RED_SHIFT) bitor
+                                        ((((sumGreen * multiplySum) >> shiftSum) bitand ARGB_GREEN_MASK) << ARGB_GREEN_SHIFT) bitor
+                                        ((((sumBlue * multiplySum) >> shiftSum) bitand ARGB_BLUE_MASK)));
 
                 destinationIndex += targetWidth;
                 sumRed -= sumOutputRed;
@@ -236,9 +237,9 @@ public:
 
                 pixel = blurStack[stackIndex];
 
-                sumOutputRed -= (pixel bitand ARGB_RED_MASK);
+                sumOutputRed -= ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 sumOutputGreen -= ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                sumOutputBlue -= ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                sumOutputBlue -= (pixel bitand ARGB_BLUE_MASK);
 
                 if (yOffset < heightMax) {
                     sourceIndex += targetWidth;
@@ -249,9 +250,9 @@ public:
 
                 pixel = imagePixels[sourceIndex];
 
-                sumInputRed += (pixel bitand ARGB_RED_MASK);
+                sumInputRed += ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 sumInputGreen += ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                sumInputBlue += ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                sumInputBlue += (pixel bitand ARGB_BLUE_MASK);
 
                 sumRed += sumInputRed;
                 sumGreen += sumInputGreen;
@@ -262,9 +263,9 @@ public:
 
                 pixel = blurStack[stackIndex];
 
-                red = (pixel bitand ARGB_RED_MASK);
+                red = ((pixel >> ARGB_RED_SHIFT) bitand ARGB_RED_MASK);
                 green = ((pixel >> ARGB_GREEN_SHIFT) bitand ARGB_GREEN_MASK);
-                blue = ((pixel >> ARGB_BLUE_SHIFT) bitand ARGB_BLUE_MASK);
+                blue = (pixel bitand ARGB_BLUE_MASK);
 
                 sumOutputRed += red;
                 sumOutputGreen += green;

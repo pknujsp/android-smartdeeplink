@@ -45,13 +45,12 @@ struct SharedValues {
 #define RGB_RED_SHIFT  11
 #define RGB_GREEN_SHIFT  5
 
-#define ARGB_PIXEL_MASK  0xff000000
-#define ARGB_BLUE_MASK 0x0000ff
-#define ARGB_GREEN_MASK 0x00ff00
-#define ARGB_RED_MASK 0xff0000
+#define ARGB_PIXEL_MASK -0x1000000
+#define ARGB_BLUE_MASK 0xff
+#define ARGB_GREEN_MASK 0xff
+#define ARGB_RED_MASK 0xff
 
-#define ARGB_ALPHA_SHIFT 24
-#define ARGB_BLUE_SHIFT 16
+#define ARGB_RED_SHIFT 16
 #define ARGB_GREEN_SHIFT 8
 
 

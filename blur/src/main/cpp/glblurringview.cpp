@@ -112,14 +112,14 @@ static GLuint loadShader(GLenum type, const char *shaderCode) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz) {
-    std::unique_lock<std::recursive_mutex> lock(mMutex);
+    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
+
+    std::unique_lock<std::mutex> lock(mMutex);
     if (mQueue.empty()) return;
     std::pair<jobject, void *> pair = mQueue.front();
 
     void *tPixels = pair.second;
     jobject tBitmap = pair.first;
-
-    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, textures);
 
@@ -130,8 +130,6 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFr
                  GL_RGBA, GL_UNSIGNED_BYTE, tPixels);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-    AndroidBitmap_unlockPixels(env, tBitmap);
 }
 
 
@@ -314,13 +312,15 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onPause(
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_blurAndDrawFrame(JNIEnv *env, jobject thiz, jobject src_bitmap) {
-    void *tPixels;
+    void *tPixels = nullptr;
     AndroidBitmap_lockPixels(env, src_bitmap, (void **) &tPixels);
     stackBlur->blur((unsigned int *) tPixels);
 
     std::unique_lock<std::mutex> lock(mMutex);
     mQueue.push(std::pair(src_bitmap, tPixels));
-    //env->CallVoidMethod(glSurfaceView, requestRenderMethodId);
+    env->CallVoidMethod(glSurfaceView, requestRenderMethodId);
+    AndroidBitmap_unlockPixels(env, src_bitmap);
+
 }
 
 extern "C"
