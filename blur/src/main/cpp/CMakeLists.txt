@@ -20,8 +20,17 @@ add_library(
         blur-manager.h
         blur-manager.cpp
         shared-values.h
-        glblur.cpp
-        glblur.h
+        glblurringview.cpp
+        glblurringview.h
+)
+
+add_library(
+        gl-blurring
+
+        SHARED
+
+        glblurringview.cpp
+        glblurringview.h
 )
 
 find_library(
@@ -41,6 +50,17 @@ find_library(ANDROID_LIB android)
 
 target_link_libraries( # Specifies the target library.
         image-processor
+
+        vulkan
+        ${log-lib}
+        ${jnigraphics-lib}
+        ${EGL-lib}
+        ${GLESv3-lib}
+        ${ANDROID_LIB}
+        )
+
+target_link_libraries( # Specifies the target library.
+        gl-blurring
 
         vulkan
         ${log-lib}
