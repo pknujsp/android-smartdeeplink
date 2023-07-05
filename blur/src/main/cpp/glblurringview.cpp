@@ -3,8 +3,15 @@
 //
 
 #include "glblurringview.h"
+#include <vector>
+#include <string>
+#include <cstring>
+#include <android/log.h>
 
-#define INDICES_SIZE 6
+#define LOG_TAG "GLBlurringView"
+#define ANDROID_LOG_DEBUG 3
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
 
 static const char *vertexShaderCode = R"(
     uniform mat4 uMVPMatrix;
@@ -26,28 +33,19 @@ static const char *fragmentShaderCode = R"(
     }
 )";
 
-static const float vertices[] = {
-        -1.0f, -1.0f, 0.0f,  // bottom left
-        1.0f, -1.0f, 0.0f,  // bottom right
-        1.0f, 1.0f, 0.0f,  // top right
-        -1.0f, 1.0f, 0.0f,  // top left
-};
 
-static const char indices[INDICES_SIZE] = {
-        0, 1, 2,
-        2, 3, 0,
-};
+static const unsigned int indices[] = {0, 1, 2, 2, 3, 0};
 
-static void *vertexBuffer;
+static GLuint verticesBufferObj;
+static GLuint uvsBufferObj;
+static GLuint indexBufferObj;
 
-static void *indexBuffer;
-
-static GLuint positionHandle = 0;
-static GLuint uvHandle = 0;
+static GLint positionHandle = 0;
+static GLint uvHandle = 0;
 static GLuint program = 0;
 static GLint mvpMatrixHandle = 0;
 
-static GLuint textures[1];
+static GLuint textures;
 static GLfloat vpMatrix[16];
 static GLfloat modelMatrix[16];
 static GLfloat mvpMatrix[16];
@@ -55,21 +53,39 @@ static GLfloat mvpMatrix[16];
 static GLint bitmapWidth = 0;
 static GLint bitmapHeight = 0;
 
-GLuint loadShader(int type, const char *shaderCode);
+GLuint loadShader(GLenum type, const char *shaderCode);
 
-void multiplyMM(GLfloat result[16], int resultOffset, GLfloat lhs[16], int lhsOffset, GLfloat rhs[16], int rhsOffset);
+void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset);
 
 bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bStart, int bLength);
 
 void setIdentityM(GLfloat sm[16], int smOffset);
 
+void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
+
+void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight);
+
+void initIndicies();
+
+void printError(const std::string &msg);
+
+void printError(const char *msg) {
+    auto error = glGetError();
+    if (error != GL_NO_ERROR) {
+        LOGD("%s Err: %d", msg, error);
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_onSurfaceCreated(JNIEnv *env, jobject thiz) {
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfaceCreated(JNIEnv *env, jobject thiz) {
     program = glCreateProgram();
     glAttachShader(program, loadShader(GL_VERTEX_SHADER, vertexShaderCode));
     glAttachShader(program, loadShader(GL_FRAGMENT_SHADER, fragmentShaderCode));
     glLinkProgram(program);
+
+    setIdentityM(modelMatrix, 0);
+    setIdentityM(vpMatrix, 0);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
@@ -77,38 +93,39 @@ Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_onSurfaceCreated(JNIEnv
 GLuint loadShader(GLenum type, const char *shaderCode) {
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &shaderCode, nullptr);
+    glShaderSource(shader, 1, &shaderCode, nullptr);
     glCompileShader(shader);
+    return shader;
 }
-
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_onDrawFrame(JNIEnv *env, jobject thiz, jobject bitmap) {
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz, jobject bitmap) {
     glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
 
-    if (bitmap != nullptr) {
-        glBindTexture(GL_TEXTURE_2D, textures[0]);
+    if (bitmap == nullptr) return;
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    void *pixels = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels) != 0) return;
 
-        void *pixels = nullptr;
-        AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels);
+    glBindTexture(GL_TEXTURE_2D, textures);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmapWidth, bitmapHeight, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmapWidth, bitmapHeight, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
-        glDrawElements(GL_TRIANGLES, INDICES_SIZE, GL_UNSIGNED_BYTE, indexBuffer);
-        glDeleteTextures(1, textures);
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    //glDeleteTextures(1, &textures);
+
+    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 void multiplyMM(GLfloat *result, int resultOffset, GLfloat *lhs, int lhsOffset, GLfloat *rhs, int rhsOffset) {
     if (overlap(result, resultOffset, 16, lhs, lhsOffset, 16)
         || overlap(result, resultOffset, 16, rhs, rhsOffset, 16)) {
-        float tmp[32];
+        float tmp[16];
         for (int i = 0; i < 4; i++) {
             float rhs_i0 = rhs[4 * i + 0 + rhsOffset];
             float ri0 = lhs[0 + lhsOffset] * rhs_i0;
@@ -180,65 +197,87 @@ bool overlap(const GLfloat *a, int aStart, int aLength, const GLfloat *b, int bS
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_onSurfaceChanged(JNIEnv *env, jobject thiz, jint width, jint height,
-                                                                          jintArray collecting_view_rect, jintArray window_rect) {
+Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onSurfaceChanged(JNIEnv *env, jobject thiz, jint width, jint height,
+                                                                                         jintArray collecting_view_rect, jintArray window_rect) {
     glViewport(0, 0, width, height);
     bitmapWidth = width;
     bitmapHeight = height;
 
+    jint *collecting_view_rect_array = env->GetIntArrayElements(collecting_view_rect, nullptr);
+    jint *window_rect_array = env->GetIntArrayElements(window_rect, nullptr);
+
+    const auto statusBarHeight = (GLfloat) collecting_view_rect_array[1];
+    const auto navigationBarHeight = (GLfloat) (window_rect_array[3] - collecting_view_rect_array[3]);
+    const auto windowHeight = (GLfloat) window_rect_array[3];
+
+    delete[] collecting_view_rect_array;
+    delete[] window_rect_array;
+
+    uvHandle = glGetAttribLocation(program, "a_texCoord");
     positionHandle = glGetAttribLocation(program, "vPosition");
     mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix");
 
     glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix);
-    setIdentityM(modelMatrix, 0);
     setIdentityM(mvpMatrix, 0);
 
     glUseProgram(program);
-    glEnableVertexAttribArray(positionHandle);
-    glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer);
 
-    int collecting_view_rect_size = env->GetArrayLength(collecting_view_rect);
-    int window_rect_size = env->GetArrayLength(window_rect);
-
-    jint *collecting_view_rect_array = env->GetIntArrayElements(collecting_view_rect, nullptr);
-    jint *window_rect_array = env->GetIntArrayElements(window_rect, nullptr);
-
-    GLfloat statusBarRatio = (GLfloat) collecting_view_rect_array[1] / (GLfloat) window_rect_array[3];
-    GLfloat navigationBarRatio = (GLfloat) (window_rect_array[3] - collecting_view_rect_array[3]) / (GLfloat) window_rect_array[3];
-
-    env->ReleaseIntArrayElements(collecting_view_rect, collecting_view_rect_array, 0);
-    env->ReleaseIntArrayElements(window_rect, window_rect_array, 0);
-
-    delete collecting_view_rect_array;
-    delete window_rect_array;
-
-    GLuint uvsVBO;
-    glGenBuffers(1, &uvsVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, uvsVBO);
-
-    const GLfloat uvs[] = {
-            0.0f, 1.0f - navigationBarRatio,
-            1.0f, 1.0f - navigationBarRatio,
-            1.0f, statusBarRatio,
-            0.0f, statusBarRatio,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-
-    GLuint indexVBO;
-    glGenBuffers(1, &indexVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, indexVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    uvHandle = glGetAttribLocation(program, "a_texCoord");
-    glEnableVertexAttribArray(uvHandle);
-    glVertexAttribPointer(uvHandle, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    initIndicies();
+    initVerticies(statusBarHeight, navigationBarHeight, windowHeight);
+    initUvs(statusBarHeight, navigationBarHeight, windowHeight);
 
     multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0);
-
     glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix);
 
-    glGenTextures(1, textures);
+    glGenTextures(1, &textures);
     glActiveTexture(GL_TEXTURE0);
+
+}
+
+void initIndicies() {
+    glGenBuffers(1, &indexBufferObj);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObj);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+}
+
+void initVerticies(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
+    const GLfloat statusBarRatio = statusBarHeight / windowHeight;
+    const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
+
+    static const GLfloat vertices[] = {
+            -1.0f, -1.0f, 0.0f,  // bottom left
+            1.0f, -1.0f, 0.0f,  // bottom right
+            1.0f, 1.0f, 0.0f,  // top right
+            -1.0f, 1.0f, 0.0f,  // top left
+    };
+
+    glGenBuffers(1, &verticesBufferObj);
+    glEnableVertexAttribArray(positionHandle);
+
+    glBindBuffer(GL_ARRAY_BUFFER, verticesBufferObj);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+
+    glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 3 * sizeof(GLfloat), nullptr);
+}
+
+void initUvs(GLfloat statusBarHeight, GLfloat navigationBarHeight, GLfloat windowHeight) {
+    const GLfloat statusBarRatio = statusBarHeight / windowHeight;
+    const GLfloat navigationBarRatio = navigationBarHeight / windowHeight;
+
+    const GLfloat uvs[] = {
+            0.0f, 1.0f,
+            1.0f, 1.0f,
+            1.0f, 0.0f,
+            0.0f, 0.0f,
+    };
+
+    glGenBuffers(1, &uvsBufferObj);
+    glEnableVertexAttribArray(uvHandle);
+
+    glBindBuffer(GL_ARRAY_BUFFER, uvsBufferObj);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), &uvs[0], GL_STATIC_DRAW);
+
+    glVertexAttribPointer(uvHandle, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
 void setIdentityM(GLfloat *sm, int smOffset) {

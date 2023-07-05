@@ -14,4 +14,6 @@
 #include <android/native_window.h>
 #include "shared-values.h"
 
+#define BUFFER_OFFSET(offset)   ((GLvoid*) (offset))
+
 #endif //TESTBED_GLBLURRINGVIEW_H

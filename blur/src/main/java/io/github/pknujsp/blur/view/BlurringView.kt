@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
-import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.util.Size
 import android.view.View
@@ -18,6 +17,7 @@ import androidx.core.view.drawToBitmap
 import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
 import io.github.pknujsp.blur.DirectBlurListener
 import io.github.pknujsp.blur.R
+import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
 import io.github.pknujsp.blur.processor.GlobalBlurProcessorImpl
 import io.github.pknujsp.coroutineext.launchSafely
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -48,7 +48,10 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   private val mutex = Mutex()
 
+  private val nativeGLBlurringImpl = NativeGLBlurringImpl()
+
   private companion object {
+
     val mainScope = MainScope()
     @OptIn(DelicateCoroutinesApi::class) private val dispatcher =
       newFixedThreadPoolContext(Runtime.getRuntime().availableProcessors(), "BlurringThreadPool")
@@ -110,7 +113,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
         mutex.withLock {
           collectingView?.drawToBitmap()?.let { bitmap ->
             blurredBitmap = blurProcessor.blur(bitmap)
-            requestRender()
+            if (blurredBitmap != null) requestRender()
           }
         }
       }.onException { _, t ->
@@ -165,68 +168,23 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
 
   override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-    program = glCreateProgram().also {
-      glAttachShader(it, loadShader(GL_VERTEX_SHADER, vertexShader.trimIndent()))
-      glAttachShader(it, loadShader(GL_FRAGMENT_SHADER, fragmentShader.trimIndent()))
-
-      glLinkProgram(it)
-      val linkStatus = IntArray(1)
-      glGetProgramiv(it, GL_LINK_STATUS, linkStatus, 0)
-    }
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
+    NativeGLBlurringImpl.onSurfaceCreated()
   }
 
   override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-    glViewport(0, 0, width, height)
-
-    positionHandle = glGetAttribLocation(program, "vPosition")
-    mvpMatrixHandle = glGetUniformLocation(program, "uMVPMatrix")
-
-    glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-    Matrix.setIdentityM(modelMatrix, 0)
-    Matrix.setIdentityM(mvpMatrix, 0)
-
-    uvHandle = glGetAttribLocation(program, "a_texCoord")
-
-    glUseProgram(program)
-    glEnableVertexAttribArray(positionHandle)
-    glVertexAttribPointer(positionHandle, 3, GL_FLOAT, false, 12, vertexBuffer)
-
-    val statusBarRatio = collectingViewCoordinatesRect.top / windowRect.bottom.toFloat()
-    val navigationBarRatio = (windowRect.bottom - collectingViewCoordinatesRect.bottom) / windowRect.bottom.toFloat()
-
-    val uvs = floatArrayOf(
-      0f, 1f - navigationBarRatio,
-      1f, 1f - navigationBarRatio,
-      1f, statusBarRatio,
-      0f, statusBarRatio,
+    NativeGLBlurringImpl.onSurfaceChanged(
+      width, height,
+      collectingViewCoordinatesRect.run {
+        intArrayOf(left, top, right, bottom)
+      },
+      windowRect.run {
+        intArrayOf(left, top, right, bottom)
+      },
     )
-    val uvBuffer = uvs.createBuffer(4)
-
-    glEnableVertexAttribArray(uvHandle)
-    glVertexAttribPointer(uvHandle, 2, GL_FLOAT, false, 0, uvBuffer)
-
-    Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, modelMatrix, 0)
-    glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-
-    glGenTextures(1, textures, 0)
-    glActiveTexture(GL_TEXTURE0)
   }
 
   override fun onDrawFrame(gl: GL10?) {
-    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-
-    blurredBitmap?.run {
-      glBindTexture(GL_TEXTURE_2D, textures[0])
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-
-      GLUtils.texImage2D(GL_TEXTURE_2D, 0, this, 0)
-
-      glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_BYTE, indexBuffer)
-      glDeleteTextures(1, textures, 0)
-    }
+    NativeGLBlurringImpl.onDrawFrame(blurredBitmap)
   }
 
   private fun loadShader(type: Int, shaderCode: String): Int = glCreateShader(type).also { shader ->
