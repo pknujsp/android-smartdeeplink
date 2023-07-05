@@ -1,4 +1,5 @@
 #pragma version(1)
+#pragma rs_fp_inprecise
 #pragma rs java_package_name(io.github.pknujsp.blur)
 
 rs_allocation gIn;

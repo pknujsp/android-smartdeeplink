@@ -16,12 +16,13 @@ add_library(
 
         image-processor.cpp
         blur.h
-        blur.cpp
+        stack-blur-rgb565.cpp
         blur-manager.h
         blur-manager.cpp
         shared-values.h
-        glblurringview.cpp
-        glblurringview.h
+        stack-blur-argb8888.cpp
+        threadpool.cpp
+        threadpool.h
 )
 
 add_library(

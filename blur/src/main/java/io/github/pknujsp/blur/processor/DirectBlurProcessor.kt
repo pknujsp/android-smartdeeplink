@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 interface DirectBlurProcessor {
   fun initBlur(width: Int, height: Int, radius: Int, resizeRatio: Double)
 
-  fun blur(srcBitmap: Bitmap)
+  fun blur(srcBitmap: Bitmap): Bitmap?
 
   fun onClear()
 }

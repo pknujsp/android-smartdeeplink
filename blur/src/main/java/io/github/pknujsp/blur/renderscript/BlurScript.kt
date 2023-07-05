@@ -13,15 +13,14 @@ class BlurScript(context: Context) {
   private var blurScript: ScriptIntrinsicBlur? = null
   private var srcAllocation: Allocation? = null
   private var outAllocation: Allocation? = null
-  private var listener: DirectBlurListener? = null
 
   init {
     renderScript = RenderScript.create(context)
     blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
   }
 
-  fun initBlur(blurListener: DirectBlurListener, width: Int, height: Int, radius: Int, resizeRatio: Double) {
-    listener = blurListener
+  fun initBlur(width: Int, height: Int, radius: Int, resizeRatio: Double) {
+
     blurScript?.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(24f))
   }
 

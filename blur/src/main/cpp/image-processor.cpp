@@ -78,29 +78,15 @@ Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_initBlur(JNIEnv *en
                                                                       jint height, jint radius, jdouble resize_ratio) {
     BlurManager &blurManager = BlurManager::getInstance();
     blurManager.initBlur(env, thiz, width, height, radius, resize_ratio);
-
     blurManager.bitmapClass = env->FindClass("android/graphics/Bitmap");
-    blurManager.createBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createBitmap",
-                                                            "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-    blurManager.createScaledBitmapMethod = env->GetStaticMethodID(blurManager.bitmapClass, "createScaledBitmap",
-                                                                  "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;");
 }
-extern "C"
-JNIEXPORT void JNICALL
-Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2(JNIEnv *env, jobject thiz,
-                                                                                              jobject src_bitmap) {
-    BlurManager &blurManager = BlurManager::getInstance();
-    if (blurManager.sharedValues->isResized) {
-        src_bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);
-    }
-    blurManager.startBlur(env, src_bitmap);
-}
+
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur__Landroid_graphics_Bitmap_2IIID(JNIEnv *env, jobject thiz,
-                                                                                                  jobject src_bitmap, jint width,
-                                                                                                  jint height, jint radius,
-                                                                                                  jdouble resize_ratio) {
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur_Landroid_graphics_Bitmap_2IIID(JNIEnv *env, jobject thiz, jobject src_bitmap,
+                                                                                                 jint width,
+                                                                                                 jint height, jint radius,
+                                                                                                 jdouble resize_ratio) {
     try {
         const SharedValues *sharedValues = init(width, height, radius, resize_ratio);
 
@@ -123,4 +109,16 @@ Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur__Landroid_grap
         jthrowable throwable = env->ExceptionOccurred();
         return throwable;
     }
+}
+
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_io_github_pknujsp_blur_natives_NativeImageProcessorImpl_blur_Landroid_graphics_Bitmap_2(JNIEnv *env, jobject thiz,
+                                                                                             jobject src_bitmap) {
+    BlurManager &blurManager = BlurManager::getInstance();
+    if (blurManager.sharedValues->isResized) {
+        src_bitmap = resize(env, blurManager.sharedValues->targetWidth, blurManager.sharedValues->targetHeight, src_bitmap);
+    }
+    return blurManager.startBlur(env, src_bitmap);
 }

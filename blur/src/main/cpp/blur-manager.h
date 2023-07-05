@@ -17,12 +17,6 @@ private:
 
 public:
     jclass bitmapClass = nullptr;
-
-    jmethodID createBitmapMethod = nullptr;
-    jmethodID createScaledBitmapMethod = nullptr;
-    jmethodID onWindowDetachListenerMethodId = nullptr;
-    jmethodID onBlurredMethodId = nullptr;
-
     SharedValues *sharedValues = nullptr;
 
     // Singleton 객체를 얻는 함수
@@ -34,11 +28,9 @@ public:
 
     void initBlur(JNIEnv *env, jobject thiz, jint width, jint height, jint radius, jdouble resize_ratio);
 
-    void startBlur(JNIEnv *env, jobject srcBitmap) const;
+    jobject startBlur(JNIEnv *env, jobject srcBitmap) const;
 
     SharedValues *getSharedValues() const;
-
-    void sendBitmap(JNIEnv *env, jobject bitmap) const;
 };
 
 #endif //TESTBED_BLUR_MANAGER_H

@@ -13,7 +13,7 @@ object NativeImageProcessorImpl : DirectBlurProcessor, NativeBlurProcessor {
 
   external override fun initBlur(width: Int, height: Int, radius: Int, resizeRatio: Double)
 
-  external override fun blur(srcBitmap: Bitmap)
+  external override fun blur(srcBitmap: Bitmap): Bitmap?
 
   external override fun onClear()
 }

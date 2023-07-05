@@ -5,9 +5,7 @@
 #ifndef TESTBED_BLUR_H
 #define TESTBED_BLUR_H
 
-#include <jni.h>
 #include "shared-values.h"
-
 
 void processingRow(const SharedValues *const sharedValues, short *imagePixels, const int startRow, const int endRow);
 

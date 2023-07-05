@@ -32,7 +32,7 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
-class BlurringView private constructor(context: Context) : GLSurfaceView(context), DirectBlurListener, GLSurfaceView.Renderer {
+class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer {
   private var resizeRatio by Delegates.notNull<Double>()
   private var radius by Delegates.notNull<Int>()
 
@@ -154,7 +154,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
         blurProcessor.initBlur(
           context,
-          this@BlurringView,
           Size(collectingViewCoordinatesRect.width(), collectingViewCoordinatesRect.height()),
           radius,
           resizeRatio,
@@ -198,9 +197,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     NativeGLBlurringImpl.onPause()
   }
 
-  override fun onBlurred(bitmap: Bitmap?) {
-    TODO("Not yet implemented")
-  }
 }
 
 private fun FloatArray.createBuffer(capacity: Int): FloatBuffer = ByteBuffer.allocateDirect(size * capacity).run {
