@@ -14,9 +14,11 @@ class BlurScript(context: Context) {
   private var srcAllocation: Allocation? = null
   private var outAllocation: Allocation? = null
 
+
   init {
     renderScript = RenderScript.create(context)
     blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
+
   }
 
   fun initBlur(width: Int, height: Int, radius: Int, resizeRatio: Double) {
@@ -24,8 +26,10 @@ class BlurScript(context: Context) {
     blurScript?.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(24f))
   }
 
-  fun blur(srcBitmap: Bitmap): Bitmap? =
+  fun instrinsicBlur(srcBitmap: Bitmap): Bitmap? =
     blurScript?.run {
+
+
       val start = System.currentTimeMillis()
       srcAllocation = Allocation.createFromBitmap(renderScript, srcBitmap)
       outAllocation = Allocation.createTyped(renderScript, srcAllocation?.type)

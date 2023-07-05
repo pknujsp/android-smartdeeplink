@@ -34,6 +34,15 @@ add_library(
         glblurringview.h
 )
 
+add_library(
+        render-toolkit
+
+        SHARED
+
+        toolkit/render-toolkit.cpp
+        toolkit/render-toolkit.h
+)
+
 find_library(
         log-lib
         log
@@ -62,6 +71,17 @@ target_link_libraries( # Specifies the target library.
 
 target_link_libraries( # Specifies the target library.
         gl-blurring
+
+        vulkan
+        ${log-lib}
+        ${jnigraphics-lib}
+        ${EGL-lib}
+        ${GLESv3-lib}
+        ${ANDROID_LIB}
+        )
+
+target_link_libraries( # Specifies the target library.
+        render-toolkit
 
         vulkan
         ${log-lib}

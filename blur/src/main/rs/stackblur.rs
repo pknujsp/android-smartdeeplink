@@ -1,41 +1,29 @@
 #pragma version(1)
-#pragma rs_fp_inprecise
-#pragma rs java_package_name(io.github.pknujsp.blur)
+#pragma rs java_package_name(io.github.pknujsp)
+#pragma rs_fp_relaxed
 
-rs_allocation gIn;
-rs_allocation gOut;
 
-float gRadius;
+static uint32_t width_default = 256; //6
+uint32_t width; //4
 
-#define MAX_RADIUS 25
-float gGaussianKernel[MAX_RADIUS];
-
-void createGaussianKernel() {
-    float sum = 0.0f;
-    float sigma = gRadius / 2.0f;
-    float twoSigmaSquare = 2.0f * sigma * sigma;
-    float rootTwoPiSigma = sqrt(2.0f * M_PI) * sigma;
-
-    for (int i = 0; i < gRadius; i++) {
-        float x = i - gRadius / 2.0f;
-        gGaussianKernel[i] = exp(-(x * x) / twoSigmaSquare) / rootTwoPiSigma;
-        sum += gGaussianKernel[i];
-    }
-
-    for (int i = 0; i < gRadius; i++) {
-        gGaussianKernel[i] /= sum;
-    }
+static uint32_t get_width_half(){ //7
+    return width/2;
+}
+void change_width(uint32_t new_width){ //5
+    width = new_width;
 }
 
-void __attribute__((kernel)) gaussianBlur(uchar4 in, uint32_t x, uint32_t y) {
-    float4 sum = {0.0f, 0.0f, 0.0f, 0.0f};
+uchar4 RS_KERNEL invert(uchar4 in, uint32_t x, uint32_t y) { //9
+  uchar4 out = in;
 
-    for (int i = 0; i < gRadius; i++) {
-        int offset = i - gRadius / 2;
-        uchar4 pixel = rsGetElementAt_uchar4(gIn, x + offset, y + offset);
-        float4 floatPixel = convert_float4(pixel);
-        sum += floatPixel * gGaussianKernel[i];
-    }
+  if(x > get_width_half()){
+    out.r = 255 - in.r;
+    out.g = 255 - in.g;
+    out.b = 255 - in.b;
+  }
+  return out;
+}
 
-    rsSetElementAt_uchar4(gOut, convert_uchar4(sum), x, y);
+void init(){ //8
+    width = width_default;
 }

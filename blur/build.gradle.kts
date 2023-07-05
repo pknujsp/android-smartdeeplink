@@ -4,7 +4,6 @@ plugins {
   alias(libs.plugins.kapt)
 }
 
-@Suppress("UnstableApiUsage")
 android {
   namespace = "io.github.pknujsp.blur"
 
@@ -15,9 +14,7 @@ android {
   }
 
   defaultConfig {
-    renderscriptTargetApi = 23
-    renderscriptSupportModeEnabled = true
-    renderscriptNdkModeEnabled = true
+    renderscriptTargetApi = 22
   }
 
   externalNativeBuild {

@@ -25,7 +25,7 @@ internal object GlobalBlurProcessorImpl : BlurringViewProcessor {
     blurScriptProcessor?.initBlur(size.width, size.height, radius, resizeRatio)
   }
 
-  override fun blur(srcBitmap: Bitmap): Bitmap? = blurScriptProcessor?.blur(srcBitmap)
+  override fun blur(srcBitmap: Bitmap): Bitmap? = blurScriptProcessor?.instrinsicBlur(srcBitmap)
 
 
   override suspend fun nativeBlur(window: Window, radius: Int, resizeRatio: Double): Bitmap? = window.toBitmap()?.run {
