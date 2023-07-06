@@ -45,6 +45,8 @@ abstract class SimpleDialog(
     dialog.dismiss()
   }
 
+  fun isShowing(): Boolean = dialog.isShowing
+
   protected open fun initTouchEvent() {
     (dialog.window?.decorView as? ViewGroup)?.let { decorView ->
       decorView.doOnPreDraw {
@@ -129,5 +131,5 @@ abstract class SimpleDialog(
   override fun moveY(y: Float, animationDuration: Long, startDelayDuration: Long) {
     dialogView.animate().y(filterY(y)).setDuration(animationDuration).setStartDelay(startDelayDuration).start()
   }
-  
+
 }

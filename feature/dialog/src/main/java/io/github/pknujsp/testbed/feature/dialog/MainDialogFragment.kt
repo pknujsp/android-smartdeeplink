@@ -1,14 +1,13 @@
 package io.github.pknujsp.testbed.feature.dialog
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewFullLoadingBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
@@ -18,6 +17,8 @@ import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialog
 import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import io.github.pknujsp.testbed.feature.dialog.databinding.FragmentMainDialogBinding
 import kotlinx.coroutines.launch
+
+@SuppressLint("SetTextI18n")
 
 class MainDialogFragment : Fragment() {
   private var _binding: FragmentMainDialogBinding? = null
@@ -43,9 +44,13 @@ class MainDialogFragment : Fragment() {
         }
       }
 
-      blurSlider.addOnChangeListener { _, value, _ ->
-        blurTextview.text = "Blur -> ${value.toInt()}"
-        viewModel.blur(value.toInt())
+      behindBlurSlider.addOnChangeListener { _, value, _ ->
+        behindBlurTextview.text = "Behind Blur -> ${value.toInt()}"
+        viewModel.behindBlur(value.toInt())
+      }
+      backgroundBlurSlider.addOnChangeListener { _, value, _ ->
+        backgroundBlurTextview.text = "Background Blur -> ${value.toInt()}"
+        viewModel.backgroundBlur(value.toInt())
       }
       dimSlider.addOnChangeListener { _, value, _ ->
         dimTextview.text = "Dim -> ${value.toInt()}"
@@ -59,13 +64,36 @@ class MainDialogFragment : Fragment() {
         bottomMarginTextview.text = "Bottom Margin -> ${value.toInt()}"
         viewModel.bottomMargin(value.toInt())
       }
-      horizontalMarginSlider.addOnChangeListener { _, value, _ ->
-        horizontalMarginTextview.text = "Horizontal Margin -> ${value.toInt()}"
-        viewModel.horizontalMargin(value.toInt())
+      endMarginSlider.addOnChangeListener { _, value, _ ->
+        endMarginTextview.text = "Horizontal Margin -> ${value.toInt()}"
+        viewModel.endMargin(value.toInt())
       }
-      cornerRadiusSlider.addOnChangeListener { _, value, _ ->
-        cornerRadiusTextview.text = "Corner Radius -> ${value.toInt()}"
-        viewModel.cornerRadius(value.toInt())
+      startMarginSlider.addOnChangeListener { _, value, _ ->
+        startMarginTextview.text = "Bottom Margin -> ${value.toInt()}"
+        viewModel.startMargin(value.toInt())
+      }
+      topMarginSlider.addOnChangeListener { _, value, _ ->
+        topMarginTextview.text = "Horizontal Margin -> ${value.toInt()}"
+        viewModel.topMargin(value.toInt())
+      }
+      topStartCornerRadiusSlider.addOnChangeListener { _, value, _ ->
+        topStartCornerRadiusTextview.text = "Top Start Corner Radius -> ${value.toInt()}"
+        viewModel.topStartCornerRadius(value.toInt())
+      }
+      topEndCornerRadiusSlider.addOnChangeListener { _, value, _ ->
+        topEndCornerRadiusTextview.text = "Top End Corner Radius -> ${value.toInt()}"
+        viewModel.topEndCornerRadius(value.toInt())
+      }
+      bottomStartCornerRadiusSlider.addOnChangeListener { _, value, _ ->
+        bottomStartCornerRadiusTextview.text = "Bottom Start Corner Radius -> ${value.toInt()}"
+        viewModel.bottomStartCornerRadius(value.toInt())
+      }
+      bottomEndCornerRadiusSlider.addOnChangeListener { _, value, _ ->
+        bottomEndCornerRadiusTextview.text = "Bottom End Corner Radius -> ${value.toInt()}"
+        viewModel.bottomEndCornerRadius(value.toInt())
+      }
+      applyForceBlur.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.applyForceBlur(isChecked)
       }
       dialogTypesRadioGroup.setOnCheckedChangeListener { _, checkedId ->
         initAttrs()
@@ -113,15 +141,12 @@ class MainDialogFragment : Fragment() {
     }
   }
 
-  override fun onViewStateRestored(savedInstanceState: Bundle?) {
-    super.onViewStateRestored(savedInstanceState)
-    binding.apply {
-      viewLifecycleOwner.lifecycleScope.launch {
-        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-          initAttrs()
-        }
+  override fun onStart() {
+    super.onStart()
+    viewLifecycleOwner.lifecycleScope.launch {
+      if (dialog?.isShowing() != true) {
+        initAttrs()
       }
-
     }
   }
 
@@ -134,9 +159,16 @@ class MainDialogFragment : Fragment() {
         ).setLayoutSize(
           if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
           if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
-          .setBehindBlur(blurSlider.value.toInt() > 0, false, blurSlider.value.toInt()).setCancelable(cancelable.isChecked)
-          .setStartMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()).setDragDirection(
+        ).setCornerRadius(
+          topStartCornerRadiusSlider.value.toInt(),
+          topEndCornerRadiusSlider.value.toInt(),
+          bottomStartCornerRadiusSlider.value.toInt(),
+          bottomEndCornerRadiusSlider.value.toInt(),
+        ).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
+          .setBehindBlur(behindBlurSlider.value.toInt() > 0, applyForceBlur.isChecked, behindBlurSlider.value.toInt())
+          .setCancelable(cancelable.isChecked).setBackgroundBlur(backgroundBlurSlider.value.toInt() > 0, false, backgroundBlurSlider.value.toInt())
+          .setStartMargin(startMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt())
+          .setTopMargin(topMarginSlider.value.toInt()).setEndMargin(endMarginSlider.value.toInt()).setDragDirection(
             when (draggleDirectionsRadioGroup.checkedRadioButtonId) {
               R.id.horizontal_radio -> DragDirection.Horizontal
               R.id.vertical_radio -> DragDirection.Vertical
@@ -151,8 +183,8 @@ class MainDialogFragment : Fragment() {
 
 
   override fun onDestroyView() {
-    _binding = null
     super.onDestroyView()
+    _binding = null
   }
 
   private fun dialogType(): DialogType = when (val type = binding.dialogTypesRadioGroup.checkedRadioButtonId) {

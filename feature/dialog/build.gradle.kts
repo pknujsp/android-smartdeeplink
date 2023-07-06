@@ -17,4 +17,5 @@ kapt {
 dependencies {
   implementation(project(":core:model"))
   implementation(project(":core:ui"))
+  implementation(libs.lottie)
 }

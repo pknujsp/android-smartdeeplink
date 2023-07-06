@@ -22,10 +22,13 @@ class MainDialogViewModel : ViewModel() {
     }
   }
 
-  fun blur(blur: Int) {
+  fun behindBlur(blur: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
-        it?.setBehindBlur(blur = blur > 0, blurIndensity = blur)
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.run {
+          behindBlurIndensity = blur
+          behindBlur = blur > 0
+        }
         _dialogBuilder.emit(it)
       }
     }
@@ -150,6 +153,96 @@ class MainDialogViewModel : ViewModel() {
       _dialogBuilder.replayCache.last().also {
         it?.setDragDirection(direction)
         _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun topMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.last().also {
+        it?.setTopMargin(toInt)
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun startMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.last().also {
+        it?.setStartMargin(toInt)
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun endMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.last().also {
+        it?.setEndMargin(toInt)
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun applyForceBlur(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.behindBlurForce = checked
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun topStartCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.run {
+          topStartCornerRadius = toInt
+        }
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun topEndCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.run {
+          topEndCornerRadius = toInt
+        }
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun bottomStartCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.run {
+          bottomStartCornerRadius = toInt
+        }
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun bottomEndCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.lastOrNull()?.also {
+        it.dialogStyleAttributes.run {
+          bottomEndCornerRadius = toInt
+        }
+        _dialogBuilder.emit(it)
+      }
+    }
+  }
+
+  fun backgroundBlur(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.replayCache.last().also {
+        it?.setBackgroundBlur(toInt > 0, false, toInt)
+        _dialogBuilder.emit(it)
+
       }
     }
   }

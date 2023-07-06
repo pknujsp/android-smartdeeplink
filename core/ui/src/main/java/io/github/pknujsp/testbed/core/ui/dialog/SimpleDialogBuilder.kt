@@ -20,8 +20,9 @@ class SimpleDialogBuilder private constructor(
   dialogType: DialogType,
 ) {
 
-  private val dialogStyler: SimpleDialogStyler =
-    WeakReference(SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)).get()!!
+  val dialogStyleAttributes = SimpleDialogStyleAttributes(dialogType = dialogType)
+
+  private val dialogStyler: SimpleDialogStyler = WeakReference(SimpleDialogStyler(dialogStyleAttributes, context)).get()!!
 
   private val generalAttributes: SimpleDialogGeneralAttributes = WeakReference(SimpleDialogGeneralAttributes()).get()!!
 

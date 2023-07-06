@@ -22,7 +22,7 @@ androidx_hilt_navigation_compose = "1.0.0"
 androidx_hilt_navigation_fragment = "1.0.0"
 material = "1.9.0"
 
-
+lottie = "6.0.0"
 kotlin_poet = "1.13.2"
 google_auto_service = "1.0.1"
 google_auto_service_annotation = "1.0.1"
@@ -93,6 +93,8 @@ google-autoservice-core = { module = "com.google.auto.service:auto-service", ver
 google-autoservice-annotation = { module = "com.google.auto.service:auto-service-annotations", version.ref = "google_auto_service_annotation" }
 ktlint = { module = "com.pinterest:ktlint", version.ref = "ktlint" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+
+lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
 
 smartdeeplink-core = { module = "io.github.pknujsp:smartdeeplink.core", version.ref = "smart_deeplink" }
 smartdeeplink-annotation = { module = "io.github.pknujsp:smartdeeplink.annotation", version.ref = "smart_deeplink" }

@@ -71,18 +71,34 @@
         android:text="Apply Force Blur" />
 
       <TextView
-        android:id="@+id/blur_textview"
+        android:id="@+id/behind_blur_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Blur -> 15"
+        android:text="Behind Blur -> 0"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
-        android:id="@+id/blur_slider"
+        android:id="@+id/behind_blur_slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
-        android:value="15"
+        android:value="0"
+        android:valueFrom="0"
+        android:valueTo="100" />
+
+      <TextView
+        android:id="@+id/background_blur_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Background Blur -> 0"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/background_blur_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="0"
         android:valueFrom="0"
         android:valueTo="100" />
 
@@ -353,6 +369,17 @@
           android:text="Both" />
 
       </RadioGroup>
+
+
+      <com.airbnb.lottie.LottieAnimationView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:lottie_autoPlay="true"
+        app:lottie_cacheComposition="true"
+        app:lottie_loop="true"
+        app:lottie_rawRes="@raw/android_lottie"
+        app:lottie_repeatMode="restart" />
+
     </LinearLayout>
 
   </androidx.core.widget.NestedScrollView>
