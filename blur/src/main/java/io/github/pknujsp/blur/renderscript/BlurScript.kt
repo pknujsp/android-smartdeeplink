@@ -35,10 +35,16 @@ class BlurScript(context: Context) {
 
 
   fun onClear() {
-    blurScript?.destroy()
-    renderScript?.destroy()
-    blurScript = null
-    renderScript = null
-    outAllocation?.destroy()
+    try {
+      blurScript?.destroy()
+      renderScript?.destroy()
+      outAllocation?.destroy()
+
+      blurScript = null
+      renderScript = null
+      outAllocation = null
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
   }
 }

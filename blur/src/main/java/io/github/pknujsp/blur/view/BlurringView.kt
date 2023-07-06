@@ -100,7 +100,6 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
         blurScript.prepare(
           radius,
         )
-
         initialized = true
       }
     }

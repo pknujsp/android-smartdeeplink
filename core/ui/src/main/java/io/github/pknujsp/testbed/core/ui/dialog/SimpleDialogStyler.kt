@@ -74,6 +74,7 @@ internal class SimpleDialogStyler(
       updateAndroidDefaultContentViewLayout()
       setCompatContentViewLayout()
       setBackgroundAndModal()
+      setElevation()
 
       dialogWindow.attributes.also { attr ->
         attr.copyFrom(attr)
@@ -208,9 +209,9 @@ internal class SimpleDialogStyler(
   }
 
   private fun setElevation() {
-    if (simpleDialogStyleAttributes.elevation > 0) {
+    if (simpleDialogStyleAttributes.elevation > 0)
       compatContentView?.elevation = simpleDialogStyleAttributes.elevation * density
-    }
+
   }
 
 }
