@@ -24,7 +24,7 @@ import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMarginsRelative
 import io.github.pknujsp.blur.view.BlurringView
-import io.github.pknujsp.blur.view.GLSurfaceLifeCycleListener
+import io.github.pknujsp.blur.view.IGLSurfaceView
 import io.github.pknujsp.blur.view.IGLSurfaceViewLayout
 import io.github.pknujsp.testbed.core.ui.R
 
@@ -42,7 +42,7 @@ internal class SimpleDialogStyler(
   private var compatContentView: FrameLayout? = null
 
   // R.id.blurring_view
-  var blurringViewLifeCycleListener: GLSurfaceLifeCycleListener? = null
+  var blurringViewLifeCycleListener: IGLSurfaceView? = null
   var iBlurringViewLayout: IGLSurfaceViewLayout? = null
 
   private companion object {

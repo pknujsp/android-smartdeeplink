@@ -13,14 +13,14 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
-import io.github.pknujsp.blur.view.GLSurfaceLifeCycleListener
+import io.github.pknujsp.blur.view.IGLSurfaceView
 import io.github.pknujsp.testbed.core.ui.R
 
 abstract class SimpleDialog(
   protected val dialog: Dialog,
   protected val attributes: SimpleDialogGeneralAttributes,
   protected val styleAttributes: SimpleDialogStyleAttributes,
-  protected var blurringViewLifeCycleListener: GLSurfaceLifeCycleListener? = null,
+  protected var blurringViewLifeCycleListener: IGLSurfaceView? = null,
 ) : DialogInterface by dialog, IDialogMover {
 
 
@@ -96,13 +96,10 @@ abstract class SimpleDialog(
         var firstDialogViewX = 0f
         var firstDialogViewY = 0f
 
-        val isDraggable = attributes.isDraggable
-        val isCancelable = attributes.isCancelable
-
-        dialog.setCancelable(isCancelable)
+        dialog.setCancelable(attributes.isCancelable)
         dialog.setCanceledOnTouchOutside(attributes.isCanceledOnTouchOutside)
 
-        dialogView.setOnTouchListener(
+        if (attributes.isDraggable) dialogView.setOnTouchListener(
           fun(view: View, event: MotionEvent): Boolean {
             when (event.action) {
               MotionEvent.ACTION_DOWN -> {
@@ -112,15 +109,21 @@ abstract class SimpleDialog(
                 firstDialogViewY = view.y
               }
 
-              MotionEvent.ACTION_UP -> {
-                if (isCancelable && !(event.rawX > view.x && event.rawX < view.x + view.width && event.rawY > view.y && event.rawY < view.y + view.height)) dismiss()
-              }
-
               MotionEvent.ACTION_MOVE -> {
-                if (isDraggable) {
-                  val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
-                  view.animate().x(xy.first).y(xy.second).setDuration(0).start()
-                }
+                val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
+                view.animate().x(xy.first).y(xy.second).setDuration(0).start()
+              }
+            }
+            return true
+          },
+        )
+
+
+        if (attributes.isCanceledOnTouchOutside && blurringViewLifeCycleListener != null) blurringViewLifeCycleListener?.setOnTouchListener(
+          fun(_: View, event: MotionEvent): Boolean {
+            when (event.action) {
+              MotionEvent.ACTION_DOWN -> {
+                dismiss()
               }
             }
             return true
@@ -130,6 +133,9 @@ abstract class SimpleDialog(
 
     }
   }
+
+  private fun isTouchedOutside(event: MotionEvent): Boolean =
+    event.rawX < dialogView.x || event.rawX > dialogView.x + dialogView.width || event.rawY < dialogView.y || event.rawY > dialogView.y + dialogView.height
 
 
   private fun filter(newX: Float, newY: Float): Pair<Float, Float> = when (attributes.dragDirection) {

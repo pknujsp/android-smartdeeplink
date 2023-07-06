@@ -314,8 +314,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="false"
-        android:text="CanceledOnTouchOutside"
-        android:visibility="gone" />
+        android:text="CanceledOnTouchOutside" />
 
       <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/restrict_views_from_off_window"

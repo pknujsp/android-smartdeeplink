@@ -29,7 +29,7 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
-class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer, GLSurfaceLifeCycleListener,
+class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer, IGLSurfaceView,
   IGLSurfaceViewLayout {
   private var radius by Delegates.notNull<Int>()
 
@@ -140,9 +140,15 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   override fun setBackgroundColor(color: Int) {
     super.setBackgroundColor(color)
   }
+
+  override fun setOnTouchListener(l: OnTouchListener) {
+    super.setOnTouchListener(l)
+  }
 }
 
-interface GLSurfaceLifeCycleListener {
+interface IGLSurfaceView {
+  fun setOnTouchListener(listener: View.OnTouchListener)
+
   fun onResume()
   fun onPause()
 }
