@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:app="http://schemas.android.com/apk/res-auto"
-  xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:clipToPadding="false"
@@ -19,6 +18,12 @@
       android:layout_width="match_parent"
       android:layout_height="match_parent"
       android:orientation="vertical">
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dialog Testing"
+        android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
       <com.google.android.material.progressindicator.LinearProgressIndicator
         android:layout_width="match_parent"
@@ -58,11 +63,18 @@
 
       </RadioGroup>
 
+      <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/apply_force_blur"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="Apply Force Blur" />
+
       <TextView
         android:id="@+id/blur_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Blur -> 10"
+        android:text="Blur -> 15"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
@@ -70,7 +82,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
-        android:value="10"
+        android:value="15"
         android:valueFrom="0"
         android:valueTo="100" />
 
@@ -78,7 +90,7 @@
         android:id="@+id/dim_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Dim -> 40"
+        android:text="Dim -> 30"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
@@ -86,7 +98,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
-        android:value="40"
+        android:value="30"
         android:valueFrom="0"
         android:valueTo="100" />
 
@@ -94,7 +106,7 @@
         android:id="@+id/bottom_margin_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bottom Margin -> 12"
+        android:text="Bottom Margin -> 0"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
@@ -102,35 +114,115 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
-        android:value="12"
+        android:value="0"
         android:valueFrom="0"
         android:valueTo="50" />
 
       <TextView
-        android:id="@+id/horizontal_margin_textview"
+        android:id="@+id/top_margin_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Horizontal Margin -> 16"
+        android:text="Top Margin -> 0"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
-        android:id="@+id/horizontal_margin_slider"
+        android:id="@+id/top_margin_slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
-        android:value="16"
+        android:value="0"
         android:valueFrom="0"
         android:valueTo="50" />
 
       <TextView
-        android:id="@+id/corner_radius_textview"
+        android:id="@+id/start_margin_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Corner Radius -> 12"
+        android:text="Start Margin -> 0"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
       <com.google.android.material.slider.Slider
-        android:id="@+id/corner_radius_slider"
+        android:id="@+id/start_margin_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="0"
+        android:valueFrom="0"
+        android:valueTo="50" />
+
+      <TextView
+        android:id="@+id/end_margin_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="End Margin -> 0"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/end_margin_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="0"
+        android:valueFrom="0"
+        android:valueTo="50" />
+
+      <TextView
+        android:id="@+id/top_start_corner_radius_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Top Start Corner Radius -> 12"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/top_start_corner_radius_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="12"
+        android:valueFrom="0"
+        android:valueTo="40" />
+
+      <TextView
+        android:id="@+id/top_end_corner_radius_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Top End Corner Radius -> 12"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/top_end_corner_radius_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="12"
+        android:valueFrom="0"
+        android:valueTo="40" />
+
+      <TextView
+        android:id="@+id/bottom_start_corner_radius_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bottom Start Corner Radius -> 12"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/bottom_start_corner_radius_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="1"
+        android:value="12"
+        android:valueFrom="0"
+        android:valueTo="40" />
+
+      <TextView
+        android:id="@+id/bottom_end_corner_radius_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bottom End Corner Radius -> 12"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+      <com.google.android.material.slider.Slider
+        android:id="@+id/bottom_end_corner_radius_slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stepSize="1"
@@ -206,7 +298,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="false"
-        android:text="CanceledOnTouchOutside" />
+        android:text="CanceledOnTouchOutside"
+        android:visibility="gone" />
 
       <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/restrict_views_from_off_window"
@@ -244,7 +337,6 @@
           android:id="@+id/vertical_radio"
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
-          android:checked="true"
           android:text="Vertical" />
 
         <androidx.appcompat.widget.AppCompatRadioButton
@@ -257,6 +349,7 @@
           android:id="@+id/both_radio"
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
+          android:checked="true"
           android:text="Both" />
 
       </RadioGroup>

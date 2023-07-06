@@ -6,18 +6,18 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.core.view.allViews
-import androidx.core.view.children
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
+import io.github.pknujsp.testbed.core.ui.R
 
 abstract class SimpleDialog(
-  val dialog: Dialog,
-  val attributes: SimpleDialogGeneralAttributes, val styleAttributes: SimpleDialogStyleAttributes,
+  protected val dialog: Dialog,
+  protected val attributes: SimpleDialogGeneralAttributes,
+  protected val styleAttributes: SimpleDialogStyleAttributes,
 ) : DialogInterface by dialog, IDialogMover {
 
   private var _draggablePixelsRangeRect: RectF? = null
@@ -33,6 +33,10 @@ abstract class SimpleDialog(
     init()
   }
 
+  private fun init() {
+    initTouchEvent()
+  }
+
   override fun cancel() {
     dialog.cancel()
   }
@@ -44,43 +48,23 @@ abstract class SimpleDialog(
   protected open fun initTouchEvent() {
     (dialog.window?.decorView as? ViewGroup)?.let { decorView ->
       decorView.doOnPreDraw {
-        decorView.allViews.filter { it.id == android.R.id.content }.first().apply {
-          setOnTouchListener(
-            fun(_: View, event: MotionEvent): Boolean {
-              when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                  dialog.dismiss()
-                }
-
-              }
-              return true
-            },
-          )
-        }
-
-        _dialogView = (decorView.children.first() as? ViewGroup)?.children?.filter { it is FrameLayout }?.first()
+        _dialogView = decorView.allViews.firstOrNull { it.id == R.id.dialog_base_content }
         _draggablePixelsRangeRect = RectF().apply {
           left = (decorView.left + dialogView.marginLeft).toFloat()
           top = (decorView.top - dialogView.marginTop).toFloat()
           right = (decorView.right - dialogView.width - dialogView.marginRight).toFloat()
           bottom = (decorView.bottom - dialogView.height - dialogView.marginBottom).toFloat()
         }
-        _dialogViewFirstPixels = Pair(dialogView.x, dialogView.y)
-
-        if (!attributes.isDraggable) return@doOnPreDraw
-
-        val decorViewWidth = decorView.width
-        val decorViewHeight = decorView.height
-
         dialogView.isClickable = true
+        _dialogViewFirstPixels = Pair(dialogView.x, dialogView.y)
 
         var firstDownX: Float = 0f
         var firstDownY: Float = 0f
         var firstDialogViewX = 0f
         var firstDialogViewY = 0f
 
-        var newX: Float = 0f
-        var newY: Float = 0f
+        val isDraggable = attributes.isDraggable
+        val isCancelable = attributes.isCancelable
 
         dialogView.setOnTouchListener(
           fun(view: View, event: MotionEvent): Boolean {
@@ -92,9 +76,15 @@ abstract class SimpleDialog(
                 firstDialogViewY = view.y
               }
 
+              MotionEvent.ACTION_UP -> {
+                if (isCancelable && !(event.rawX > view.x && event.rawX < view.x + view.width && event.rawY > view.y && event.rawY < view.y + view.height)) dismiss()
+              }
+
               MotionEvent.ACTION_MOVE -> {
-                val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
-                view.animate().x(xy.first).y(xy.second).setDuration(0).start()
+                if (isDraggable) {
+                  val xy = filter(firstDialogViewX + (-firstDownX + event.rawX), firstDialogViewY + (-firstDownY + event.rawY))
+                  view.animate().x(xy.first).y(xy.second).setDuration(0).start()
+                }
               }
             }
             return true
@@ -105,9 +95,6 @@ abstract class SimpleDialog(
     }
   }
 
-  private fun init() {
-    initTouchEvent()
-  }
 
   private fun filter(newX: Float, newY: Float): Pair<Float, Float> = when (attributes.dragDirection) {
     is DragDirection.Both -> Pair(filterX(newX), filterY(newY))
@@ -142,6 +129,5 @@ abstract class SimpleDialog(
   override fun moveY(y: Float, animationDuration: Long, startDelayDuration: Long) {
     dialogView.animate().y(filterY(y)).setDuration(animationDuration).setStartDelay(startDelayDuration).start()
   }
-
-
+  
 }

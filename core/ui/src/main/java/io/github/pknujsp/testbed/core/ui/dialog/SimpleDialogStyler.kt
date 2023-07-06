@@ -97,23 +97,21 @@ internal class SimpleDialogStyler(
         attributes.blurBehindRadius = (simpleDialogStyleAttributes.behindBlurIndensity / 100f * maxRadius).toInt()
       }
     } else if (simpleDialogStyleAttributes.behindBlurForce) {
-      blurringView =
-        BlurringView(activityContextWindow.context, (simpleDialogStyleAttributes.behindBlurIndensity / 100f * 25f).toInt()).also { view ->
-          decorView.findViewTreeLifecycleOwner()?.lifecycle?.addObserver(
-            object : DefaultLifecycleObserver {
-              override fun onResume(owner: LifecycleOwner) {
-                super.onResume(owner)
-                view.onResume()
-              }
+      blurringView = BlurringView(activityContextWindow.context, (simpleDialogStyleAttributes.behindBlurIndensity / 100f * 25f).toInt())
+      decorView.findViewTreeLifecycleOwner()?.lifecycle?.addObserver(
+        object : DefaultLifecycleObserver {
+          override fun onResume(owner: LifecycleOwner) {
+            super.onResume(owner)
+            blurringView?.onResume()
+          }
 
-              override fun onPause(owner: LifecycleOwner) {
-                super.onPause(owner)
-                view.onPause()
-              }
-            },
-          )
-          androidDefaultContentView?.addView(view, 0, view.layoutParams)
-        }
+          override fun onPause(owner: LifecycleOwner) {
+            super.onPause(owner)
+            blurringView?.onPause()
+          }
+        },
+      )
+      androidDefaultContentView?.addView(blurringView, 0, blurringView?.layoutParams)
     }
   }
 
@@ -217,6 +215,12 @@ internal class SimpleDialogStyler(
     attributes.apply {
       width = ViewGroup.LayoutParams.MATCH_PARENT
       height = ViewGroup.LayoutParams.MATCH_PARENT
+    }
+  }
+
+  private fun setElevation() {
+    if (simpleDialogStyleAttributes.elevation > 0) {
+      compatContentView?.elevation = simpleDialogStyleAttributes.elevation * density
     }
   }
 
