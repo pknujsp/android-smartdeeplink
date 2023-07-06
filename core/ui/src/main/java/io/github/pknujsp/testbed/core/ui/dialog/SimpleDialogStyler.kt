@@ -23,10 +23,9 @@ import androidx.core.view.allViews
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMarginsRelative
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.findViewTreeLifecycleOwner
 import io.github.pknujsp.blur.view.BlurringView
+import io.github.pknujsp.blur.view.GLSurfaceLifeCycleListener
+import io.github.pknujsp.blur.view.IGLSurfaceViewLayout
 import io.github.pknujsp.testbed.core.ui.R
 
 
@@ -43,7 +42,8 @@ internal class SimpleDialogStyler(
   private var compatContentView: FrameLayout? = null
 
   // R.id.blurring_view
-  private var blurringView: BlurringView? = null
+  var blurringViewLifeCycleListener: GLSurfaceLifeCycleListener? = null
+  var iBlurringViewLayout: IGLSurfaceViewLayout? = null
 
   private companion object {
     private val density: Float = Resources.getSystem().displayMetrics.density
@@ -64,7 +64,6 @@ internal class SimpleDialogStyler(
   fun applyStyle(dialog: Dialog) {
     dialog.window?.let { dialogWindow ->
       val decorView = dialogWindow.decorView as ViewGroup
-
       decorView.allViews.forEach { view ->
         if (view.id == R.id.dialog_base_content) compatContentView = view as FrameLayout
         else if (view.id == android.R.id.content) androidDefaultContentView = view as FrameLayout
@@ -97,27 +96,17 @@ internal class SimpleDialogStyler(
         attributes.blurBehindRadius = (simpleDialogStyleAttributes.behindBlurIndensity / 100f * maxRadius).toInt()
       }
     } else if (simpleDialogStyleAttributes.behindBlurForce) {
-      blurringView = BlurringView(activityContextWindow.context, (simpleDialogStyleAttributes.behindBlurIndensity / 100f * 25f).toInt())
-      decorView.findViewTreeLifecycleOwner()?.lifecycle?.addObserver(
-        object : DefaultLifecycleObserver {
-          override fun onResume(owner: LifecycleOwner) {
-            super.onResume(owner)
-            blurringView?.onResume()
-          }
-
-          override fun onPause(owner: LifecycleOwner) {
-            super.onPause(owner)
-            blurringView?.onPause()
-          }
-        },
-      )
-      androidDefaultContentView?.addView(blurringView, 0, blurringView?.layoutParams)
+      BlurringView(activityContextWindow.context, (simpleDialogStyleAttributes.behindBlurIndensity / 100f * 25f).toInt()).also {
+        androidDefaultContentView?.addView(it, 0, it.layoutParams)
+        blurringViewLifeCycleListener = it
+        iBlurringViewLayout = it
+      }
     }
   }
 
   private fun setDim(window: Window, attributes: WindowManager.LayoutParams) {
     if (simpleDialogStyleAttributes.dim) {
-      blurringView?.apply { setBackgroundColor(simpleDialogStyleAttributes.dimIndensity shl 24) } ?: run {
+      iBlurringViewLayout?.apply { setBackgroundColor(simpleDialogStyleAttributes.dimIndensity shl 24) } ?: run {
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         attributes.dimAmount = simpleDialogStyleAttributes.dimIndensity / 100f
       }

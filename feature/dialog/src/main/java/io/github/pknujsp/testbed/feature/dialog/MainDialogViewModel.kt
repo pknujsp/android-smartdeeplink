@@ -4,72 +4,45 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.pknujsp.testbed.core.ui.dialog.DragDirection
 import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MainDialogViewModel : ViewModel() {
-  private val _dialogBuilder = MutableSharedFlow<SimpleDialogBuilder?>(
-    replay = 1,
-    onBufferOverflow = BufferOverflow.DROP_OLDEST,
-  )
-  val dialogBuilder get() = _dialogBuilder.asSharedFlow()
+  private val _dialogBuilder = MutableStateFlow<SimpleDialogBuilder?>(null)
+  val dialogBuilder get() = _dialogBuilder.asStateFlow()
 
   fun init(builder: SimpleDialogBuilder) {
     viewModelScope.launch {
-      _dialogBuilder.emit(builder)
+      _dialogBuilder.value = builder
     }
   }
 
   fun behindBlur(blur: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.run {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.run {
           behindBlurIndensity = blur
           behindBlur = blur > 0
         }
-        _dialogBuilder.emit(it)
+        it
       }
     }
   }
 
   fun dim(dim: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setDim(dim = dim > 0, dimIndensity = dim)
-        _dialogBuilder.emit(it)
-
       }
     }
   }
 
   fun bottomMargin(margin: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setBottomMargin(margin)
-        _dialogBuilder.emit(it)
-
-      }
-    }
-  }
-
-  fun horizontalMargin(margin: Int) {
-    viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
-        it?.setStartMargin(margin)
-        _dialogBuilder.emit(it)
-
-      }
-    }
-  }
-
-  fun cornerRadius(radius: Int) {
-    viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
-        it?.setCornerRadius(radius)
-        _dialogBuilder.emit(it)
-
       }
     }
   }
@@ -77,172 +50,150 @@ class MainDialogViewModel : ViewModel() {
 
   fun size(width: Int, height: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setLayoutSize(width, height)
-        _dialogBuilder.emit(it)
-
       }
     }
   }
 
   fun elevation(elevation: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setElevation(elevation)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun draggable(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setDraggable(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun cancelable(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setCancelable(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun canceledOnTouchOutside(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setCanceledOnTouchOutside(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun restrictViewsFromOffWindow(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setRestrictViewsFromOffWindow(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun showModalPoint(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setIsShowModalPoint(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun onlyDraggleOnModalPoint(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setIsOnlyDraggleOnModalPoint(checked)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun draggleDirections(direction: DragDirection) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setDragDirection(direction)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun topMargin(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setTopMargin(toInt)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun startMargin(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setStartMargin(toInt)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun endMargin(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setEndMargin(toInt)
-        _dialogBuilder.emit(it)
       }
     }
   }
 
   fun applyForceBlur(checked: Boolean) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.behindBlurForce = checked
-        _dialogBuilder.emit(it)
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.behindBlurForce = checked
+        it
       }
     }
   }
 
   fun topStartCornerRadius(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.run {
-          topStartCornerRadius = toInt
-        }
-        _dialogBuilder.emit(it)
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.topStartCornerRadius = toInt
+        it
       }
     }
   }
 
   fun topEndCornerRadius(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.run {
-          topEndCornerRadius = toInt
-        }
-        _dialogBuilder.emit(it)
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.topEndCornerRadius = toInt
+
+        it
       }
     }
   }
 
   fun bottomStartCornerRadius(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.run {
-          bottomStartCornerRadius = toInt
-        }
-        _dialogBuilder.emit(it)
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.bottomStartCornerRadius = toInt
+        it
       }
     }
   }
 
   fun bottomEndCornerRadius(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.lastOrNull()?.also {
-        it.dialogStyleAttributes.run {
-          bottomEndCornerRadius = toInt
-        }
-        _dialogBuilder.emit(it)
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.bottomEndCornerRadius = toInt
+        it
       }
     }
   }
 
   fun backgroundBlur(toInt: Int) {
     viewModelScope.launch {
-      _dialogBuilder.replayCache.last().also {
+      _dialogBuilder.update {
         it?.setBackgroundBlur(toInt > 0, false, toInt)
-        _dialogBuilder.emit(it)
-
       }
     }
   }

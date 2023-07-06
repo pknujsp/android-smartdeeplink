@@ -2,6 +2,7 @@ package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.app.Dialog
 import android.content.DialogInterface
+import android.content.DialogInterface.OnCancelListener
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
@@ -12,13 +13,16 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
+import io.github.pknujsp.blur.view.GLSurfaceLifeCycleListener
 import io.github.pknujsp.testbed.core.ui.R
 
 abstract class SimpleDialog(
   protected val dialog: Dialog,
   protected val attributes: SimpleDialogGeneralAttributes,
   protected val styleAttributes: SimpleDialogStyleAttributes,
+  protected var blurringViewLifeCycleListener: GLSurfaceLifeCycleListener? = null,
 ) : DialogInterface by dialog, IDialogMover {
+
 
   private var _draggablePixelsRangeRect: RectF? = null
   private val draggablePixelsRangeRect: RectF get() = _draggablePixelsRangeRect!!
@@ -29,12 +33,27 @@ abstract class SimpleDialog(
   private var _dialogView: View? = null
   private val dialogView: View get() = _dialogView!!
 
+  private var onShowListener: DialogInterface.OnShowListener? = null
+  private var onCancelListener: OnCancelListener? = null
+  private var onDismissListener: DialogInterface.OnDismissListener? = null
+
   init {
     init()
   }
 
   private fun init() {
     initTouchEvent()
+
+    dialog.setOnShowListener {
+      onShowListener?.onShow(dialog)
+    }
+    dialog.setOnCancelListener {
+      onCancelListener?.onCancel(dialog)
+    }
+    dialog.setOnDismissListener {
+      blurringViewLifeCycleListener?.onPause()
+      onDismissListener?.onDismiss(dialog)
+    }
   }
 
   override fun cancel() {
@@ -43,6 +62,18 @@ abstract class SimpleDialog(
 
   override fun dismiss() {
     dialog.dismiss()
+  }
+
+  fun setOnShowListener(listener: DialogInterface.OnShowListener) {
+    onShowListener = listener
+  }
+
+  fun setOnCancelListener(listener: OnCancelListener) {
+    onCancelListener = listener
+  }
+
+  fun setOnDismissListener(listener: DialogInterface.OnDismissListener) {
+    onDismissListener = listener
   }
 
   fun isShowing(): Boolean = dialog.isShowing
@@ -67,6 +98,9 @@ abstract class SimpleDialog(
 
         val isDraggable = attributes.isDraggable
         val isCancelable = attributes.isCancelable
+
+        dialog.setCancelable(isCancelable)
+        dialog.setCanceledOnTouchOutside(attributes.isCanceledOnTouchOutside)
 
         dialogView.setOnTouchListener(
           fun(view: View, event: MotionEvent): Boolean {

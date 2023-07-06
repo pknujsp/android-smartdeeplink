@@ -1,11 +1,13 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.app.Dialog
+import io.github.pknujsp.blur.view.GLSurfaceLifeCycleListener
 
 class BottomSheetDialog(
-  alertDialog: Dialog, attributes: SimpleDialogGeneralAttributes,
+  dialog: Dialog, attributes: SimpleDialogGeneralAttributes,
   styleAttributes: SimpleDialogStyleAttributes,
-) : SimpleDialog(alertDialog, attributes, styleAttributes) {
+  blurringViewLifeCycleListener: GLSurfaceLifeCycleListener? = null,
+) : SimpleDialog(dialog, attributes, styleAttributes, blurringViewLifeCycleListener) {
 
 
 }

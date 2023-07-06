@@ -37,7 +37,7 @@ class MainDialogFragment : Fragment() {
     super.onViewCreated(view, savedInstanceState)
     binding.apply {
       showDialogBtn.setOnClickListener {
-        viewModel.dialogBuilder.replayCache.lastOrNull()?.also { builder ->
+        viewModel.dialogBuilder.value?.also { builder ->
           dialog?.dismiss()
           builder.setContentView(dialogView(dialogType()))
           dialog = builder.buildAndShow()

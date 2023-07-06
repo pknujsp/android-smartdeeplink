@@ -29,7 +29,8 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
-class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer {
+class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer, GLSurfaceLifeCycleListener,
+  IGLSurfaceViewLayout {
   private var radius by Delegates.notNull<Int>()
 
   private var initialized = false
@@ -49,7 +50,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private val mainScope = MainScope()
 
   private companion object {
-    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(4, "BlurringThreadPool")
+    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(3, "BlurringThreadPool")
   }
 
   private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
@@ -127,12 +128,25 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   override fun onPause() {
-    if (mainScope.isActive) mainScope.cancel()
-    queue.clear()
-    blurScript.onClear()
-    NativeGLBlurringImpl.onPause()
     collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
-    collectingView = null
+    blurScript.onClear()
     super.onPause()
+    queue.clear()
+    NativeGLBlurringImpl.onPause()
+    collectingView = null
+    if (mainScope.isActive) mainScope.cancel()
   }
+
+  override fun setBackgroundColor(color: Int) {
+    super.setBackgroundColor(color)
+  }
+}
+
+interface GLSurfaceLifeCycleListener {
+  fun onResume()
+  fun onPause()
+}
+
+interface IGLSurfaceViewLayout {
+  fun setBackgroundColor(color: Int)
 }

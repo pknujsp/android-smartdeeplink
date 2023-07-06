@@ -314,14 +314,26 @@ class SimpleDialogBuilder private constructor(
    */
   fun buildAndShow(): SimpleDialog = dialogBuilder.run {
     create()
-    show()
     dialogStyler.applyStyle(this)
+    show()
 
     when (dialogStyler.simpleDialogStyleAttributes.dialogType) {
-      DialogType.BottomSheet -> BottomSheetDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
-      DialogType.Normal -> NormalDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
-      DialogType.Fullscreen -> FullScreenDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes)
+      DialogType.BottomSheet -> BottomSheetDialog(
+        this,
+        generalAttributes,
+        dialogStyler.simpleDialogStyleAttributes,
+        dialogStyler.blurringViewLifeCycleListener,
+      )
+
+      DialogType.Normal -> NormalDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes, dialogStyler.blurringViewLifeCycleListener)
+      DialogType.Fullscreen -> FullScreenDialog(
+        this,
+        generalAttributes,
+        dialogStyler.simpleDialogStyleAttributes,
+        dialogStyler.blurringViewLifeCycleListener,
+      )
     }
+
   }
 
   @StyleRes
