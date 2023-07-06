@@ -12,11 +12,11 @@ package io.github.pknujsp.testbed.core.ui.dialog
  */
 data class SimpleDialogGeneralAttributes(
   var isDraggable: Boolean = false,
-  var dragDirection: DragDirection = DragDirection.Vertical,
-  var isCancelable: Boolean = false,
-  var isCanceledOnTouchOutside: Boolean = false,
+  var dragDirection: DragDirection = DragDirection.Both,
+  var isCancelable: Boolean = true,
+  var isCanceledOnTouchOutside: Boolean = true,
   var isRestrictViewsFromOffWindow: Boolean = true,
-  var isOnlyDraggleOnModalPoint: Boolean = true,
+  var isOnlyDraggleOnModalPoint: Boolean = false,
 )
 
 sealed class DragDirection {

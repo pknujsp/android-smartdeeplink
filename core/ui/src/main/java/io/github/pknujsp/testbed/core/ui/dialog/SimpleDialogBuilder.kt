@@ -12,6 +12,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
 import io.github.pknujsp.testbed.core.ui.R
+import java.lang.ref.WeakReference
 
 
 class SimpleDialogBuilder private constructor(
@@ -19,38 +20,82 @@ class SimpleDialogBuilder private constructor(
   dialogType: DialogType,
 ) {
 
-  private val dialogStyler: SimpleDialogStyler = SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)
+  private val dialogStyler: SimpleDialogStyler =
+    WeakReference(SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)).get()!!
 
-  private val generalAttributes: SimpleDialogGeneralAttributes = SimpleDialogGeneralAttributes()
+  private val generalAttributes: SimpleDialogGeneralAttributes = WeakReference(SimpleDialogGeneralAttributes()).get()!!
 
   private val dialogBuilder = Dialog(context, theme(dialogType))
 
   companion object {
-
     /**
      * Create Builder instance.(Builder 인스턴스를 생성합니다.)
      */
-    fun builder(@ActivityContext context: Context, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
+    fun builder(context: Context, dialogType: DialogType): SimpleDialogBuilder = SimpleDialogBuilder(
       context, dialogType,
     )
   }
 
 
   /**
-   * Set blur and blur intensity.(Blue 활성과 Blur 강도를 설정합니다.)
+   * Set blur and blur intensity on window behind this dialog.(Dialog가 표시되는 Window에 Blur 활성화 및 Blur 강도를 설정합니다.)
+   *
+   * Default value is false and 15.(기본 값은 false, 15입니다.)
    *
    * If you set [blur] to false, [blurIndensity] will be ignored.(만약 [blur]을 false로 설정한다면 [blurIndensity]는 무시됩니다.)
    *
    * If DialogType is DialogType.FullScreen, [blur] will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 [blur]은 무시됩니다.)
    *
    * Warning! Performance may be degraded if you set [blurIndensity] to a high value.(경고! [blurIndensity]를 높은 값으로 설정한다면 성능이 저하될 수 있습니다.)
+   *
+   * @param blur Whether to activate blur.(Blur 활성화 여부)
+   * @param forceApply Whether to force apply blur.(Blur 강제 적용 여부)
+   * @param blurIndensity Blur intensity.(Blur 강도)
+   *
+   * - Blur는 Android 12이상에서 공식적으로 지원되는 기능입니다.
+   * - 기기가 Android 12이상이더라도, 제조사의 기본 설정에 따라 Blur가 적용되지 않을 수 있습니다.
+   * - Android 12미만에서 이 기능을 적용하려면, [forceApply]를 true로 설정해야 합니다.
+   * - [forceApply]를 true로 설정하는 경우, 자체적으로 제작한 Blur 기능을 사용하며, 제조사의 설정과 관계없이 항상 Blur가 적용됩니다.
    */
-  fun setBlur(
+  fun setBehindBlur(
     blur: Boolean,
+    forceApply: Boolean = false,
     @IntRange(from = 0, to = 100) blurIndensity: Int = SimpleDialogStyleAttributes.currentBlurIndensity,
   ): SimpleDialogBuilder {
-    dialogStyler.simpleDialogStyleAttributes.blur = blur
-    dialogStyler.simpleDialogStyleAttributes.blurIndensity = blurIndensity
+    dialogStyler.simpleDialogStyleAttributes.behindBlur = blur
+    dialogStyler.simpleDialogStyleAttributes.behindBlurIndensity = blurIndensity
+    dialogStyler.simpleDialogStyleAttributes.behindBlurForce = forceApply
+    return this
+  }
+
+  /**
+   * Set blur and blur intensity for background on dialog.(Dialog의 background에 Blur 활성화 및 Blur 강도를 설정합니다.)
+   *
+   * Default value is false and 15.(기본 값은 false, 15입니다.)
+   *
+   * If you set [blur] to false, [blurIndensity] will be ignored.(만약 [blur]을 false로 설정한다면 [blurIndensity]는 무시됩니다.)
+   *
+   * If DialogType is DialogType.FullScreen, [blur] will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 [blur]은 무시됩니다.)
+   *
+   * Warning! Performance may be degraded if you set [blurIndensity] to a high value.(경고! [blurIndensity]를 높은 값으로 설정한다면 성능이 저하될 수 있습니다.)
+   *
+   * @param blur Whether to activate blur.(Blur 활성화 여부)
+   * @param forceApply Whether to force apply blur.(Blur 강제 적용 여부)
+   * @param blurIndensity Blur intensity.(Blur 강도)
+   *
+   * - Blur는 Android 12이상에서 공식적으로 지원되는 기능입니다.
+   * - 기기가 Android 12이상이더라도, 제조사의 기본 설정에 따라 Blur가 적용되지 않을 수 있습니다.
+   * - Android 12미만에서 이 기능을 적용하려면, [forceApply]를 true로 설정해야 합니다.
+   * - [forceApply]를 true로 설정하는 경우, 자체적으로 제작한 Blur 기능을 사용하며, 제조사의 설정과 관계없이 항상 Blur가 적용됩니다.
+   */
+  fun setBackgroundBlur(
+    blur: Boolean,
+    forceApply: Boolean = false,
+    @IntRange(from = 0, to = 100) blurIndensity: Int = SimpleDialogStyleAttributes.currentBlurIndensity,
+  ): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.backgroundBlur = blur
+    dialogStyler.simpleDialogStyleAttributes.backgroundBlurIndensity = blurIndensity
+    dialogStyler.simpleDialogStyleAttributes.backgroundBlurForce = forceApply
     return this
   }
 
@@ -148,8 +193,6 @@ class SimpleDialogBuilder private constructor(
    * only applied for DialogType.BottomSheet.(DialogType.BottomSheet에만 적용됩니다.)
    *
    * Set bottom margin.(하단 여백을 설정합니다.)
-   *
-   * If you set [bottomMargin] to 0, the dialog will be full screen.(만약 [bottomMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
    */
   fun setBottomMargin(@Dimension(unit = Dimension.DP) bottomMargin: Int): SimpleDialogBuilder {
     dialogStyler.simpleDialogStyleAttributes.bottomMargin = bottomMargin
@@ -159,24 +202,53 @@ class SimpleDialogBuilder private constructor(
   /**
    * only applied for DialogType.BottomSheet.(DialogType.BottomSheet에만 적용됩니다.)
    *
-   * Set horizontal margin.(좌우 여백을 설정합니다.)
-   *
-   * If you set [horizontalMargin] to 0, the dialog will be full screen.(만약 [horizontalMargin]을 0으로 설정한다면 전체 화면이 됩니다.)
+   * Set top margin.(상단 여백을 설정합니다.)
    */
-  fun setHorizontalMargin(@Dimension(unit = Dimension.DP) horizontalMargin: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogStyleAttributes.horizontalMargin = horizontalMargin
+  fun setTopMargin(@Dimension(unit = Dimension.DP) topMargin: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.topMargin = topMargin
     return this
   }
 
   /**
-   * Set corner radius.(모서리 반지름을 설정합니다.)
-   *
-   * If you set [cornerRadius] to 0, the corner will not be rounded.(만약 [cornerRadius]를 0으로 설정한다면 모서리가 둥글어지지 않습니다.)
-   *
-   * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
+   * Set start margin.(좌우 여백을 설정합니다.)
+   */
+  fun setStartMargin(@Dimension(unit = Dimension.DP) startMargin: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.startMargin = startMargin
+    return this
+  }
+
+  /**
+   * Set end margin.(좌우 여백을 설정합니다.)
+   */
+  fun setEndMargin(@Dimension(unit = Dimension.DP) endMargin: Int): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.endMargin = endMargin
+    return this
+  }
+
+  /**
+   * Set the corner rounding for the top left, top right, bottom left, and bottom right.(왼쪽 상단, 오른쪽 상단, 왼쪽 하단, 오른쪽 하단의 모서리를 둥글게 만듭니다.)
+   */
+  fun setCornerRadius(
+    @Dimension(unit = Dimension.DP) topStart: Int,
+    @Dimension(unit = Dimension.DP) topEnd: Int,
+    @Dimension(unit = Dimension.DP) bottomStart: Int,
+    @Dimension(unit = Dimension.DP) bottomEnd: Int,
+  ): SimpleDialogBuilder {
+    dialogStyler.simpleDialogStyleAttributes.topStartCornerRadius = topStart
+    dialogStyler.simpleDialogStyleAttributes.topEndCornerRadius = topEnd
+    dialogStyler.simpleDialogStyleAttributes.bottomStartCornerRadius = bottomStart
+    dialogStyler.simpleDialogStyleAttributes.bottomEndCornerRadius = bottomEnd
+    return this
+  }
+
+  /**
+   * Set the corner rounding for all corners.(모든 모서리를 둥글게 만듭니다.)
    */
   fun setCornerRadius(@Dimension(unit = Dimension.DP) cornerRadius: Int): SimpleDialogBuilder {
-    dialogStyler.simpleDialogStyleAttributes.cornerRadius = cornerRadius
+    dialogStyler.simpleDialogStyleAttributes.topStartCornerRadius = cornerRadius
+    dialogStyler.simpleDialogStyleAttributes.topEndCornerRadius = cornerRadius
+    dialogStyler.simpleDialogStyleAttributes.bottomStartCornerRadius = cornerRadius
+    dialogStyler.simpleDialogStyleAttributes.bottomEndCornerRadius = cornerRadius
     return this
   }
 
@@ -192,8 +264,6 @@ class SimpleDialogBuilder private constructor(
    * Set elevation.(그림자 수준을 설정합니다.)
    *
    * If you set [elevation] to 0, the shadow will not be drawn.(만약 [elevation]을 0으로 설정한다면 그림자가 그려지지 않습니다.)
-   *
-   * If DialogType is DialogType.FullScreen, this method will be ignored.(만약 DialogType이 DialogType.FullScreen이라면 이 메소드는 무시됩니다.)
    */
   fun setElevation(@Dimension(unit = Dimension.DP) elevation: Int): SimpleDialogBuilder {
     dialogStyler.simpleDialogStyleAttributes.elevation = elevation
@@ -222,11 +292,14 @@ class SimpleDialogBuilder private constructor(
     return this
   }
 
+  /**
+   * Set content view.(컨텐츠 뷰를 설정합니다.)
+   */
   fun setContentView(view: View): SimpleDialogBuilder {
     dialogBuilder.setContentView(
       FrameLayout(view.context).apply {
         addView(view)
-        id = R.id.dialog_custom_background
+        id = R.id.dialog_base_content
       },
       FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
         gravity = Gravity.CENTER

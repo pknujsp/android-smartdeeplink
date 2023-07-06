@@ -25,7 +25,7 @@ class MainDialogViewModel : ViewModel() {
   fun blur(blur: Int) {
     viewModelScope.launch {
       _dialogBuilder.replayCache.last().also {
-        it?.setBlur(blur = blur > 0, blurIndensity = blur)
+        it?.setBehindBlur(blur = blur > 0, blurIndensity = blur)
         _dialogBuilder.emit(it)
       }
     }
@@ -54,7 +54,7 @@ class MainDialogViewModel : ViewModel() {
   fun horizontalMargin(margin: Int) {
     viewModelScope.launch {
       _dialogBuilder.replayCache.last().also {
-        it?.setHorizontalMargin(margin)
+        it?.setStartMargin(margin)
         _dialogBuilder.emit(it)
 
       }

@@ -12,6 +12,10 @@
     <item name="android:windowSoftInputMode">adjustResize</item>
     <item name="android:windowBackground">@android:color/transparent</item>
     <item name="enforceMaterialTheme">false</item>
+
+    <item name="android:windowBlurBehindEnabled">true</item>
+    <item name="android:windowBlurBehindRadius">15dp</item>
+    <item name="android:windowBackgroundBlurRadius">15dp</item>
   </style>
 
   <style name="BottomSheet" parent="Theme.AppCompat.Dialog">

@@ -135,8 +135,8 @@ class MainDialogFragment : Fragment() {
           if (width.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
           if (height.isChecked) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
         ).setCornerRadius(cornerRadiusSlider.value.toInt()).setDim(dimSlider.value.toInt() > 0, dimSlider.value.toInt())
-          .setBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(cancelable.isChecked)
-          .setHorizontalMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()).setDragDirection(
+          .setBehindBlur(blurSlider.value.toInt() > 0, blurSlider.value.toInt()).setCancelable(cancelable.isChecked)
+          .setStartMargin(horizontalMarginSlider.value.toInt()).setBottomMargin(bottomMarginSlider.value.toInt()).setDragDirection(
             when (draggleDirectionsRadioGroup.checkedRadioButtonId) {
               R.id.horizontal_radio -> DragDirection.Horizontal
               R.id.vertical_radio -> DragDirection.Vertical
