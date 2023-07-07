@@ -1,5 +1,7 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import IGLSurfaceView
+import IGLSurfaceViewLayout
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
@@ -24,8 +26,6 @@ import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMarginsRelative
 import io.github.pknujsp.blur.view.BlurringView
-import io.github.pknujsp.blur.view.IGLSurfaceView
-import io.github.pknujsp.blur.view.IGLSurfaceViewLayout
 import io.github.pknujsp.testbed.core.ui.R
 
 

@@ -1,7 +1,7 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import IGLSurfaceView
 import android.app.Dialog
-import io.github.pknujsp.blur.view.IGLSurfaceView
 
 class FullScreenDialog(
   dialog: Dialog, attributes: SimpleDialogGeneralAttributes,

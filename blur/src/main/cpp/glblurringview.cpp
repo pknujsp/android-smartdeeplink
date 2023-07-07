@@ -112,10 +112,10 @@ static GLuint loadShader(GLenum type, const char *shaderCode) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_io_github_pknujsp_blur_natives_NativeGLBlurringImpl_00024Companion_onDrawFrame(JNIEnv *env, jobject thiz, jobject bitmap) {
-    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
-
     void *pixels = nullptr;
     if (AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels) != 0) return;
+
+    glClear(GL_COLOR_BUFFER_BIT bitor GL_DEPTH_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, textures);
 

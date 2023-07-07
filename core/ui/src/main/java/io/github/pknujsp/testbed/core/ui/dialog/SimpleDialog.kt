@@ -1,5 +1,6 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import IGLSurfaceView
 import android.app.Dialog
 import android.content.DialogInterface
 import android.content.DialogInterface.OnCancelListener
@@ -13,7 +14,6 @@ import androidx.core.view.marginBottom
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
-import io.github.pknujsp.blur.view.IGLSurfaceView
 import io.github.pknujsp.testbed.core.ui.R
 
 abstract class SimpleDialog(

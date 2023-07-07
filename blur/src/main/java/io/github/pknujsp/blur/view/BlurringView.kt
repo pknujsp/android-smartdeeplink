@@ -1,5 +1,7 @@
 package io.github.pknujsp.blur.view
 
+import IGLSurfaceView
+import IGLSurfaceViewLayout
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
@@ -16,12 +18,21 @@ import io.github.pknujsp.blur.BlurUtils.getCoordinatesInWindow
 import io.github.pknujsp.blur.R
 import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
 import io.github.pknujsp.blur.renderscript.BlurScript
-import io.github.pknujsp.coroutineext.launchSafely
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onSuccess
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.microedition.khronos.egl.EGLConfig
@@ -29,11 +40,8 @@ import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
 
 
-class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer, IGLSurfaceView,
-  IGLSurfaceViewLayout {
+class BlurringView private constructor(context: Context) : GLSurfaceView(context), GLSurfaceView.Renderer, IGLSurfaceView, IGLSurfaceViewLayout {
   private var radius by Delegates.notNull<Int>()
-
-  private var initialized = false
 
   private var collectingView: View? = null
   private var window: Window? = null
@@ -43,28 +51,36 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   private val blurScript = BlurScript(context)
 
-  private val mutex = Mutex()
+  private val viewMutex = Mutex()
 
-  private val queue = ArrayDeque<Bitmap>(60)
+  private val srcBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
+  private val blurredBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
 
-  private val mainScope = MainScope()
+  private val copyScope = CoroutineScope(copyDispatcher) + SupervisorJob()
+  private val blurScope = CoroutineScope(blurDispatcher) + SupervisorJob()
 
   private companion object {
-    @OptIn(DelicateCoroutinesApi::class) val dispatcher = newFixedThreadPoolContext(3, "BlurringThreadPool")
+    @OptIn(DelicateCoroutinesApi::class) val copyDispatcher = newFixedThreadPoolContext(1, "CopyThread")
+    @OptIn(DelicateCoroutinesApi::class) val blurDispatcher = newFixedThreadPoolContext(2, "BlurThread")
+  }
+
+  init {
+    srcBitmapChannel.consumeAsFlow().flowOn(copyDispatcher).map { bitmap ->
+      blurScript.instrinsicBlur(bitmap)?.also {
+        blurredBitmapChannel.trySend(it)
+        this@BlurringView.queueEvent {
+          requestRender()
+        }
+      }
+    }.launchIn(blurScope)
   }
 
   private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
-    if (initialized) {
-      mainScope.launchSafely(dispatcher) {
-        mutex.withLock {
-          val bitmap = collectingView?.drawToBitmap()?.let { blurScript.instrinsicBlur(it) }
-          if (bitmap != null) {
-            queue.add(bitmap)
-            requestRender()
-          }
+    copyScope.launch {
+      if (!viewMutex.isLocked) {
+        viewMutex.withLock {
+          collectingView?.drawToBitmap()?.run { srcBitmapChannel.send(this) }
         }
-      }.onException { _, t ->
-        t.printStackTrace()
       }
     }
     true
@@ -90,17 +106,14 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
       this.window = window
 
       window.decorView.findViewById<View>(androidx.appcompat.R.id.action_bar_root).let { actionBarRoot ->
-        collectingView = window.decorView
-        collectingView!!.viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
-        collectingViewCoordinatesRect.set(actionBarRoot.getCoordinatesInWindow(window))
+        collectingView = window.decorView.apply {
+          collectingViewCoordinatesRect.set(actionBarRoot.getCoordinatesInWindow(window))
+          windowRect.right = window.decorView.width
+          windowRect.bottom = window.decorView.height
 
-        windowRect.right = window.decorView.width
-        windowRect.bottom = window.decorView.height
-
-        blurScript.prepare(
-          radius,
-        )
-        initialized = true
+          blurScript.prepare(radius)
+          viewTreeObserver.addOnPreDrawListener(onPreDrawListener)
+        }
       }
     }
   }
@@ -123,35 +136,26 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   override fun onDrawFrame(gl: GL10?) {
-    if (queue.isNotEmpty()) NativeGLBlurringImpl.onDrawFrame(queue.removeFirst())
+    blurredBitmapChannel.tryReceive().onSuccess {
+      NativeGLBlurringImpl.onDrawFrame(it)
+    }
   }
 
   override fun onPause() {
+    if (copyScope.isActive) copyScope.cancel()
     collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
     blurScript.onClear()
     super.onPause()
-    queue.clear()
     NativeGLBlurringImpl.onPause()
     collectingView = null
-    if (mainScope.isActive) mainScope.cancel()
   }
 
   override fun setBackgroundColor(color: Int) {
     super.setBackgroundColor(color)
   }
 
-  override fun setOnTouchListener(l: OnTouchListener) {
+  override fun setOnTouchListener(l: View.OnTouchListener) {
     super.setOnTouchListener(l)
   }
-}
 
-interface IGLSurfaceView {
-  fun setOnTouchListener(listener: View.OnTouchListener)
-
-  fun onResume()
-  fun onPause()
-}
-
-interface IGLSurfaceViewLayout {
-  fun setBackgroundColor(color: Int)
 }

@@ -6,6 +6,12 @@
 #include "stackblur/abgr-stackblur.h"
 #include <jni.h>
 #include <android/bitmap.h>
+#include <android/native_window.h>
+#include <android/hardware_buffer.h>
+#include <android/hardware_buffer_jni.h>
+#include <android/window.h>
+#include <android/surface_texture.h>
+#include <android/surface_texture_jni.h>
 
 static ABGRStackBlur *stackBlur = new ABGRStackBlur();
 
