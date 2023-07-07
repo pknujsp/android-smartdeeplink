@@ -22,7 +22,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.allViews
-import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMarginsRelative
 import io.github.pknujsp.blur.view.BlurringView
@@ -43,12 +42,11 @@ internal class SimpleDialogStyler(
 
   // R.id.blurring_view
   var blurringViewLifeCycleListener: IGLSurfaceView? = null
-  var iBlurringViewLayout: IGLSurfaceViewLayout? = null
+  private var iBlurringViewLayout: IGLSurfaceViewLayout? = null
 
   private companion object {
-    private val density: Float = Resources.getSystem().displayMetrics.density
-
-    private val drawableCache = LruCache<BackgroundDrawableInfo, Drawable>(10)
+    val density: Float = Resources.getSystem().displayMetrics.density
+    val drawableCache = LruCache<BackgroundDrawableInfo, Drawable>(10)
   }
 
   private data class BackgroundDrawableInfo(
@@ -69,7 +67,6 @@ internal class SimpleDialogStyler(
         else if (view.id == android.R.id.content) androidDefaultContentView = view as FrameLayout
         if (androidDefaultContentView != null && compatContentView != null) return@forEach
       }
-      (decorView.children.first() as LinearLayout).gravity = Gravity.CENTER
 
       updateAndroidDefaultContentViewLayout()
       setCompatContentViewLayout()
@@ -88,7 +85,7 @@ internal class SimpleDialogStyler(
   private fun setBlur(decorView: View, window: Window, attributes: LayoutParams) {
     if (!simpleDialogStyleAttributes.behindBlur && !simpleDialogStyleAttributes.backgroundBlur) return
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !simpleDialogStyleAttributes.behindBlurForce) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       val maxRadius = 30f * density
 
       if (simpleDialogStyleAttributes.backgroundBlur) window.setBackgroundBlurRadius((simpleDialogStyleAttributes.backgroundBlurIndensity / 100f * maxRadius).toInt())
@@ -147,7 +144,7 @@ internal class SimpleDialogStyler(
 
           var iconHeight = 0
           if (simpleDialogStyleAttributes.isShowModalPoint) {
-            iconHeight = (12 * density).toInt()
+            iconHeight = (14 * density).toInt()
             val icon = ResourcesCompat.getDrawable(
               context.resources,
               simpleDialogStyleAttributes.customModalViewId ?: R.drawable.icon_more_edited,
@@ -162,7 +159,7 @@ internal class SimpleDialogStyler(
           background = LayerDrawable(drawables.toTypedArray()).apply {
             if (simpleDialogStyleAttributes.isShowModalPoint) {
               setLayerGravity(1, Gravity.CENTER_HORIZONTAL or Gravity.TOP)
-              setLayerInsetTop(0, iconHeight)
+              setLayerInsetBottom(1, iconHeight)
             }
             drawableCache.put(backgroundDrawableInfo, this)
           }
@@ -175,19 +172,21 @@ internal class SimpleDialogStyler(
 
   private fun updateAndroidDefaultContentViewLayout() {
     androidDefaultContentView?.apply {
-      updateLayoutParams<ViewGroup.MarginLayoutParams> {
+      updateLayoutParams<LinearLayout.LayoutParams> {
         width = ViewGroup.LayoutParams.MATCH_PARENT
         height = ViewGroup.LayoutParams.MATCH_PARENT
-      }
-      updateLayoutParams<LinearLayout.LayoutParams> {
-        gravity = Gravity.CENTER
       }
     }
   }
 
   private fun setCompatContentViewLayout() {
     compatContentView?.apply {
-      updateLayoutParams<ViewGroup.MarginLayoutParams> {
+      updateLayoutParams<FrameLayout.LayoutParams> {
+        width =
+          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+        height =
+          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+
         updateMarginsRelative(
           start = simpleDialogStyleAttributes.startMargin * density.toInt(),
           top = simpleDialogStyleAttributes.topMargin * density.toInt(),
@@ -195,8 +194,8 @@ internal class SimpleDialogStyler(
           bottom = simpleDialogStyleAttributes.bottomMargin * density.toInt(),
         )
 
-        width = ViewGroup.LayoutParams.WRAP_CONTENT
-        height = ViewGroup.LayoutParams.WRAP_CONTENT
+        gravity =
+          if (simpleDialogStyleAttributes.dialogType == DialogType.BottomSheet) Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL else Gravity.CENTER
       }
     }
   }
@@ -209,9 +208,7 @@ internal class SimpleDialogStyler(
   }
 
   private fun setElevation() {
-    if (simpleDialogStyleAttributes.elevation > 0)
-      compatContentView?.elevation = simpleDialogStyleAttributes.elevation * density
-
+    if (simpleDialogStyleAttributes.elevation > 0) androidDefaultContentView?.elevation = simpleDialogStyleAttributes.elevation * density
   }
 
 }

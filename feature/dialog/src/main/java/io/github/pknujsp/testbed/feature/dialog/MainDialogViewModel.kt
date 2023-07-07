@@ -104,13 +104,6 @@ class MainDialogViewModel : ViewModel() {
     }
   }
 
-  fun onlyDraggleOnModalPoint(checked: Boolean) {
-    viewModelScope.launch {
-      _dialogBuilder.update {
-        it?.setIsOnlyDraggleOnModalPoint(checked)
-      }
-    }
-  }
 
   fun draggleDirections(direction: DragDirection) {
     viewModelScope.launch {

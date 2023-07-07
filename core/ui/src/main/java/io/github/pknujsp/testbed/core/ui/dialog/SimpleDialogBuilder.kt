@@ -2,7 +2,6 @@ package io.github.pknujsp.testbed.core.ui.dialog
 
 import android.app.Dialog
 import android.content.Context
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
@@ -162,16 +161,6 @@ class SimpleDialogBuilder private constructor(
   }
 
   /**
-   * Set draggble only on modal point.(모달 포인트에서만 드래그 가능 여부를 설정합니다.)
-   *
-   * If you set [isOnlyDraggleOnModalPoint] to true, Dialog will be able to move only on modal point.(만약 [isOnlyDraggleOnModalPoint]을 true로 설정한다면 Dialog는 모달 포인트에서만 움직일 수 있습니다.)
-   */
-  fun setIsOnlyDraggleOnModalPoint(isOnlyDraggleOnModalPoint: Boolean): SimpleDialogBuilder {
-    generalAttributes.isOnlyDraggleOnModalPoint = isOnlyDraggleOnModalPoint
-    return this
-  }
-
-  /**
    * Set custom modal view id.(커스텀 모달 뷰 id를 설정합니다.)
    *
    */
@@ -299,11 +288,8 @@ class SimpleDialogBuilder private constructor(
   fun setContentView(view: View): SimpleDialogBuilder {
     dialogBuilder.setContentView(
       FrameLayout(view.context).apply {
-        addView(view)
         id = R.id.dialog_base_content
-      },
-      FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
-        gravity = Gravity.CENTER
+        addView(view)
       },
     )
     return this

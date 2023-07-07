@@ -125,9 +125,6 @@ class MainDialogFragment : Fragment() {
       showModalPoint.setOnCheckedChangeListener { _, isChecked ->
         viewModel.showModalPoint(isChecked)
       }
-      onlyDraggleOnModalPoint.setOnCheckedChangeListener { _, isChecked ->
-        viewModel.onlyDraggleOnModalPoint(isChecked)
-      }
       draggleDirectionsRadioGroup.setOnCheckedChangeListener { _, checkedId ->
         viewModel.draggleDirections(
           when (checkedId) {
@@ -175,8 +172,7 @@ class MainDialogFragment : Fragment() {
               else -> DragDirection.Both
             },
           ).setDraggable(draggable.isChecked).setCanceledOnTouchOutside(canceledOnTouchOutside.isChecked)
-          .setRestrictViewsFromOffWindow(restrictViewsFromOffWindow.isChecked).setIsShowModalPoint(showModalPoint.isChecked)
-          .setIsOnlyDraggleOnModalPoint(onlyDraggleOnModalPoint.isChecked),
+          .setRestrictViewsFromOffWindow(restrictViewsFromOffWindow.isChecked).setIsShowModalPoint(showModalPoint.isChecked),
       )
     }
   }

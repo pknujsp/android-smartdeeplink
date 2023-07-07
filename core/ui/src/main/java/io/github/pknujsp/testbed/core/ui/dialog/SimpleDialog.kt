@@ -1,6 +1,7 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
 import IGLSurfaceView
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.DialogInterface
 import android.content.DialogInterface.OnCancelListener
@@ -52,6 +53,9 @@ abstract class SimpleDialog(
     }
     dialog.setOnDismissListener {
       blurringViewLifeCycleListener?.onPause()
+      _dialogView = null
+      _draggablePixelsRangeRect = null
+      _dialogViewFirstPixels = null
       onDismissListener?.onDismiss(dialog)
     }
   }
@@ -78,6 +82,7 @@ abstract class SimpleDialog(
 
   fun isShowing(): Boolean = dialog.isShowing
 
+  @SuppressLint("ClickableViewAccessibility")
   protected open fun initTouchEvent() {
     (dialog.window?.decorView as? ViewGroup)?.let { decorView ->
       decorView.doOnPreDraw {
@@ -118,17 +123,20 @@ abstract class SimpleDialog(
           },
         )
 
-
-        if (attributes.isCanceledOnTouchOutside && blurringViewLifeCycleListener != null) blurringViewLifeCycleListener?.setOnTouchListener(
-          fun(_: View, event: MotionEvent): Boolean {
-            when (event.action) {
-              MotionEvent.ACTION_DOWN -> {
-                dismiss()
-              }
+        val dialogOnTouchListener = View.OnTouchListener { _, event ->
+          when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+              dismiss()
             }
-            return true
-          },
-        )
+          }
+          true
+        }
+
+        if (attributes.isCanceledOnTouchOutside) {
+          blurringViewLifeCycleListener?.setOnTouchListener(dialogOnTouchListener) ?: (dialogView.parent as View).setOnTouchListener(
+            dialogOnTouchListener,
+          )
+        }
       }
 
     }
@@ -145,11 +153,13 @@ abstract class SimpleDialog(
   }
 
 
-  private fun filterX(newX: Float): Float = if (newX < draggablePixelsRangeRect.left) draggablePixelsRangeRect.left
+  private fun filterX(newX: Float): Float = if (!attributes.isRestrictViewsFromOffWindow) newX
+  else if (newX < draggablePixelsRangeRect.left) draggablePixelsRangeRect.left
   else if (newX > draggablePixelsRangeRect.right) draggablePixelsRangeRect.right
   else newX
 
-  private fun filterY(newY: Float): Float = if (newY < draggablePixelsRangeRect.top) draggablePixelsRangeRect.top
+  private fun filterY(newY: Float): Float = if (!attributes.isRestrictViewsFromOffWindow) newY
+  else if (newY < draggablePixelsRangeRect.top) draggablePixelsRangeRect.top
   else if (newY > draggablePixelsRangeRect.bottom) draggablePixelsRangeRect.bottom
   else newY
 
