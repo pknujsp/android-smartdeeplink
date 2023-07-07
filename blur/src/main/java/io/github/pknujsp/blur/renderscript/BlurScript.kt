@@ -6,6 +6,7 @@ import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
+import io.github.pknujsp.blur.toolkit.Toolkit
 
 @Suppress("deprecation")
 class BlurScript(context: Context) {
@@ -13,9 +14,11 @@ class BlurScript(context: Context) {
   private var blurScript: ScriptIntrinsicBlur? = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
   private var srcAllocation: Allocation? = null
   private var outAllocation: Allocation? = null
+  private var radius = 0
 
   fun prepare(radius: Int) {
-    blurScript?.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(24f))
+    this.radius = radius.coerceAtLeast(1).coerceAtMost(25)
+    //blurScript?.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(25f))
   }
 
   fun instrinsicBlur(srcBitmap: Bitmap): Bitmap? = if (blurScript == null) null else try {
@@ -32,6 +35,8 @@ class BlurScript(context: Context) {
   } catch (e: Exception) {
     null
   }
+
+  fun blur(srcBitmap: Bitmap): Bitmap = Toolkit.blur(srcBitmap, radius)
 
 
   fun onClear() {

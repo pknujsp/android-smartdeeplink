@@ -65,7 +65,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   init {
     srcBitmapChannel.consumeAsFlow().map { bitmap ->
-      blurScript.instrinsicBlur(bitmap)?.also {
+      blurScript.blur(bitmap).also {
         blurredBitmapChannel.send(it)
         this@BlurringView.queueEvent {
           requestRender()
