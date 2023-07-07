@@ -17,6 +17,7 @@
 #include <android/bitmap.h>
 #include <cassert>
 #include <jni.h>
+#include <sys/sysconf.h>
 
 #include "RenderScriptToolkit.h"
 #include "Utils.h"
@@ -199,8 +200,8 @@ public:
 };
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_io_github_pknujsp_blur_toolkit_Toolkit_createNative(JNIEnv *env, jobject *thiz) {
-    return reinterpret_cast<jlong>(new RenderScriptToolkit());
+Java_io_github_pknujsp_blur_toolkit_Toolkit_createNative(JNIEnv *env, jobject thiz) {
+    return reinterpret_cast<jlong>(new RenderScriptToolkit(sysconf(_SC_NPROCESSORS_ONLN)));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_io_github_pknujsp_blur_toolkit_Toolkit_destroyNative(

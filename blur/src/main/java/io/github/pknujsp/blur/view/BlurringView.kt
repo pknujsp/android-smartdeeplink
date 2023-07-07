@@ -34,6 +34,7 @@ import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicLong
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -63,11 +64,12 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     @OptIn(DelicateCoroutinesApi::class) val blurDispatcher = newSingleThreadContext("BlurThread")
   }
 
+  private val lastCompletedBlurNum = AtomicLong(0)
+
   init {
     srcBitmapChannel.consumeAsFlow().map { bitmap ->
       val start = System.currentTimeMillis()
-      blurScript.blur(bitmap).also {
-        println("블러 처리 소요 시간 : ${System.currentTimeMillis() - start}MS")
+      blurScript.instrinsicBlur(bitmap)?.also {
         blurredBitmapChannel.send(it)
         this@BlurringView.queueEvent {
           requestRender()
