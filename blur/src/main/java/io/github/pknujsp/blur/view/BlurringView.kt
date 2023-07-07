@@ -26,7 +26,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
@@ -65,9 +64,9 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   }
 
   init {
-    srcBitmapChannel.consumeAsFlow().flowOn(copyDispatcher).map { bitmap ->
+    srcBitmapChannel.consumeAsFlow().map { bitmap ->
       blurScript.instrinsicBlur(bitmap)?.also {
-        blurredBitmapChannel.trySend(it)
+        blurredBitmapChannel.send(it)
         this@BlurringView.queueEvent {
           requestRender()
         }
@@ -148,6 +147,7 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
     super.onPause()
     NativeGLBlurringImpl.onPause()
     collectingView = null
+    window = null
   }
 
   override fun setBackgroundColor(color: Int) {
