@@ -50,10 +50,13 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private val srcBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
   private val blurredBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
 
-  private companion object {
-    @OptIn(DelicateCoroutinesApi::class) private val copyScope = CoroutineScope(newSingleThreadContext("copyScope")) + SupervisorJob()
-    @OptIn(DelicateCoroutinesApi::class) private val blurScope = CoroutineScope(newSingleThreadContext("blurScope")) + SupervisorJob()
+  private val copyScope = CoroutineScope(copyThread) + SupervisorJob()
+  private val blurScope = CoroutineScope(blurThread) + SupervisorJob()
 
+  @OptIn(DelicateCoroutinesApi::class)
+  private companion object {
+    val blurThread = newSingleThreadContext("blurThread")
+    val copyThread = newSingleThreadContext("copyThread")
   }
 
   init {
@@ -138,8 +141,8 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   override fun onPause() {
     collectingView?.viewTreeObserver?.removeOnPreDrawListener(onPreDrawListener)
-    if (copyScope.isActive) copyScope.cancel()
     if (blurScope.isActive) blurScope.cancel()
+    if (copyScope.isActive) copyScope.cancel()
     BlurScript.onClear()
     super.onPause()
     NativeGLBlurringImpl.onPause()

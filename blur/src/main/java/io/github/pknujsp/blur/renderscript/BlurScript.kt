@@ -1,6 +1,5 @@
 package io.github.pknujsp.blur.renderscript
 
-import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.renderscript.Allocation
@@ -11,10 +10,10 @@ import io.github.pknujsp.blur.toolkit.Toolkit
 import kotlin.properties.Delegates
 
 @Suppress("deprecation")
-object BlurScript : Application() {
+object BlurScript {
   private var initialized = false
   private var renderScript: RenderScript by Delegates.notNull()
-  private var blurScript: ScriptIntrinsicBlur by Delegates.notNull()
+  private var blurScript: ScriptIntrinsicBlur? = null
   private var srcAllocation: Allocation? = null
   private var outAllocation: Allocation? = null
   private var radius = 0
@@ -22,21 +21,22 @@ object BlurScript : Application() {
   fun init(context: Context) {
     if (!initialized) {
       renderScript = RenderScript.create(context)
-      blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
       initialized = true
     }
+    blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
   }
 
   fun prepare(radius: Int) {
-    blurScript.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(25f))
+    this.radius = radius.coerceAtLeast(1).coerceAtMost(25)
+    blurScript?.setRadius(radius.toFloat().coerceAtLeast(1f).coerceAtMost(25f))
   }
 
   fun instrinsicBlur(srcBitmap: Bitmap): Bitmap? = try {
     srcAllocation = Allocation.createFromBitmap(renderScript, srcBitmap)
     outAllocation = Allocation.createTyped(renderScript, srcAllocation?.type)
 
-    blurScript.setInput(srcAllocation)
-    blurScript.forEach(outAllocation)
+    blurScript?.setInput(srcAllocation)
+    blurScript!!.forEach(outAllocation)
 
     srcAllocation?.destroy()
     outAllocation?.copyTo(srcBitmap)
@@ -51,8 +51,9 @@ object BlurScript : Application() {
 
   fun onClear() {
     try {
-      blurScript.destroy()
+      blurScript?.destroy()
       renderScript.destroy()
+      blurScript = null
       outAllocation?.destroy()
       outAllocation = null
     } catch (e: Exception) {
