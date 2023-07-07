@@ -84,6 +84,7 @@ androidx-annotation = { module = "androidx.annotation:annotation", version.ref =
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin_version" }
 kotlinx-coroutine = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutine-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
 kotlin-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlin_poet" }
@@ -134,7 +135,7 @@ appcompat = ["androidx-appcompat"]
 
 fragment = ["androidx-fragment"]
 
-kotlinx = ["kotlinx-coroutine"]
+kotlinx = ["kotlinx-coroutine","kotlinx-coroutine-core"]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "gradle_android_plugin_version" }

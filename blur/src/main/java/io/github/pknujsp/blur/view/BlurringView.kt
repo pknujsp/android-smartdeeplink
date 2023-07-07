@@ -6,7 +6,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.opengl.GLES32.*
 import android.opengl.GLSurfaceView
 import android.view.View
 import android.view.ViewGroup
@@ -20,21 +19,17 @@ import io.github.pknujsp.blur.natives.NativeGLBlurringImpl
 import io.github.pknujsp.blur.renderscript.BlurScript
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.Executors
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -56,33 +51,33 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
   private val srcBitmapChannel = Channel<Bitmap>(capacity = 40, onBufferOverflow = BufferOverflow.SUSPEND)
   private val blurredBitmapChannel = Channel<Bitmap>(capacity = 40, onBufferOverflow = BufferOverflow.SUSPEND)
 
-  private val copyScope = CoroutineScope(copyDispatcher) + SupervisorJob()
-  private val blurScope = CoroutineScope(blurDispatcher) + SupervisorJob()
-
-  private companion object {
-    @OptIn(DelicateCoroutinesApi::class) val copyDispatcher = newSingleThreadContext("CopyThread")
-    @OptIn(DelicateCoroutinesApi::class) val blurDispatcher = newSingleThreadContext("BlurThread")
-  }
-
-  private val lastCompletedBlurNum = AtomicLong(0)
+  @OptIn(DelicateCoroutinesApi::class) private val copyScope = CoroutineScope(newSingleThreadContext("copyScope"))
+  @OptIn(DelicateCoroutinesApi::class) private val blurScope = CoroutineScope(newSingleThreadContext("blurScope"))
+  private val threadPool = Executors.newFixedThreadPool(1)
 
   init {
-    srcBitmapChannel.consumeAsFlow().map { bitmap ->
-      val start = System.currentTimeMillis()
-      blurScript.instrinsicBlur(bitmap)?.also {
-        blurredBitmapChannel.send(it)
-        this@BlurringView.queueEvent {
-          requestRender()
+    blurScope.launch {
+      srcBitmapChannel.consumeAsFlow().collect { bitmap ->
+        val start = System.currentTimeMillis()
+        blurScript.instrinsicBlur(bitmap)?.also {
+          println("모든 처리 완료 : ${System.currentTimeMillis() - start}MS")
+          blurredBitmapChannel.send(it)
+          this@BlurringView.queueEvent {
+            requestRender()
+          }
         }
       }
-    }.launchIn(blurScope)
+    }
   }
+
 
   private val onPreDrawListener = ViewTreeObserver.OnPreDrawListener {
     copyScope.launch {
       if (!viewMutex.isLocked) {
         viewMutex.withLock {
-          collectingView?.drawToBitmap()?.run { srcBitmapChannel.send(this) }
+          collectingView?.drawToBitmap()?.run {
+            srcBitmapChannel.send(this)
+          }
         }
       }
     }
