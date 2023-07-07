@@ -88,7 +88,7 @@ internal class SimpleDialogStyler(
   private fun setBlur(decorView: View, window: Window, attributes: LayoutParams) {
     if (!simpleDialogStyleAttributes.behindBlur && !simpleDialogStyleAttributes.backgroundBlur) return
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !simpleDialogStyleAttributes.behindBlurForce) {
       val maxRadius = 30f * density
 
       if (simpleDialogStyleAttributes.backgroundBlur) window.setBackgroundBlurRadius((simpleDialogStyleAttributes.backgroundBlurIndensity / 100f * maxRadius).toInt())

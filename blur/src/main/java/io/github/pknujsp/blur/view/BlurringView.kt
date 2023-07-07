@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -52,15 +52,15 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   private val viewMutex = Mutex()
 
-  private val srcBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
-  private val blurredBitmapChannel = Channel<Bitmap>(capacity = 30, onBufferOverflow = BufferOverflow.SUSPEND)
+  private val srcBitmapChannel = Channel<Bitmap>(capacity = 40, onBufferOverflow = BufferOverflow.SUSPEND)
+  private val blurredBitmapChannel = Channel<Bitmap>(capacity = 40, onBufferOverflow = BufferOverflow.SUSPEND)
 
   private val copyScope = CoroutineScope(copyDispatcher) + SupervisorJob()
   private val blurScope = CoroutineScope(blurDispatcher) + SupervisorJob()
 
   private companion object {
-    @OptIn(DelicateCoroutinesApi::class) val copyDispatcher = newFixedThreadPoolContext(1, "CopyThread")
-    @OptIn(DelicateCoroutinesApi::class) val blurDispatcher = newFixedThreadPoolContext(2, "BlurThread")
+    @OptIn(DelicateCoroutinesApi::class) val copyDispatcher = newSingleThreadContext("CopyThread")
+    @OptIn(DelicateCoroutinesApi::class) val blurDispatcher = newSingleThreadContext("BlurThread")
   }
 
   init {
