@@ -134,13 +134,13 @@ umull2 v15
 br          \reg
 
 /* This version of the vertical fetch loop body is used away from the edges
-   * of the source image.  The pointers start at the top and bottom source rows
-   * and work their way towards the centre on each iteration.  This way the
-   * number of taps used can be controlled by jumping directly into the middle
-   * of the loop and running to completion.
-   * If the loop body changes size then the code which calculates the address of
-   * the initial iteration must be updated to accordingly.
-   */
+ * of the source image.  The pointers start at the top and bottom source rows
+ * and work their way towards the centre on each iteration.  This way the
+ * number of taps used can be controlled by jumping directly into the middle
+ * of the loop and running to completion.
+ * If the loop body changes size then the code which calculates the address of
+ * the initial iteration must be updated to accordingly.
+ */
 .
 macro vertfetch_noclamp
 i, dreg
@@ -175,12 +175,12 @@ umlal2 v15
 .endm
 
 /* This version of the vertical fetch loop body is used near the edges of the
-   * source image, where one or both of the accesses may start with a clamped
-   * value, and the row addresses only begin to change after some number of
-   * iterations before the end.
-   * If the loop body changes size then the code which calculates the address of
-   * the initial iteration must be updated to accordingly.
-   */
+ * source image, where one or both of the accesses may start with a clamped
+ * value, and the row addresses only begin to change after some number of
+ * iterations before the end.
+ * If the loop body changes size then the code which calculates the address of
+ * the initial iteration must be updated to accordingly.
+ */
 .
 macro vertfetch_clamped
 i, dreg
@@ -225,8 +225,8 @@ umlal2 v15
 .endm
 
 /* Entry into this unrolled loop is computed as a negative index from
-   * \labelc at the end of the block.
-   */
+ * \labelc at the end of the block.
+ */
 .align 4
 vertfetch_clamped 27, v3.h[3]
 vertfetch_clamped 26, v3.h[2]
@@ -260,8 +260,8 @@ vertfetch_clamped  0, v0.h[0]
 \labelc : b 2f    /* done with clamped loop, skip over non-clamped loop */
 
 /* Entry into this unrolled loop is computed as a negative index from
-   * \labelnc at the end of the block.
-   */
+ * \labelnc at the end of the block.
+ */
 .align 4
 vertfetch_noclamp 27, v3.h[3]
 vertfetch_noclamp 26, v3.h[2]
@@ -2613,20 +2613,20 @@ hs
 x11, x11, #windowsize
 
 /* x10 indicates where in the window legal image data begins.
-             * x11 indicates where in the window legal image date ends.
-             * When starting near the centre of a large image these would be
-             * zero and windowsize respectively, but when starting near the
-             * edges this can change.
-             * When starting on the leftmost pixel, x10 will be centertap.
-             * When starting on the rightmost pixel, x11 will be centertap+1.
-             */
+ * x11 indicates where in the window legal image date ends.
+ * When starting near the centre of a large image these would be
+ * zero and windowsize respectively, but when starting near the
+ * edges this can change.
+ * When starting on the leftmost pixel, x10 will be centertap.
+ * When starting on the rightmost pixel, x11 will be centertap+1.
+ */
 
 /* x4 indicates how much data there is between the current pointers
-             * and the right edge of the image.  The pointers currently point
-             * to the data needed at centertap.  The subsequent code will
-             * consume (windowsize - x10) data, but only the data from
-             * centertap to windowsize comes out of x4's budget.
-             */
+ * and the right edge of the image.  The pointers currently point
+ * to the data needed at centertap.  The subsequent code will
+ * consume (windowsize - x10) data, but only the data from
+ * centertap to windowsize comes out of x4's budget.
+ */
 1:
 subs x4, x4,
 #windowsize -
@@ -2636,7 +2636,7 @@ x4, xzr, x4,
 lo
 
 /* And the pointers need to rewind to the start of the window.
-             */
+ */
 sub
 x1, x1, #
 centertap
@@ -2648,7 +2648,7 @@ x19, x19, #
 centertap
 
 /* Unless x8 indicated that there wasn't that much data available.
-             */
+ */
 add
 x1, x1,
 x10
@@ -2660,15 +2660,15 @@ x19, x19,
 x10
 
 /* Get the first chunk, and add padding to align it to the window
-             * if necessary.
-             */
+ * if necessary.
+ */
 bl
 fetch_clampleft\
 step
 
 /* Sometimes the start and the end of the window are in the same
-             * chunk.  In that case both ends need filler at the outset.
-             */
+ * chunk.  In that case both ends need filler at the outset.
+ */
 sub
 x12, x11, #1
 eor x12, x10, x12
@@ -2679,8 +2679,8 @@ bl prefill_sweepright
 \step
 
 /* Iterate through all the points in the window and fill them in
-             * with padding or image data as needed.
-             */
+ * with padding or image data as needed.
+ */
 1:          prefill_body \max_r, \step, \label
 .endm
 
@@ -2720,14 +2720,14 @@ core,
 step = 1, max_r = 25, labelc = "", labelnc = ""
 
 /* If x4 >= x3 then there's no need for clipping.  The main loop
-             * needs to exit when either x3 or x4 runs out, so clamp x4 to be
-             * no greater than x3 and use x4 for the loop.
-             * However, if x4 comes out of the loop with less than 16 bytes
-             * left, a partial read would be necessary to avoid reading beyond
-             * the end of the image.  To avoid this, clamp x4 to the next
-             * multiple of 16, which is still sufficient to force it out of the
-             * loop but doesn't imply a rewind.
-             */
+ * needs to exit when either x3 or x4 runs out, so clamp x4 to be
+ * no greater than x3 and use x4 for the loop.
+ * However, if x4 comes out of the loop with less than 16 bytes
+ * left, a partial read would be necessary to avoid reading beyond
+ * the end of the image.  To avoid this, clamp x4 to the next
+ * multiple of 16, which is still sufficient to force it out of the
+ * loop but doesn't imply a rewind.
+ */
 add x12, x3,
 #15
 bic x12, x12,
@@ -2736,9 +2736,9 @@ cmp x4, x12
 csel x4, x12, x4, hi
 
 /* First calculate the entry-point into the internal fetch logic.
-             * This is done so the same function can service several kernel
-             * sizes.
-             */
+ * This is done so the same function can service several kernel
+ * sizes.
+ */
 adrp x8,
 \
 labelnc
@@ -2757,8 +2757,8 @@ eq
 5f
 
 /* if (r != rup || r != rdn) then the address-clamping table should
-             * be used rather than the short-cut version.
-             */
+ * be used rather than the short-cut version.
+ */
 adrp x8,
 \
 labelc
@@ -2785,12 +2785,12 @@ labelnc =
 reg = x8
 
 /* ...then perform a horizontal convolution on that window to
-             * produce eight output bytes, and slide the window along.
-             * This has to be done twice to match the 16-way vertical pass.
-             * It would be preferable to have twice the work done in \core, but
-             * that would demand yet another variant on those macros and would
-             * perturb the register allocation severely.
-             */
+ * produce eight output bytes, and slide the window along.
+ * This has to be done twice to match the 16-way vertical pass.
+ * It would be preferable to have twice the work done in \core, but
+ * that would demand yet another variant on those macros and would
+ * perturb the register allocation severely.
+ */
 \
 core
         st1{v15.8b},
@@ -2807,13 +2807,13 @@ subs x4, x4,
 #16
 bhi         3b
 /* Here there's 16 or fewer bytes available before the edge of the
-             * source image.  x4 holds that count minus 16 (because it was
-             * decremented before the first iteration ran).  The last read may
-             * not be a whole chunk, and beyond that a fill value must be used.
-             *
-             * Of course, none of that matters if there's no more output to
-             * produce...
-             */
+ * source image.  x4 holds that count minus 16 (because it was
+ * decremented before the first iteration ran).  The last read may
+ * not be a whole chunk, and beyond that a fill value must be used.
+ *
+ * Of course, none of that matters if there's no more output to
+ * produce...
+ */
 cbz x3,
 5f
 
@@ -2837,16 +2837,16 @@ endif
 3f
 
 /* To avoid reading past end of input, rewind pointers by (16-x4)
-             * to ensure that they're exactly 16 bytes from the edge.
-             */
+ * to ensure that they're exactly 16 bytes from the edge.
+ */
 1:
 mov x11, x4
 bl fetch_clampright
 \step
 /* Now to put this padding to use, perform any remaining
-             * iterations.  This is done at half the rate of the main loop,
-             * because there's no longer pressure from a 16-lane window filler.
-             */
+ * iterations.  This is done at half the rate of the main loop,
+ * because there's no longer pressure from a 16-lane window filler.
+ */
 3:          \core
 .if \step==1
 dup v11
@@ -2865,8 +2865,8 @@ bne         3b
 b           5f
 
 /* If the final iteration contained 0 < l < 8 values, then perform
-             * a piecewise store of the final vector.
-             */
+ * a piecewise store of the final vector.
+ */
 4:
 tbz x3,
 #2, 1f
@@ -2934,9 +2934,9 @@ bic x9, x9,
 #0x7f
 
 /* x9 now points to a 0x40 byte buffer on the stack whose address
-             * has the low 7 bits clear.  This allows easy address calculation
-             * in the wrap-around cases.
-             */
+ * has the low 7 bits clear.  This allows easy address calculation
+ * in the wrap-around cases.
+ */
 
 prefill step = 4, max_r =
 \r,

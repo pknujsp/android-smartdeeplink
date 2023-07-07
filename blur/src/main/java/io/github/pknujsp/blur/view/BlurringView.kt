@@ -65,7 +65,9 @@ class BlurringView private constructor(context: Context) : GLSurfaceView(context
 
   init {
     srcBitmapChannel.consumeAsFlow().map { bitmap ->
+      val start = System.currentTimeMillis()
       blurScript.blur(bitmap).also {
+        println("블러 처리 소요 시간 : ${System.currentTimeMillis() - start}MS")
         blurredBitmapChannel.send(it)
         this@BlurringView.queueEvent {
           requestRender()
