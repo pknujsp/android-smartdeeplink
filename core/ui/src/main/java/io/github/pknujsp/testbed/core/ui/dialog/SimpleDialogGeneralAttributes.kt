@@ -18,6 +18,7 @@ data class SimpleDialogGeneralAttributes(
   var isRestrictViewsFromOffWindow: Boolean = true,
   var isFoldable: Boolean = false,
   var foldDirection: FoldDirection = FoldDirection.Vertical,
+  var viewMethodsInteractWith: InteractController? = null,
 )
 
 sealed class DragDirection {
@@ -30,3 +31,11 @@ sealed class FoldDirection {
   object Horizontal : FoldDirection()
   object Vertical : FoldDirection()
 }
+
+data class InteractController(
+  val setBottom: (Int) -> Unit,
+  val originalWidth: Int,
+  val originalHeight: Int,
+  val originalX: Float,
+  val originalY: Float,
+)

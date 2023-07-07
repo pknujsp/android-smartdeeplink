@@ -175,7 +175,8 @@ class MainDialogFragment : Fragment() {
               else -> DragDirection.Both
             },
           ).setDraggable(draggable.isChecked).setCanceledOnTouchOutside(canceledOnTouchOutside.isChecked)
-          .setRestrictViewsFromOffWindow(restrictViewsFromOffWindow.isChecked).setIsShowModalPoint(showModalPoint.isChecked),
+          .setViewInteractWith(binding.scrollView).setRestrictViewsFromOffWindow(restrictViewsFromOffWindow.isChecked)
+          .setIsShowModalPoint(showModalPoint.isChecked),
       )
     }
   }

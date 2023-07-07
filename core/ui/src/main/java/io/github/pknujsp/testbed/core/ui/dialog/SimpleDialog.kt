@@ -34,9 +34,9 @@ abstract class SimpleDialog(
   private var _dialogView: View? = null
   private val dialogView: View get() = _dialogView!!
 
-  private var onShowListener: DialogInterface.OnShowListener? = null
-  private var onCancelListener: OnCancelListener? = null
-  private var onDismissListener: DialogInterface.OnDismissListener? = null
+  private var onShowListener: MutableList<DialogInterface.OnShowListener> = mutableListOf()
+  private var onCancelListener: MutableList<OnCancelListener> = mutableListOf()
+  private var onDismissListener: MutableList<DialogInterface.OnDismissListener> = mutableListOf()
 
   init {
     init()
@@ -46,17 +46,17 @@ abstract class SimpleDialog(
     initTouchEvent()
 
     dialog.setOnShowListener {
-      onShowListener?.onShow(dialog)
+      onShowListener.forEach { it.onShow(dialog) }
     }
     dialog.setOnCancelListener {
-      onCancelListener?.onCancel(dialog)
+      onCancelListener.forEach { it.onCancel(dialog) }
     }
     dialog.setOnDismissListener {
       blurringViewLifeCycleListener?.onPause()
+      onDismissListener.forEach { it.onDismiss(dialog) }
       _dialogView = null
       _draggablePixelsRangeRect = null
       _dialogViewFirstPixels = null
-      onDismissListener?.onDismiss(dialog)
     }
   }
 
@@ -69,16 +69,17 @@ abstract class SimpleDialog(
   }
 
   fun setOnShowListener(listener: DialogInterface.OnShowListener) {
-    onShowListener = listener
+    onShowListener.add(listener)
   }
 
   fun setOnCancelListener(listener: OnCancelListener) {
-    onCancelListener = listener
+    onCancelListener.add(listener)
   }
 
   fun setOnDismissListener(listener: DialogInterface.OnDismissListener) {
-    onDismissListener = listener
+    onDismissListener.add(listener)
   }
+  
 
   fun isShowing(): Boolean = dialog.isShowing
 

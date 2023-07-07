@@ -271,6 +271,21 @@ class SimpleDialogBuilder private constructor(
     return this
   }
 
+
+  /**
+   * Set viewId interact with.(상호작용할 뷰 id를 설정합니다.)
+   */
+  fun setViewInteractWith(view: View): SimpleDialogBuilder {
+    generalAttributes.viewMethodsInteractWith = InteractController(
+      setBottom = view::setBottom,
+      originalWidth = view.width,
+      originalHeight = view.height,
+      originalX = view.x,
+      originalY = view.y,
+    )
+    return this
+  }
+
   /**
    * Set background color.(배경 색상을 설정합니다.)
    *

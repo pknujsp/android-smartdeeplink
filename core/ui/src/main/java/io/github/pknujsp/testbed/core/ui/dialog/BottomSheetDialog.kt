@@ -5,11 +5,18 @@ import android.app.Dialog
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.Animation.AnimationListener
 import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 import androidx.core.view.children
 import androidx.core.view.doOnPreDraw
 import io.github.pknujsp.testbed.core.ui.R
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class BottomSheetDialog(
   dialog: Dialog, attributes: SimpleDialogGeneralAttributes,
@@ -18,6 +25,9 @@ class BottomSheetDialog(
 ) : SimpleDialog(dialog, attributes, styleAttributes, blurringViewLifeCycleListener) {
 
   private val foldHistoryMap = mutableSetOf<FoldHistory>()
+
+  private val _dialogTopInWindow = MutableStateFlow(0f)
+  val dialogTopInWindow = _dialogTopInWindow.asStateFlow()
 
   private companion object {
     val minHeight = SimpleDialogStyleAttributes.modalIconHeight * 1.5f
@@ -33,10 +43,33 @@ class BottomSheetDialog(
   }
 
   private fun init() {
-    if (attributes.isFoldable) {
-      val dialogView = dialog.findViewById<ViewGroup>(R.id.dialog_base_content)
-      dialogView?.doOnPreDraw {
+    val dialogView = dialog.findViewById<ViewGroup>(R.id.dialog_base_content)
+    dialogView.layoutAnimationListener = object : AnimationListener {
+      override fun onAnimationEnd(animation: Animation?) {
+        updateDialogTopInWindow(dialogView.y)
+      }
 
+      override fun onAnimationRepeat(animation: Animation?) {
+        updateDialogTopInWindow(dialogView.y)
+      }
+
+      override fun onAnimationStart(animation: Animation?) {
+        updateDialogTopInWindow(dialogView.y)
+      }
+    }
+
+    attributes.viewMethodsInteractWith?.run {
+      dialogView?.doOnPreDraw {
+        //setBottom(dialogView.y.toInt())
+      }
+
+      setOnDismissListener {
+        //setBottom((originalHeight + originalY).toInt())
+      }
+    }
+
+    if (attributes.isFoldable) {
+      dialogView?.doOnPreDraw {
         val originalDialogViewTopInWindow = dialogView.y
         val originalDialogViewBottomInWindow = dialogView.y + dialogView.height
         val originalDialogViewHeight = dialogView.height
@@ -60,6 +93,7 @@ class BottomSheetDialog(
 
                 if (newDialogViewTop in (originalDialogViewTopInWindow..(originalDialogViewBottomInWindow - minHeight))) {
                   view.top = newDialogViewTop.toInt()
+                  updateDialogTopInWindow(newDialogViewTop)
                 }
               }
             }
@@ -68,6 +102,20 @@ class BottomSheetDialog(
         )
       }
 
+    }
+
+    MainScope().launch {
+      dialogTopInWindow.collect {
+        attributes.viewMethodsInteractWith?.run {
+          // setBottom(it.toInt())
+        }
+      }
+    }
+  }
+
+  private fun updateDialogTopInWindow(top: Float) {
+    _dialogTopInWindow.update {
+      top
     }
   }
 
