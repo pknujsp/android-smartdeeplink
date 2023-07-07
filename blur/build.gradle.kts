@@ -7,15 +7,19 @@ plugins {
 android {
   namespace = "io.github.pknujsp.blur"
 
+  defaultConfig {
+    renderscriptTargetApi = 24
+    renderscriptNdkModeEnabled = false
+    renderscriptSupportModeEnabled = true
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
     }
   }
 
-  defaultConfig {
-    renderscriptTargetApi = 22
-  }
+
 
   externalNativeBuild {
     cmake {
@@ -47,6 +51,7 @@ tasks.withType(GenerateModuleMetadata::class).configureEach {
 }
 
 dependencies {
+  implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
   implementation(libs.androidx.annotation)
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
