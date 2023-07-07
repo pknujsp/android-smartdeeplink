@@ -1,5 +1,6 @@
 package io.github.pknujsp.testbed.core.ui.dialog
 
+import android.content.res.Resources
 import android.graphics.Color
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import androidx.annotation.ColorInt
@@ -51,6 +52,8 @@ data class SimpleDialogStyleAttributes(
     /**
      * Current attributes.(현재 속성 값들입니다.)
      */
+
+    val modalIconHeight: Int = (Resources.getSystem().displayMetrics.density * 14).toInt()
 
     /**
      * The currently set blur intensity.(현재 설정된  Blur 강도입니다.)

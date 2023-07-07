@@ -296,6 +296,14 @@ class SimpleDialogBuilder private constructor(
   }
 
   /**
+   * Set foldable.(접을 수 있는지 설정합니다.)
+   */
+  fun setFoldable(isFoldable: Boolean): SimpleDialogBuilder {
+    generalAttributes.isFoldable = isFoldable
+    return this
+  }
+
+  /**
    * Build and show dialog.(다이얼로그를 생성하고 보여줍니다.)
    */
   fun buildAndShow(): SimpleDialog = dialogBuilder.run {

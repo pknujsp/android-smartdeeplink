@@ -191,4 +191,12 @@ class MainDialogViewModel : ViewModel() {
     }
   }
 
+  fun foldable(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setFoldable(checked)
+      }
+    }
+  }
+
 }

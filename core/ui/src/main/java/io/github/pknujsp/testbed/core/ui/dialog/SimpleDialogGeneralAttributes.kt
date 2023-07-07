@@ -8,6 +8,7 @@ package io.github.pknujsp.testbed.core.ui.dialog
  * @property isCancelable Whether the dialog is cancelable.(Dialog가 취소 가능한지 여부)
  * @property isCanceledOnTouchOutside Whether the dialog is canceled when touched outside.(Dialog가 바깥쪽을 터치하면 취소되는지 여부)
  * @property isRestrictViewsFromOffWindow Whether the dialog is restricted from going off the screen.(Dialog가 화면 밖으로 나가는 것을 제한하는지 여부)
+ * @property isFoldable Whether the dialog is foldable.(Dialog가 접힐 수 있는지 여부)
  */
 data class SimpleDialogGeneralAttributes(
   var isDraggable: Boolean = false,
@@ -15,10 +16,17 @@ data class SimpleDialogGeneralAttributes(
   var isCancelable: Boolean = true,
   var isCanceledOnTouchOutside: Boolean = true,
   var isRestrictViewsFromOffWindow: Boolean = true,
+  var isFoldable: Boolean = false,
+  var foldDirection: FoldDirection = FoldDirection.Vertical,
 )
 
 sealed class DragDirection {
   object Horizontal : DragDirection()
   object Vertical : DragDirection()
   object Both : DragDirection()
+}
+
+sealed class FoldDirection {
+  object Horizontal : FoldDirection()
+  object Vertical : FoldDirection()
 }

@@ -40,6 +40,9 @@ internal class SimpleDialogStyler(
   // R.id.dialog_base_content
   private var compatContentView: FrameLayout? = null
 
+  // mainContentView LayoutParams
+  private var mainContentViewLayoutParams: FrameLayout.LayoutParams? = null
+
   // R.id.blurring_view
   var blurringViewLifeCycleListener: IGLSurfaceView? = null
   private var iBlurringViewLayout: IGLSurfaceViewLayout? = null
@@ -142,16 +145,14 @@ internal class SimpleDialogStyler(
             },
           )
 
-          var iconHeight = 0
           if (simpleDialogStyleAttributes.isShowModalPoint) {
-            iconHeight = (14 * density).toInt()
             val icon = ResourcesCompat.getDrawable(
               context.resources,
               simpleDialogStyleAttributes.customModalViewId ?: R.drawable.icon_more_edited,
               null,
             )
             if (icon != null) {
-              icon.setBounds(0, 0, iconHeight, iconHeight)
+              icon.setBounds(0, 0, SimpleDialogStyleAttributes.modalIconHeight, SimpleDialogStyleAttributes.modalIconHeight)
               drawables.add(icon)
             }
           }
@@ -159,7 +160,7 @@ internal class SimpleDialogStyler(
           background = LayerDrawable(drawables.toTypedArray()).apply {
             if (simpleDialogStyleAttributes.isShowModalPoint) {
               setLayerGravity(1, Gravity.CENTER_HORIZONTAL or Gravity.TOP)
-              setLayerInsetBottom(1, iconHeight)
+              setLayerInsetBottom(1, SimpleDialogStyleAttributes.modalIconHeight)
             }
             drawableCache.put(backgroundDrawableInfo, this)
           }
@@ -183,9 +184,9 @@ internal class SimpleDialogStyler(
     compatContentView?.apply {
       updateLayoutParams<FrameLayout.LayoutParams> {
         width =
-          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogStyleAttributes.layoutWidth
         height =
-          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+          if (simpleDialogStyleAttributes.dialogType == DialogType.Fullscreen) ViewGroup.LayoutParams.MATCH_PARENT else simpleDialogStyleAttributes.layoutHeight
 
         updateMarginsRelative(
           start = simpleDialogStyleAttributes.startMargin * density.toInt(),

@@ -65,15 +65,15 @@ class MainDialogFragment : Fragment() {
         viewModel.bottomMargin(value.toInt())
       }
       endMarginSlider.addOnChangeListener { _, value, _ ->
-        endMarginTextview.text = "Horizontal Margin -> ${value.toInt()}"
+        endMarginTextview.text = "End Margin -> ${value.toInt()}"
         viewModel.endMargin(value.toInt())
       }
       startMarginSlider.addOnChangeListener { _, value, _ ->
-        startMarginTextview.text = "Bottom Margin -> ${value.toInt()}"
+        startMarginTextview.text = "Start Margin -> ${value.toInt()}"
         viewModel.startMargin(value.toInt())
       }
       topMarginSlider.addOnChangeListener { _, value, _ ->
-        topMarginTextview.text = "Horizontal Margin -> ${value.toInt()}"
+        topMarginTextview.text = "Top Margin -> ${value.toInt()}"
         viewModel.topMargin(value.toInt())
       }
       topStartCornerRadiusSlider.addOnChangeListener { _, value, _ ->
@@ -94,6 +94,9 @@ class MainDialogFragment : Fragment() {
       }
       applyForceBlur.setOnCheckedChangeListener { _, isChecked ->
         viewModel.applyForceBlur(isChecked)
+      }
+      foldable.setOnCheckedChangeListener { _, isChecked ->
+        viewModel.foldable(isChecked)
       }
       dialogTypesRadioGroup.setOnCheckedChangeListener { _, checkedId ->
         initAttrs()
