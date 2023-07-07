@@ -24,21 +24,15 @@
  * intermediate storage is 16-bit, and we started with 8 bit data (the integer
  * part), so this should be between 0 and 8.
  */
-.
-set FRACTION_BITS,
-7
-.
-set MAX_R,
-25
+.set FRACTION_BITS, 7
+.set MAX_R, 25
 
 
 /* A quick way of making a line of code conditional on some other condition.
  * Use `.set cc, 1` or `.set cc, 0` to enable or disable lines prefixed with
  * `ifcc`:
  */
-.
-macro ifcc
-zzz:vararg
+.macro ifcc zzz:vararg
 .if cc
 \zzz
 .endif
@@ -85,52 +79,29 @@ zzz:vararg
  *      x11 = lower row pointer
  *      v12-v15 = temporary sums
  */
-.
-macro fetch, max_r = MAX_R, labelc = 1, labelnc = 2, reg = x12 /*{{{*/
-        .ifc
-\reg,
-x12;
-.
-set cc,
-1; .else; .
-set cc,
-0; .
-endif
+.macro fetch, max_r=MAX_R, labelc=1, labelnc=2, reg=x12 /*{{{*/
+        .ifc \reg,x12 ; .set cc, 1 ; .else ; .set cc, 0 ; .endif
 
-        ld1{v15.16b},
-[x1], #16
-mov x10, x15
+        ld1         {v15.16b}, [x1], #16
+mov         x10, x15
 
-uxtl v14
-.8h, v15.8b
-VERTPLD(x1,
-        #16)
-        uxtl2
-v15.8h, v15.16b
+uxtl        v14.8h, v15.8b
+VERTPLD(x1, #16)
+        uxtl2       v15.8h, v15.16b
 .if \max_r < 16 // approximate
-ifcc adr
-\reg, 1f
+ifcc    adr         \reg, 1f
 .else
-ifcc adrp
-\reg, 1f
-ifcc add
-\reg, \reg, #:lo12:1f
-.
-endif
+ifcc    adrp        \reg, 1f
+ifcc    add         \reg, \reg, #:lo12:1f
+.endif
 
-        umull
-v12.4s, v14.4h, v0.h[0]
-ifcc sub
-\reg, \reg, x5, LSL #6
-umull2 v13
-.4s, v14.8h, v0.h[0]
-mov x11, x19
-umull v14
-.4s, v15.4h, v0.h[0]
-ifcc add
-\reg, \reg, x5, LSL #3
-umull2 v15
-.4s, v15.8h, v0.h[0]
+        umull       v12.4s, v14.4h, v0.h[0]
+ifcc    sub         \reg, \reg, x5, LSL #6
+umull2      v13.4s, v14.8h, v0.h[0]
+mov         x11, x19
+umull       v14.4s, v15.4h, v0.h[0]
+ifcc    add         \reg, \reg, x5, LSL #3
+umull2      v15.4s, v15.8h, v0.h[0]
 br          \reg
 
 /* This version of the vertical fetch loop body is used away from the edges
@@ -141,36 +112,18 @@ br          \reg
  * If the loop body changes size then the code which calculates the address of
  * the initial iteration must be updated to accordingly.
  */
-.
-macro vertfetch_noclamp
-i, dreg
-.if 0 < \i && \i <= \
-max_r
-        ld1{v10.16b},
-[x10],
-x2
-        ld1{v11.16b},
-[x11],
-x13
-        uaddl
-v16.8h, v10.8b, v11.8b
-uaddl2 v11
-.8h, v10.16b, v11.16b
-umlal v12
-.4s, v16.4h, \
-dreg
-        umlal2
-v13.4s, v16.8h, \
-dreg
-        VERTPLD(x10,
-                #32)
-umlal v14
-.4s, v11.4h, \
-dreg
-        VERTPLD(x11,
-                #32)
-umlal2 v15
-.4s, v11.8h, \dreg
+.macro vertfetch_noclamp i, dreg
+.if 0 < \i && \i <= \max_r
+        ld1         {v10.16b}, [x10], x2
+        ld1         {v11.16b}, [x11], x13
+        uaddl       v16.8h, v10.8b, v11.8b
+uaddl2      v11.8h, v10.16b, v11.16b
+umlal       v12.4s, v16.4h, \dreg
+        umlal2      v13.4s, v16.8h, \dreg
+        VERTPLD(x10, #32)
+umlal       v14.4s, v11.4h, \dreg
+        VERTPLD(x11, #32)
+umlal2      v15.4s, v11.8h, \dreg
 .endif
 .endm
 
@@ -181,46 +134,22 @@ umlal2 v15
  * If the loop body changes size then the code which calculates the address of
  * the initial iteration must be updated to accordingly.
  */
-.
-macro vertfetch_clamped
-i, dreg
-.if 0 < \i && \i <= \
-max_r
-        ld1{v10.16b},
-[x10],
-x2
-        cmp
-x6, #\
-i
-        ld1{v11.16b},
-[x11],
-x13
-        csel
-x10, x15, x10,
-lo
-        uaddl
-v16.8h, v10.8b, v11.8b
-cmp x7,
-#\
-i
-        uaddl2
-v11.8h, v10.16b, v11.16b
-csel x11, x19, x11, lo
-umlal v12
-.4s, v16.4h, \
-dreg
-        umlal2
-v13.4s, v16.8h, \
-dreg
-        VERTPLD(x10,
-                #32)
-umlal v14
-.4s, v11.4h, \
-dreg
-        VERTPLD(x11,
-                #32)
-umlal2 v15
-.4s, v11.8h, \dreg
+.macro vertfetch_clamped i, dreg
+.if 0 < \i && \i <= \max_r
+        ld1         {v10.16b}, [x10], x2
+        cmp         x6, #\i
+        ld1         {v11.16b}, [x11], x13
+        csel        x10, x15, x10, lo
+        uaddl       v16.8h, v10.8b, v11.8b
+cmp         x7, #\i
+        uaddl2      v11.8h, v10.16b, v11.16b
+csel        x11, x19, x11, lo
+umlal       v12.4s, v16.4h, \dreg
+        umlal2      v13.4s, v16.8h, \dreg
+        VERTPLD(x10, #32)
+umlal       v14.4s, v11.4h, \dreg
+        VERTPLD(x11, #32)
+umlal2      v15.4s, v11.8h, \dreg
 .endif
 .endm
 
@@ -293,27 +222,15 @@ vertfetch_noclamp  1, v0.h[1]
 vertfetch_noclamp  0, v0.h[0]
 \labelnc :
 
-.
-purgem vertfetch_clamped
-.
-purgem vertfetch_noclamp
+.purgem vertfetch_clamped
+.purgem vertfetch_noclamp
 
-2:
-uqrshrn v10
-.4h, v12.4s, #16 -
-FRACTION_BITS
-        add
-x15, x15, #16
-uqrshrn2 v10
-.8h, v13.4s, #16 -
-FRACTION_BITS
-        add
-x19, x19, #16
-uqrshrn v11
-.4h, v14.4s, #16 -
-FRACTION_BITS
-        uqrshrn2
-v11.8h, v15.4s, #16 - FRACTION_BITS
+2:        uqrshrn     v10.4h, v12.4s, #16 - FRACTION_BITS
+        add         x15, x15, #16
+uqrshrn2    v10.8h, v13.4s, #16 - FRACTION_BITS
+        add         x19, x19, #16
+uqrshrn     v11.4h, v14.4s, #16 - FRACTION_BITS
+        uqrshrn2    v11.8h, v15.4s, #16 - FRACTION_BITS
 .endm /*}}}*/
 
 /* Some portion of the convolution window (as much as will fit, and all of it
@@ -344,8 +261,7 @@ v11.8h, v15.4s, #16 - FRACTION_BITS
  *      v14-v15 -- intermediate sums
  */
 #define TUNED_LIST1 8, 16
-.
-macro hconv1_8/*{{{*/
+.macro hconv1_8/*{{{*/
 
 .rodata
 200:    .hword -4
@@ -358,140 +274,73 @@ macro hconv1_8/*{{{*/
 .hword 107f-100f
 .hword 108f-100f
 .align      4
-.
-text
-        umull
-v14.4s, v9.4h, v0.h[0]
-umull2 v15
-.4s, v9.8h, v0.h[0]
+.text
+        umull       v14.4s, v9.4h, v0.h[0]
+umull2      v15.4s, v9.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-108:
-umlal v14
-.4s, v8.4h, v1.h[0]
-umlal2 v15
-.4s, v8.8h, v1.h[0]
-umlal v14
-.4s, v10.4h, v1.h[0]
-umlal2 v15
-.4s, v10.8h, v1.h[0]
-107:
-ext v12
-.16b, v8.16b, v9.16b, #1*2
-ext v13
-.16b, v9.16b, v10.16b, #7*2
-umlal v14
-.4s, v12.4h, v0.h[7]
-umlal2 v15
-.4s, v12.8h, v0.h[7]
-umlal v14
-.4s, v13.4h, v0.h[7]
-umlal2 v15
-.4s, v13.8h, v0.h[7]
-106:
-ext v12
-.16b, v8.16b, v9.16b, #2*2
-ext v13
-.16b, v9.16b, v10.16b, #6*2
-umlal v14
-.4s, v12.4h, v0.h[6]
-umlal2 v15
-.4s, v12.8h, v0.h[6]
-umlal v14
-.4s, v13.4h, v0.h[6]
-umlal2 v15
-.4s, v13.8h, v0.h[6]
-105:
-ext v12
-.16b, v8.16b, v9.16b, #3*2
-ext v13
-.16b, v9.16b, v10.16b, #5*2
-umlal v14
-.4s, v12.4h, v0.h[5]
-umlal2 v15
-.4s, v12.8h, v0.h[5]
-umlal v14
-.4s, v13.4h, v0.h[5]
-umlal2 v15
-.4s, v13.8h, v0.h[5]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+108:    umlal       v14.4s, v8.4h, v1.h[0]
+umlal2      v15.4s, v8.8h, v1.h[0]
+umlal       v14.4s, v10.4h, v1.h[0]
+umlal2      v15.4s, v10.8h, v1.h[0]
+107:    ext         v12.16b, v8.16b, v9.16b, #1*2
+ext         v13.16b, v9.16b, v10.16b, #7*2
+umlal       v14.4s, v12.4h, v0.h[7]
+umlal2      v15.4s, v12.8h, v0.h[7]
+umlal       v14.4s, v13.4h, v0.h[7]
+umlal2      v15.4s, v13.8h, v0.h[7]
+106:    ext         v12.16b, v8.16b, v9.16b, #2*2
+ext         v13.16b, v9.16b, v10.16b, #6*2
+umlal       v14.4s, v12.4h, v0.h[6]
+umlal2      v15.4s, v12.8h, v0.h[6]
+umlal       v14.4s, v13.4h, v0.h[6]
+umlal2      v15.4s, v13.8h, v0.h[6]
+105:    ext         v12.16b, v8.16b, v9.16b, #3*2
+ext         v13.16b, v9.16b, v10.16b, #5*2
+umlal       v14.4s, v12.4h, v0.h[5]
+umlal2      v15.4s, v12.8h, v0.h[5]
+umlal       v14.4s, v13.4h, v0.h[5]
+umlal2      v15.4s, v13.8h, v0.h[5]
 104:    //ext         v12.16b, v8.16b, v9.16b, #4*2
 //ext         v13.16b, v9.16b, v10.16b, #4*2
-umlal2 v14
-.4s, v8.8h, v0.h[4]
-umlal v15
-.4s, v9.4h, v0.h[4]
-umlal2 v14
-.4s, v9.8h, v0.h[4]
-umlal v15
-.4s, v10.4h, v0.h[4]
-103:
-ext v12
-.16b, v8.16b, v9.16b, #5*2
-ext v13
-.16b, v9.16b, v10.16b, #3*2
-umlal v14
-.4s, v12.4h, v0.h[3]
-umlal2 v15
-.4s, v12.8h, v0.h[3]
-umlal v14
-.4s, v13.4h, v0.h[3]
-umlal2 v15
-.4s, v13.8h, v0.h[3]
-102:
-ext v12
-.16b, v8.16b, v9.16b, #6*2
-ext v13
-.16b, v9.16b, v10.16b, #2*2
-umlal v14
-.4s, v12.4h, v0.h[2]
-umlal2 v15
-.4s, v12.8h, v0.h[2]
-umlal v14
-.4s, v13.4h, v0.h[2]
-umlal2 v15
-.4s, v13.8h, v0.h[2]
-101:
-ext v12
-.16b, v8.16b, v9.16b, #7*2
-ext v13
-.16b, v9.16b, v10.16b, #1*2
-umlal v14
-.4s, v12.4h, v0.h[1]
-umlal2 v15
-.4s, v12.8h, v0.h[1]
-umlal v14
-.4s, v13.4h, v0.h[1]
-umlal2 v15
-.4s, v13.8h, v0.h[1]
+umlal2      v14.4s, v8.8h, v0.h[4]
+umlal       v15.4s, v9.4h, v0.h[4]
+umlal2      v14.4s, v9.8h, v0.h[4]
+umlal       v15.4s, v10.4h, v0.h[4]
+103:    ext         v12.16b, v8.16b, v9.16b, #5*2
+ext         v13.16b, v9.16b, v10.16b, #3*2
+umlal       v14.4s, v12.4h, v0.h[3]
+umlal2      v15.4s, v12.8h, v0.h[3]
+umlal       v14.4s, v13.4h, v0.h[3]
+umlal2      v15.4s, v13.8h, v0.h[3]
+102:    ext         v12.16b, v8.16b, v9.16b, #6*2
+ext         v13.16b, v9.16b, v10.16b, #2*2
+umlal       v14.4s, v12.4h, v0.h[2]
+umlal2      v15.4s, v12.8h, v0.h[2]
+umlal       v14.4s, v13.4h, v0.h[2]
+umlal2      v15.4s, v13.8h, v0.h[2]
+101:    ext         v12.16b, v8.16b, v9.16b, #7*2
+ext         v13.16b, v9.16b, v10.16b, #1*2
+umlal       v14.4s, v12.4h, v0.h[1]
+umlal2      v15.4s, v12.8h, v0.h[1]
+umlal       v14.4s, v13.4h, v0.h[1]
+umlal2      v15.4s, v13.8h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v8.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
-.
-macro hconv1_16/*{{{*/
+.macro hconv1_16/*{{{*/
 .rodata
 200:     .hword -4
 .hword 101f-100f
@@ -512,243 +361,125 @@ macro hconv1_16/*{{{*/
 .hword 116f-100f
 .align 4
 
-.
-text
-        umull
-v14.4s, v8.4h, v0.h[0]
-umull2 v15
-.4s, v8.8h, v0.h[0]
+.text
+        umull       v14.4s, v8.4h, v0.h[0]
+umull2      v15.4s, v8.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
 116:    //ext         v12.16b, v6.16b, v7.16b, #0*2
 //ext         v13.16b, v10.16b, v11.16b, #0*2
-umlal v14
-.4s, v6.4h, v2.h[0]
-umlal2 v15
-.4s, v6.8h, v2.h[0]
-umlal v14
-.4s, v10.4h, v2.h[0]
-umlal2 v15
-.4s, v10.8h, v2.h[0]
-115:
-ext v12
-.16b, v6.16b, v7.16b, #1*2
-ext v13
-.16b, v9.16b, v10.16b, #7*2
-umlal v14
-.4s, v12.4h, v1.h[7]
-umlal2 v15
-.4s, v12.8h, v1.h[7]
-umlal v14
-.4s, v13.4h, v1.h[7]
-umlal2 v15
-.4s, v13.8h, v1.h[7]
-114:
-ext v12
-.16b, v6.16b, v7.16b, #2*2
-ext v13
-.16b, v9.16b, v10.16b, #6*2
-umlal v14
-.4s, v12.4h, v1.h[6]
-umlal2 v15
-.4s, v12.8h, v1.h[6]
-umlal v14
-.4s, v13.4h, v1.h[6]
-umlal2 v15
-.4s, v13.8h, v1.h[6]
-113:
-ext v12
-.16b, v6.16b, v7.16b, #3*2
-ext v13
-.16b, v9.16b, v10.16b, #5*2
-umlal v14
-.4s, v12.4h, v1.h[5]
-umlal2 v15
-.4s, v12.8h, v1.h[5]
-umlal v14
-.4s, v13.4h, v1.h[5]
-umlal2 v15
-.4s, v13.8h, v1.h[5]
+umlal       v14.4s, v6.4h, v2.h[0]
+umlal2      v15.4s, v6.8h, v2.h[0]
+umlal       v14.4s, v10.4h, v2.h[0]
+umlal2      v15.4s, v10.8h, v2.h[0]
+115:    ext         v12.16b, v6.16b, v7.16b, #1*2
+ext         v13.16b, v9.16b, v10.16b, #7*2
+umlal       v14.4s, v12.4h, v1.h[7]
+umlal2      v15.4s, v12.8h, v1.h[7]
+umlal       v14.4s, v13.4h, v1.h[7]
+umlal2      v15.4s, v13.8h, v1.h[7]
+114:    ext         v12.16b, v6.16b, v7.16b, #2*2
+ext         v13.16b, v9.16b, v10.16b, #6*2
+umlal       v14.4s, v12.4h, v1.h[6]
+umlal2      v15.4s, v12.8h, v1.h[6]
+umlal       v14.4s, v13.4h, v1.h[6]
+umlal2      v15.4s, v13.8h, v1.h[6]
+113:    ext         v12.16b, v6.16b, v7.16b, #3*2
+ext         v13.16b, v9.16b, v10.16b, #5*2
+umlal       v14.4s, v12.4h, v1.h[5]
+umlal2      v15.4s, v12.8h, v1.h[5]
+umlal       v14.4s, v13.4h, v1.h[5]
+umlal2      v15.4s, v13.8h, v1.h[5]
 112:    //ext         v12.16b, v6.16b, v7.16b, #4*2
 //ext         v13.16b, v9.16b, v10.16b, #4*2
-umlal2 v14
-.4s, v6.8h, v1.h[4]
-umlal v15
-.4s, v7.4h, v1.h[4]
-umlal2 v14
-.4s, v9.8h, v1.h[4]
-umlal v15
-.4s, v10.4h, v1.h[4]
-111:
-ext v12
-.16b, v6.16b, v7.16b, #5*2
-ext v13
-.16b, v9.16b, v10.16b, #3*2
-umlal v14
-.4s, v12.4h, v1.h[3]
-umlal2 v15
-.4s, v12.8h, v1.h[3]
-umlal v14
-.4s, v13.4h, v1.h[3]
-umlal2 v15
-.4s, v13.8h, v1.h[3]
-110:
-ext v12
-.16b, v6.16b, v7.16b, #6*2
-ext v13
-.16b, v9.16b, v10.16b, #2*2
-umlal v14
-.4s, v12.4h, v1.h[2]
-umlal2 v15
-.4s, v12.8h, v1.h[2]
-umlal v14
-.4s, v13.4h, v1.h[2]
-umlal2 v15
-.4s, v13.8h, v1.h[2]
-109:
-ext v12
-.16b, v6.16b, v7.16b, #7*2
-ext v13
-.16b, v9.16b, v10.16b, #1*2
-umlal v14
-.4s, v12.4h, v1.h[1]
-umlal2 v15
-.4s, v12.8h, v1.h[1]
-umlal v14
-.4s, v13.4h, v1.h[1]
-umlal2 v15
-.4s, v13.8h, v1.h[1]
+umlal2      v14.4s, v6.8h, v1.h[4]
+umlal       v15.4s, v7.4h, v1.h[4]
+umlal2      v14.4s, v9.8h, v1.h[4]
+umlal       v15.4s, v10.4h, v1.h[4]
+111:    ext         v12.16b, v6.16b, v7.16b, #5*2
+ext         v13.16b, v9.16b, v10.16b, #3*2
+umlal       v14.4s, v12.4h, v1.h[3]
+umlal2      v15.4s, v12.8h, v1.h[3]
+umlal       v14.4s, v13.4h, v1.h[3]
+umlal2      v15.4s, v13.8h, v1.h[3]
+110:    ext         v12.16b, v6.16b, v7.16b, #6*2
+ext         v13.16b, v9.16b, v10.16b, #2*2
+umlal       v14.4s, v12.4h, v1.h[2]
+umlal2      v15.4s, v12.8h, v1.h[2]
+umlal       v14.4s, v13.4h, v1.h[2]
+umlal2      v15.4s, v13.8h, v1.h[2]
+109:    ext         v12.16b, v6.16b, v7.16b, #7*2
+ext         v13.16b, v9.16b, v10.16b, #1*2
+umlal       v14.4s, v12.4h, v1.h[1]
+umlal2      v15.4s, v12.8h, v1.h[1]
+umlal       v14.4s, v13.4h, v1.h[1]
+umlal2      v15.4s, v13.8h, v1.h[1]
 108:    //ext         v12.16b, v7.16b, v8.16b, #0*2
 //ext         v13.16b, v9.16b, v10.16b, #0*2
-umlal v14
-.4s, v7.4h, v1.h[0]
-umlal2 v15
-.4s, v7.8h, v1.h[0]
-umlal v14
-.4s, v9.4h, v1.h[0]
-umlal2 v15
-.4s, v9.8h, v1.h[0]
-107:
-ext v12
-.16b, v7.16b, v8.16b, #1*2
-ext v13
-.16b, v8.16b, v9.16b, #7*2
-umlal v14
-.4s, v12.4h, v0.h[7]
-umlal2 v15
-.4s, v12.8h, v0.h[7]
-umlal v14
-.4s, v13.4h, v0.h[7]
-umlal2 v15
-.4s, v13.8h, v0.h[7]
-106:
-ext v12
-.16b, v7.16b, v8.16b, #2*2
-ext v13
-.16b, v8.16b, v9.16b, #6*2
-umlal v14
-.4s, v12.4h, v0.h[6]
-umlal2 v15
-.4s, v12.8h, v0.h[6]
-umlal v14
-.4s, v13.4h, v0.h[6]
-umlal2 v15
-.4s, v13.8h, v0.h[6]
-105:
-ext v12
-.16b, v7.16b, v8.16b, #3*2
-ext v13
-.16b, v8.16b, v9.16b, #5*2
-umlal v14
-.4s, v12.4h, v0.h[5]
-umlal2 v15
-.4s, v12.8h, v0.h[5]
-umlal v14
-.4s, v13.4h, v0.h[5]
-umlal2 v15
-.4s, v13.8h, v0.h[5]
+umlal       v14.4s, v7.4h, v1.h[0]
+umlal2      v15.4s, v7.8h, v1.h[0]
+umlal       v14.4s, v9.4h, v1.h[0]
+umlal2      v15.4s, v9.8h, v1.h[0]
+107:    ext         v12.16b, v7.16b, v8.16b, #1*2
+ext         v13.16b, v8.16b, v9.16b, #7*2
+umlal       v14.4s, v12.4h, v0.h[7]
+umlal2      v15.4s, v12.8h, v0.h[7]
+umlal       v14.4s, v13.4h, v0.h[7]
+umlal2      v15.4s, v13.8h, v0.h[7]
+106:    ext         v12.16b, v7.16b, v8.16b, #2*2
+ext         v13.16b, v8.16b, v9.16b, #6*2
+umlal       v14.4s, v12.4h, v0.h[6]
+umlal2      v15.4s, v12.8h, v0.h[6]
+umlal       v14.4s, v13.4h, v0.h[6]
+umlal2      v15.4s, v13.8h, v0.h[6]
+105:    ext         v12.16b, v7.16b, v8.16b, #3*2
+ext         v13.16b, v8.16b, v9.16b, #5*2
+umlal       v14.4s, v12.4h, v0.h[5]
+umlal2      v15.4s, v12.8h, v0.h[5]
+umlal       v14.4s, v13.4h, v0.h[5]
+umlal2      v15.4s, v13.8h, v0.h[5]
 104:    //ext         v12.16b, v7.16b, v8.16b, #4*2
 //ext         v13.16b, v8.16b, v9.16b, #4*2
-umlal2 v14
-.4s, v7.8h, v0.h[4]
-umlal v15
-.4s, v8.4h, v0.h[4]
-umlal2 v14
-.4s, v8.8h, v0.h[4]
-umlal v15
-.4s, v9.4h, v0.h[4]
-103:
-ext v12
-.16b, v7.16b, v8.16b, #5*2
-ext v13
-.16b, v8.16b, v9.16b, #3*2
-umlal v14
-.4s, v12.4h, v0.h[3]
-umlal2 v15
-.4s, v12.8h, v0.h[3]
-umlal v14
-.4s, v13.4h, v0.h[3]
-umlal2 v15
-.4s, v13.8h, v0.h[3]
-102:
-ext v12
-.16b, v7.16b, v8.16b, #6*2
-ext v13
-.16b, v8.16b, v9.16b, #2*2
-umlal v14
-.4s, v12.4h, v0.h[2]
-umlal2 v15
-.4s, v12.8h, v0.h[2]
-umlal v14
-.4s, v13.4h, v0.h[2]
-umlal2 v15
-.4s, v13.8h, v0.h[2]
-101:
-ext v12
-.16b, v7.16b, v8.16b, #7*2
-ext v13
-.16b, v8.16b, v9.16b, #1*2
-umlal v14
-.4s, v12.4h, v0.h[1]
-umlal2 v15
-.4s, v12.8h, v0.h[1]
-umlal v14
-.4s, v13.4h, v0.h[1]
-umlal2 v15
-.4s, v13.8h, v0.h[1]
+umlal2      v14.4s, v7.8h, v0.h[4]
+umlal       v15.4s, v8.4h, v0.h[4]
+umlal2      v14.4s, v8.8h, v0.h[4]
+umlal       v15.4s, v9.4h, v0.h[4]
+103:    ext         v12.16b, v7.16b, v8.16b, #5*2
+ext         v13.16b, v8.16b, v9.16b, #3*2
+umlal       v14.4s, v12.4h, v0.h[3]
+umlal2      v15.4s, v12.8h, v0.h[3]
+umlal       v14.4s, v13.4h, v0.h[3]
+umlal2      v15.4s, v13.8h, v0.h[3]
+102:    ext         v12.16b, v7.16b, v8.16b, #6*2
+ext         v13.16b, v8.16b, v9.16b, #2*2
+umlal       v14.4s, v12.4h, v0.h[2]
+umlal2      v15.4s, v12.8h, v0.h[2]
+umlal       v14.4s, v13.4h, v0.h[2]
+umlal2      v15.4s, v13.8h, v0.h[2]
+101:    ext         v12.16b, v7.16b, v8.16b, #7*2
+ext         v13.16b, v8.16b, v9.16b, #1*2
+umlal       v14.4s, v12.4h, v0.h[1]
+umlal2      v15.4s, v12.8h, v0.h[1]
+umlal       v14.4s, v13.4h, v0.h[1]
+umlal2      v15.4s, v13.8h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v6.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
-.
-macro hconv1_25/*{{{*/
+.macro hconv1_25/*{{{*/
 .rodata
 200:     .hword -4
 .hword 101f-100f
@@ -777,381 +508,184 @@ macro hconv1_25/*{{{*/
 .hword 124f-100f
 .hword 125f-100f
 .align 4
-.
-text
-        ext
-v12.16b, v6.16b, v7.16b, #7*2
-umull v14
-.4s, v12.4h, v0.h[0]
-umull2 v15
-.4s, v12.8h, v0.h[0]
+.text
+        ext         v12.16b, v6.16b, v7.16b, #7*2
+umull       v14.4s, v12.4h, v0.h[0]
+umull2      v15.4s, v12.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-125:
-ext v12
-.16b, v31.16b, v4.16b, #6*2
-ext v13
-.16b, v10.16b, v11.16b, #0*2
-umlal v14
-.4s, v12.4h, v3.h[1]
-umlal2 v15
-.4s, v12.8h, v3.h[1]
-umlal v14
-.4s, v13.4h, v3.h[1]
-umlal2 v15
-.4s, v13.8h, v3.h[1]
-124:
-ext v12
-.16b, v31.16b, v4.16b, #7*2
-ext v13
-.16b, v9.16b, v10.16b, #7*2
-umlal v14
-.4s, v12.4h, v3.h[0]
-umlal2 v15
-.4s, v12.8h, v3.h[0]
-umlal v14
-.4s, v13.4h, v3.h[0]
-umlal2 v15
-.4s, v13.8h, v3.h[0]
-123:
-ext v12
-.16b, v4.16b, v5.16b, #0*2
-ext v13
-.16b, v9.16b, v10.16b, #6*2
-umlal v14
-.4s, v12.4h, v2.h[7]
-umlal2 v15
-.4s, v12.8h, v2.h[7]
-umlal v14
-.4s, v13.4h, v2.h[7]
-umlal2 v15
-.4s, v13.8h, v2.h[7]
-122:
-ext v12
-.16b, v4.16b, v5.16b, #1*2
-ext v13
-.16b, v9.16b, v10.16b, #5*2
-umlal v14
-.4s, v12.4h, v2.h[6]
-umlal2 v15
-.4s, v12.8h, v2.h[6]
-umlal v14
-.4s, v13.4h, v2.h[6]
-umlal2 v15
-.4s, v13.8h, v2.h[6]
-121:
-ext v12
-.16b, v4.16b, v5.16b, #2*2
-ext v13
-.16b, v9.16b, v10.16b, #4*2
-umlal v14
-.4s, v12.4h, v2.h[5]
-umlal2 v15
-.4s, v12.8h, v2.h[5]
-umlal v14
-.4s, v13.4h, v2.h[5]
-umlal2 v15
-.4s, v13.8h, v2.h[5]
-120:
-ext v12
-.16b, v4.16b, v5.16b, #3*2
-ext v13
-.16b, v9.16b, v10.16b, #3*2
-umlal v14
-.4s, v12.4h, v2.h[4]
-umlal2 v15
-.4s, v12.8h, v2.h[4]
-umlal v14
-.4s, v13.4h, v2.h[4]
-umlal2 v15
-.4s, v13.8h, v2.h[4]
-119:
-ext v12
-.16b, v4.16b, v5.16b, #4*2
-ext v13
-.16b, v9.16b, v10.16b, #2*2
-umlal v14
-.4s, v12.4h, v2.h[3]
-umlal2 v15
-.4s, v12.8h, v2.h[3]
-umlal v14
-.4s, v13.4h, v2.h[3]
-umlal2 v15
-.4s, v13.8h, v2.h[3]
-118:
-ext v12
-.16b, v4.16b, v5.16b, #5*2
-ext v13
-.16b, v9.16b, v10.16b, #1*2
-umlal v14
-.4s, v12.4h, v2.h[2]
-umlal2 v15
-.4s, v12.8h, v2.h[2]
-umlal v14
-.4s, v13.4h, v2.h[2]
-umlal2 v15
-.4s, v13.8h, v2.h[2]
-117:
-ext v12
-.16b, v4.16b, v5.16b, #6*2
-ext v13
-.16b, v9.16b, v10.16b, #0*2
-umlal v14
-.4s, v12.4h, v2.h[1]
-umlal2 v15
-.4s, v12.8h, v2.h[1]
-umlal v14
-.4s, v13.4h, v2.h[1]
-umlal2 v15
-.4s, v13.8h, v2.h[1]
-116:
-ext v12
-.16b, v4.16b, v5.16b, #7*2
-ext v13
-.16b, v8.16b, v9.16b, #7*2
-umlal v14
-.4s, v12.4h, v2.h[0]
-umlal2 v15
-.4s, v12.8h, v2.h[0]
-umlal v14
-.4s, v13.4h, v2.h[0]
-umlal2 v15
-.4s, v13.8h, v2.h[0]
-115:
-ext v12
-.16b, v5.16b, v6.16b, #0*2
-ext v13
-.16b, v8.16b, v9.16b, #6*2
-umlal v14
-.4s, v12.4h, v1.h[7]
-umlal2 v15
-.4s, v12.8h, v1.h[7]
-umlal v14
-.4s, v13.4h, v1.h[7]
-umlal2 v15
-.4s, v13.8h, v1.h[7]
-114:
-ext v12
-.16b, v5.16b, v6.16b, #1*2
-ext v13
-.16b, v8.16b, v9.16b, #5*2
-umlal v14
-.4s, v12.4h, v1.h[6]
-umlal2 v15
-.4s, v12.8h, v1.h[6]
-umlal v14
-.4s, v13.4h, v1.h[6]
-umlal2 v15
-.4s, v13.8h, v1.h[6]
-113:
-ext v12
-.16b, v5.16b, v6.16b, #2*2
-ext v13
-.16b, v8.16b, v9.16b, #4*2
-umlal v14
-.4s, v12.4h, v1.h[5]
-umlal2 v15
-.4s, v12.8h, v1.h[5]
-umlal v14
-.4s, v13.4h, v1.h[5]
-umlal2 v15
-.4s, v13.8h, v1.h[5]
-112:
-ext v12
-.16b, v5.16b, v6.16b, #3*2
-ext v13
-.16b, v8.16b, v9.16b, #3*2
-umlal v14
-.4s, v12.4h, v1.h[4]
-umlal2 v15
-.4s, v12.8h, v1.h[4]
-umlal v14
-.4s, v13.4h, v1.h[4]
-umlal2 v15
-.4s, v13.8h, v1.h[4]
-111:
-ext v12
-.16b, v5.16b, v6.16b, #4*2
-ext v13
-.16b, v8.16b, v9.16b, #2*2
-umlal v14
-.4s, v12.4h, v1.h[3]
-umlal2 v15
-.4s, v12.8h, v1.h[3]
-umlal v14
-.4s, v13.4h, v1.h[3]
-umlal2 v15
-.4s, v13.8h, v1.h[3]
-110:
-ext v12
-.16b, v5.16b, v6.16b, #5*2
-ext v13
-.16b, v8.16b, v9.16b, #1*2
-umlal v14
-.4s, v12.4h, v1.h[2]
-umlal2 v15
-.4s, v12.8h, v1.h[2]
-umlal v14
-.4s, v13.4h, v1.h[2]
-umlal2 v15
-.4s, v13.8h, v1.h[2]
-109:
-ext v12
-.16b, v5.16b, v6.16b, #6*2
-ext v13
-.16b, v8.16b, v9.16b, #0*2
-umlal v14
-.4s, v12.4h, v1.h[1]
-umlal2 v15
-.4s, v12.8h, v1.h[1]
-umlal v14
-.4s, v13.4h, v1.h[1]
-umlal2 v15
-.4s, v13.8h, v1.h[1]
-108:
-ext v12
-.16b, v5.16b, v6.16b, #7*2
-ext v13
-.16b, v7.16b, v8.16b, #7*2
-umlal v14
-.4s, v12.4h, v1.h[0]
-umlal2 v15
-.4s, v12.8h, v1.h[0]
-umlal v14
-.4s, v13.4h, v1.h[0]
-umlal2 v15
-.4s, v13.8h, v1.h[0]
-107:
-ext v12
-.16b, v6.16b, v7.16b, #0*2
-ext v13
-.16b, v7.16b, v8.16b, #6*2
-umlal v14
-.4s, v12.4h, v0.h[7]
-umlal2 v15
-.4s, v12.8h, v0.h[7]
-umlal v14
-.4s, v13.4h, v0.h[7]
-umlal2 v15
-.4s, v13.8h, v0.h[7]
-106:
-ext v12
-.16b, v6.16b, v7.16b, #1*2
-ext v13
-.16b, v7.16b, v8.16b, #5*2
-umlal v14
-.4s, v12.4h, v0.h[6]
-umlal2 v15
-.4s, v12.8h, v0.h[6]
-umlal v14
-.4s, v13.4h, v0.h[6]
-umlal2 v15
-.4s, v13.8h, v0.h[6]
-105:
-ext v12
-.16b, v6.16b, v7.16b, #2*2
-ext v13
-.16b, v7.16b, v8.16b, #4*2
-umlal v14
-.4s, v12.4h, v0.h[5]
-umlal2 v15
-.4s, v12.8h, v0.h[5]
-umlal v14
-.4s, v13.4h, v0.h[5]
-umlal2 v15
-.4s, v13.8h, v0.h[5]
-104:
-ext v12
-.16b, v6.16b, v7.16b, #3*2
-ext v13
-.16b, v7.16b, v8.16b, #3*2
-umlal v14
-.4s, v12.4h, v0.h[4]
-umlal2 v15
-.4s, v12.8h, v0.h[4]
-umlal v14
-.4s, v13.4h, v0.h[4]
-umlal2 v15
-.4s, v13.8h, v0.h[4]
-103:
-ext v12
-.16b, v6.16b, v7.16b, #4*2
-ext v13
-.16b, v7.16b, v8.16b, #2*2
-umlal v14
-.4s, v12.4h, v0.h[3]
-umlal2 v15
-.4s, v12.8h, v0.h[3]
-umlal v14
-.4s, v13.4h, v0.h[3]
-umlal2 v15
-.4s, v13.8h, v0.h[3]
-102:
-ext v12
-.16b, v6.16b, v7.16b, #5*2
-ext v13
-.16b, v7.16b, v8.16b, #1*2
-umlal v14
-.4s, v12.4h, v0.h[2]
-umlal2 v15
-.4s, v12.8h, v0.h[2]
-umlal v14
-.4s, v13.4h, v0.h[2]
-umlal2 v15
-.4s, v13.8h, v0.h[2]
-101:
-ext v12
-.16b, v6.16b, v7.16b, #6*2
-ext v13
-.16b, v7.16b, v8.16b, #0*2
-umlal v14
-.4s, v12.4h, v0.h[1]
-umlal2 v15
-.4s, v12.8h, v0.h[1]
-umlal v14
-.4s, v13.4h, v0.h[1]
-umlal2 v15
-.4s, v13.8h, v0.h[1]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+125:    ext         v12.16b, v31.16b, v4.16b, #6*2
+ext         v13.16b, v10.16b, v11.16b, #0*2
+umlal       v14.4s, v12.4h, v3.h[1]
+umlal2      v15.4s, v12.8h, v3.h[1]
+umlal       v14.4s, v13.4h, v3.h[1]
+umlal2      v15.4s, v13.8h, v3.h[1]
+124:    ext         v12.16b, v31.16b, v4.16b, #7*2
+ext         v13.16b, v9.16b, v10.16b, #7*2
+umlal       v14.4s, v12.4h, v3.h[0]
+umlal2      v15.4s, v12.8h, v3.h[0]
+umlal       v14.4s, v13.4h, v3.h[0]
+umlal2      v15.4s, v13.8h, v3.h[0]
+123:    ext         v12.16b, v4.16b, v5.16b, #0*2
+ext         v13.16b, v9.16b, v10.16b, #6*2
+umlal       v14.4s, v12.4h, v2.h[7]
+umlal2      v15.4s, v12.8h, v2.h[7]
+umlal       v14.4s, v13.4h, v2.h[7]
+umlal2      v15.4s, v13.8h, v2.h[7]
+122:    ext         v12.16b, v4.16b, v5.16b, #1*2
+ext         v13.16b, v9.16b, v10.16b, #5*2
+umlal       v14.4s, v12.4h, v2.h[6]
+umlal2      v15.4s, v12.8h, v2.h[6]
+umlal       v14.4s, v13.4h, v2.h[6]
+umlal2      v15.4s, v13.8h, v2.h[6]
+121:    ext         v12.16b, v4.16b, v5.16b, #2*2
+ext         v13.16b, v9.16b, v10.16b, #4*2
+umlal       v14.4s, v12.4h, v2.h[5]
+umlal2      v15.4s, v12.8h, v2.h[5]
+umlal       v14.4s, v13.4h, v2.h[5]
+umlal2      v15.4s, v13.8h, v2.h[5]
+120:    ext         v12.16b, v4.16b, v5.16b, #3*2
+ext         v13.16b, v9.16b, v10.16b, #3*2
+umlal       v14.4s, v12.4h, v2.h[4]
+umlal2      v15.4s, v12.8h, v2.h[4]
+umlal       v14.4s, v13.4h, v2.h[4]
+umlal2      v15.4s, v13.8h, v2.h[4]
+119:    ext         v12.16b, v4.16b, v5.16b, #4*2
+ext         v13.16b, v9.16b, v10.16b, #2*2
+umlal       v14.4s, v12.4h, v2.h[3]
+umlal2      v15.4s, v12.8h, v2.h[3]
+umlal       v14.4s, v13.4h, v2.h[3]
+umlal2      v15.4s, v13.8h, v2.h[3]
+118:    ext         v12.16b, v4.16b, v5.16b, #5*2
+ext         v13.16b, v9.16b, v10.16b, #1*2
+umlal       v14.4s, v12.4h, v2.h[2]
+umlal2      v15.4s, v12.8h, v2.h[2]
+umlal       v14.4s, v13.4h, v2.h[2]
+umlal2      v15.4s, v13.8h, v2.h[2]
+117:    ext         v12.16b, v4.16b, v5.16b, #6*2
+ext         v13.16b, v9.16b, v10.16b, #0*2
+umlal       v14.4s, v12.4h, v2.h[1]
+umlal2      v15.4s, v12.8h, v2.h[1]
+umlal       v14.4s, v13.4h, v2.h[1]
+umlal2      v15.4s, v13.8h, v2.h[1]
+116:    ext         v12.16b, v4.16b, v5.16b, #7*2
+ext         v13.16b, v8.16b, v9.16b, #7*2
+umlal       v14.4s, v12.4h, v2.h[0]
+umlal2      v15.4s, v12.8h, v2.h[0]
+umlal       v14.4s, v13.4h, v2.h[0]
+umlal2      v15.4s, v13.8h, v2.h[0]
+115:    ext         v12.16b, v5.16b, v6.16b, #0*2
+ext         v13.16b, v8.16b, v9.16b, #6*2
+umlal       v14.4s, v12.4h, v1.h[7]
+umlal2      v15.4s, v12.8h, v1.h[7]
+umlal       v14.4s, v13.4h, v1.h[7]
+umlal2      v15.4s, v13.8h, v1.h[7]
+114:    ext         v12.16b, v5.16b, v6.16b, #1*2
+ext         v13.16b, v8.16b, v9.16b, #5*2
+umlal       v14.4s, v12.4h, v1.h[6]
+umlal2      v15.4s, v12.8h, v1.h[6]
+umlal       v14.4s, v13.4h, v1.h[6]
+umlal2      v15.4s, v13.8h, v1.h[6]
+113:    ext         v12.16b, v5.16b, v6.16b, #2*2
+ext         v13.16b, v8.16b, v9.16b, #4*2
+umlal       v14.4s, v12.4h, v1.h[5]
+umlal2      v15.4s, v12.8h, v1.h[5]
+umlal       v14.4s, v13.4h, v1.h[5]
+umlal2      v15.4s, v13.8h, v1.h[5]
+112:    ext         v12.16b, v5.16b, v6.16b, #3*2
+ext         v13.16b, v8.16b, v9.16b, #3*2
+umlal       v14.4s, v12.4h, v1.h[4]
+umlal2      v15.4s, v12.8h, v1.h[4]
+umlal       v14.4s, v13.4h, v1.h[4]
+umlal2      v15.4s, v13.8h, v1.h[4]
+111:    ext         v12.16b, v5.16b, v6.16b, #4*2
+ext         v13.16b, v8.16b, v9.16b, #2*2
+umlal       v14.4s, v12.4h, v1.h[3]
+umlal2      v15.4s, v12.8h, v1.h[3]
+umlal       v14.4s, v13.4h, v1.h[3]
+umlal2      v15.4s, v13.8h, v1.h[3]
+110:    ext         v12.16b, v5.16b, v6.16b, #5*2
+ext         v13.16b, v8.16b, v9.16b, #1*2
+umlal       v14.4s, v12.4h, v1.h[2]
+umlal2      v15.4s, v12.8h, v1.h[2]
+umlal       v14.4s, v13.4h, v1.h[2]
+umlal2      v15.4s, v13.8h, v1.h[2]
+109:    ext         v12.16b, v5.16b, v6.16b, #6*2
+ext         v13.16b, v8.16b, v9.16b, #0*2
+umlal       v14.4s, v12.4h, v1.h[1]
+umlal2      v15.4s, v12.8h, v1.h[1]
+umlal       v14.4s, v13.4h, v1.h[1]
+umlal2      v15.4s, v13.8h, v1.h[1]
+108:    ext         v12.16b, v5.16b, v6.16b, #7*2
+ext         v13.16b, v7.16b, v8.16b, #7*2
+umlal       v14.4s, v12.4h, v1.h[0]
+umlal2      v15.4s, v12.8h, v1.h[0]
+umlal       v14.4s, v13.4h, v1.h[0]
+umlal2      v15.4s, v13.8h, v1.h[0]
+107:    ext         v12.16b, v6.16b, v7.16b, #0*2
+ext         v13.16b, v7.16b, v8.16b, #6*2
+umlal       v14.4s, v12.4h, v0.h[7]
+umlal2      v15.4s, v12.8h, v0.h[7]
+umlal       v14.4s, v13.4h, v0.h[7]
+umlal2      v15.4s, v13.8h, v0.h[7]
+106:    ext         v12.16b, v6.16b, v7.16b, #1*2
+ext         v13.16b, v7.16b, v8.16b, #5*2
+umlal       v14.4s, v12.4h, v0.h[6]
+umlal2      v15.4s, v12.8h, v0.h[6]
+umlal       v14.4s, v13.4h, v0.h[6]
+umlal2      v15.4s, v13.8h, v0.h[6]
+105:    ext         v12.16b, v6.16b, v7.16b, #2*2
+ext         v13.16b, v7.16b, v8.16b, #4*2
+umlal       v14.4s, v12.4h, v0.h[5]
+umlal2      v15.4s, v12.8h, v0.h[5]
+umlal       v14.4s, v13.4h, v0.h[5]
+umlal2      v15.4s, v13.8h, v0.h[5]
+104:    ext         v12.16b, v6.16b, v7.16b, #3*2
+ext         v13.16b, v7.16b, v8.16b, #3*2
+umlal       v14.4s, v12.4h, v0.h[4]
+umlal2      v15.4s, v12.8h, v0.h[4]
+umlal       v14.4s, v13.4h, v0.h[4]
+umlal2      v15.4s, v13.8h, v0.h[4]
+103:    ext         v12.16b, v6.16b, v7.16b, #4*2
+ext         v13.16b, v7.16b, v8.16b, #2*2
+umlal       v14.4s, v12.4h, v0.h[3]
+umlal2      v15.4s, v12.8h, v0.h[3]
+umlal       v14.4s, v13.4h, v0.h[3]
+umlal2      v15.4s, v13.8h, v0.h[3]
+102:    ext         v12.16b, v6.16b, v7.16b, #5*2
+ext         v13.16b, v7.16b, v8.16b, #1*2
+umlal       v14.4s, v12.4h, v0.h[2]
+umlal2      v15.4s, v12.8h, v0.h[2]
+umlal       v14.4s, v13.4h, v0.h[2]
+umlal2      v15.4s, v13.8h, v0.h[2]
+101:    ext         v12.16b, v6.16b, v7.16b, #6*2
+ext         v13.16b, v7.16b, v8.16b, #0*2
+umlal       v14.4s, v12.4h, v0.h[1]
+umlal2      v15.4s, v12.8h, v0.h[1]
+umlal       v14.4s, v13.4h, v0.h[1]
+umlal2      v15.4s, v13.8h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v31.16b, v4.16b
-mov v4
-.16b, v5.16b
-mov v5
-.16b, v6.16b
-mov v6
-.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v31.16b, v4.16b
+mov         v4.16b, v5.16b
+mov         v5.16b, v6.16b
+mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
 #define TUNED_LIST4 6, 12, 20
-.
-macro hconv4_6/*{{{*/
+.macro hconv4_6/*{{{*/
 .rodata
 200:     .hword -4
 .hword 101f-100f
@@ -1161,105 +695,55 @@ macro hconv4_6/*{{{*/
 .hword 105f-100f
 .hword 106f-100f
 .align      4
-.
-text
-        umull
-v14.4s, v7.4h, v0.h[0]
-umull2 v15
-.4s, v7.8h, v0.h[0]
+.text
+        umull       v14.4s, v7.4h, v0.h[0]
+umull2      v15.4s, v7.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-106:
-umlal v14
-.4s, v4.4h,  v0.h[6]
-umlal2 v15
-.4s, v4.8h,  v0.h[6]
-umlal v14
-.4s, v10.4h, v0.h[6]
-umlal2 v15
-.4s, v10.8h, v0.h[6]
-105:
-umlal2 v14
-.4s, v4.8h,  v0.h[5]
-umlal v15
-.4s, v5.4h, v0.h[5]
-umlal2 v14
-.4s, v9.8h, v0.h[5]
-umlal v15
-.4s, v10.4h, v0.h[5]
-104:
-umlal v14
-.4s, v5.4h, v0.h[4]
-umlal2 v15
-.4s, v5.8h, v0.h[4]
-umlal v14
-.4s, v9.4h, v0.h[4]
-umlal2 v15
-.4s, v9.8h, v0.h[4]
-103:
-umlal2 v14
-.4s, v5.8h, v0.h[3]
-umlal v15
-.4s, v6.4h, v0.h[3]
-umlal2 v14
-.4s, v8.8h, v0.h[3]
-umlal v15
-.4s, v9.4h, v0.h[3]
-102:
-umlal v14
-.4s, v6.4h, v0.h[2]
-umlal2 v15
-.4s, v6.8h, v0.h[2]
-umlal v14
-.4s, v8.4h, v0.h[2]
-umlal2 v15
-.4s, v8.8h, v0.h[2]
-101:
-umlal2 v14
-.4s, v6.8h, v0.h[1]
-umlal v15
-.4s, v7.4h, v0.h[1]
-umlal2 v14
-.4s, v7.8h, v0.h[1]
-umlal v15
-.4s, v8.4h, v0.h[1]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+106:    umlal       v14.4s, v4.4h,  v0.h[6]
+umlal2      v15.4s, v4.8h,  v0.h[6]
+umlal       v14.4s, v10.4h, v0.h[6]
+umlal2      v15.4s, v10.8h, v0.h[6]
+105:    umlal2      v14.4s, v4.8h,  v0.h[5]
+umlal       v15.4s, v5.4h, v0.h[5]
+umlal2      v14.4s, v9.8h, v0.h[5]
+umlal       v15.4s, v10.4h, v0.h[5]
+104:    umlal       v14.4s, v5.4h, v0.h[4]
+umlal2      v15.4s, v5.8h, v0.h[4]
+umlal       v14.4s, v9.4h, v0.h[4]
+umlal2      v15.4s, v9.8h, v0.h[4]
+103:    umlal2      v14.4s, v5.8h, v0.h[3]
+umlal       v15.4s, v6.4h, v0.h[3]
+umlal2      v14.4s, v8.8h, v0.h[3]
+umlal       v15.4s, v9.4h, v0.h[3]
+102:    umlal       v14.4s, v6.4h, v0.h[2]
+umlal2      v15.4s, v6.8h, v0.h[2]
+umlal       v14.4s, v8.4h, v0.h[2]
+umlal2      v15.4s, v8.8h, v0.h[2]
+101:    umlal2      v14.4s, v6.8h, v0.h[1]
+umlal       v15.4s, v7.4h, v0.h[1]
+umlal2      v14.4s, v7.8h, v0.h[1]
+umlal       v15.4s, v8.4h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v4.16b, v5.16b
-mov v5
-.16b, v6.16b
-mov v6
-.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v4.16b, v5.16b
+mov         v5.16b, v6.16b
+mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
-.
-macro hconv4_12/*{{{*/
+.macro hconv4_12/*{{{*/
 .rodata
 200:     .hword -4 //Might need to remove these...
 .hword 101f-100f
@@ -1275,171 +759,85 @@ macro hconv4_12/*{{{*/
 .hword 111f-100f
 .hword 112f-100f
 .align 4
-.
-text
-        umull
-v14.4s, v4.4h, v0.h[0]
-umull2 v15
-.4s, v4.8h, v0.h[0]
+.text
+        umull       v14.4s, v4.4h, v0.h[0]
+umull2      v15.4s, v4.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-112:
-umlal v14
-.4s, v26.4h, v1.h[4]
-umlal2 v15
-.4s, v26.8h, v1.h[4]
-umlal v14
-.4s, v10.4h, v1.h[4]
-umlal2 v15
-.4s, v10.8h, v1.h[4]
-111:
-umlal2 v14
-.4s, v26.8h, v1.h[3]
-umlal v15
-.4s, v27.4h, v1.h[3]
-umlal2 v14
-.4s, v9.8h, v1.h[3]
-umlal v15
-.4s, v10.4h, v1.h[3]
-110:
-umlal v14
-.4s, v27.4h, v1.h[2]
-umlal2 v15
-.4s, v27.8h, v1.h[2]
-umlal v14
-.4s, v9.4h, v1.h[2]
-umlal2 v15
-.4s, v9.8h, v1.h[2]
-109:
-umlal2 v14
-.4s, v27.8h, v1.h[1]
-umlal v15
-.4s, v28.4h, v1.h[1]
-umlal2 v14
-.4s, v8.8h, v1.h[1]
-umlal v15
-.4s, v9.4h, v1.h[1]
-108:
-umlal v14
-.4s, v28.4h, v1.h[0]
-umlal2 v15
-.4s, v28.8h, v1.h[0]
-umlal v14
-.4s, v8.4h, v1.h[0]
-umlal2 v15
-.4s, v8.8h, v1.h[0]
-107:
-umlal2 v14
-.4s, v28.8h, v0.h[7]
-umlal v15
-.4s, v29.4h, v0.h[7]
-umlal2 v14
-.4s, v7.8h, v0.h[7]
-umlal v15
-.4s, v8.4h, v0.h[7]
-106:
-umlal v14
-.4s, v29.4h, v0.h[6]
-umlal2 v15
-.4s, v29.8h, v0.h[6]
-umlal v14
-.4s, v7.4h, v0.h[6]
-umlal2 v15
-.4s, v7.8h, v0.h[6]
-105:
-umlal2 v14
-.4s, v29.8h, v0.h[5]
-umlal v15
-.4s, v30.4h, v0.h[5]
-umlal2 v14
-.4s, v6.8h, v0.h[5]
-umlal v15
-.4s, v7.4h, v0.h[5]
-104:
-umlal v14
-.4s, v30.4h, v0.h[4]
-umlal2 v15
-.4s, v30.8h, v0.h[4]
-umlal v14
-.4s, v6.4h, v0.h[4]
-umlal2 v15
-.4s, v6.8h, v0.h[4]
-103:
-umlal2 v14
-.4s, v30.8h, v0.h[3]
-umlal v15
-.4s, v31.4h, v0.h[3]
-umlal2 v14
-.4s, v5.8h, v0.h[3]
-umlal v15
-.4s, v6.4h, v0.h[3]
-102:
-umlal v14
-.4s, v31.4h, v0.h[2]
-umlal2 v15
-.4s, v31.8h, v0.h[2]
-umlal v14
-.4s, v5.4h, v0.h[2]
-umlal2 v15
-.4s, v5.8h, v0.h[2]
-101:
-umlal2 v14
-.4s, v31.8h, v0.h[1]
-umlal v15
-.4s, v4.4h,  v0.h[1]
-umlal2 v14
-.4s, v4.8h,  v0.h[1]
-umlal v15
-.4s, v5.4h, v0.h[1]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+112:    umlal       v14.4s, v26.4h, v1.h[4]
+umlal2      v15.4s, v26.8h, v1.h[4]
+umlal       v14.4s, v10.4h, v1.h[4]
+umlal2      v15.4s, v10.8h, v1.h[4]
+111:    umlal2      v14.4s, v26.8h, v1.h[3]
+umlal       v15.4s, v27.4h, v1.h[3]
+umlal2      v14.4s, v9.8h, v1.h[3]
+umlal       v15.4s, v10.4h, v1.h[3]
+110:    umlal       v14.4s, v27.4h, v1.h[2]
+umlal2      v15.4s, v27.8h, v1.h[2]
+umlal       v14.4s, v9.4h, v1.h[2]
+umlal2      v15.4s, v9.8h, v1.h[2]
+109:    umlal2      v14.4s, v27.8h, v1.h[1]
+umlal       v15.4s, v28.4h, v1.h[1]
+umlal2      v14.4s, v8.8h, v1.h[1]
+umlal       v15.4s, v9.4h, v1.h[1]
+108:    umlal       v14.4s, v28.4h, v1.h[0]
+umlal2      v15.4s, v28.8h, v1.h[0]
+umlal       v14.4s, v8.4h, v1.h[0]
+umlal2      v15.4s, v8.8h, v1.h[0]
+107:    umlal2      v14.4s, v28.8h, v0.h[7]
+umlal       v15.4s, v29.4h, v0.h[7]
+umlal2      v14.4s, v7.8h, v0.h[7]
+umlal       v15.4s, v8.4h, v0.h[7]
+106:    umlal       v14.4s, v29.4h, v0.h[6]
+umlal2      v15.4s, v29.8h, v0.h[6]
+umlal       v14.4s, v7.4h, v0.h[6]
+umlal2      v15.4s, v7.8h, v0.h[6]
+105:    umlal2      v14.4s, v29.8h, v0.h[5]
+umlal       v15.4s, v30.4h, v0.h[5]
+umlal2      v14.4s, v6.8h, v0.h[5]
+umlal       v15.4s, v7.4h, v0.h[5]
+104:    umlal       v14.4s, v30.4h, v0.h[4]
+umlal2      v15.4s, v30.8h, v0.h[4]
+umlal       v14.4s, v6.4h, v0.h[4]
+umlal2      v15.4s, v6.8h, v0.h[4]
+103:    umlal2      v14.4s, v30.8h, v0.h[3]
+umlal       v15.4s, v31.4h, v0.h[3]
+umlal2      v14.4s, v5.8h, v0.h[3]
+umlal       v15.4s, v6.4h, v0.h[3]
+102:    umlal       v14.4s, v31.4h, v0.h[2]
+umlal2      v15.4s, v31.8h, v0.h[2]
+umlal       v14.4s, v5.4h, v0.h[2]
+umlal2      v15.4s, v5.8h, v0.h[2]
+101:    umlal2      v14.4s, v31.8h, v0.h[1]
+umlal       v15.4s, v4.4h,  v0.h[1]
+umlal2      v14.4s, v4.8h,  v0.h[1]
+umlal       v15.4s, v5.4h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v26.16b, v27.16b
-mov v27
-.16b, v28.16b
-mov v28
-.16b, v29.16b
-mov v29
-.16b, v30.16b
-mov v30
-.16b, v31.16b
-mov v31
-.16b, v4.16b
-mov v4
-.16b, v5.16b
-mov v5
-.16b, v6.16b
-mov v6
-.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v26.16b, v27.16b
+mov         v27.16b, v28.16b
+mov         v28.16b, v29.16b
+mov         v29.16b, v30.16b
+mov         v30.16b, v31.16b
+mov         v31.16b, v4.16b
+mov         v4.16b, v5.16b
+mov         v5.16b, v6.16b
+mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
-.
-macro hconv4_20/*{{{*/
+.macro hconv4_20/*{{{*/
 .rodata
 200:     .hword -4
 .hword 101f-100f
@@ -1463,259 +861,125 @@ macro hconv4_20/*{{{*/
 .hword 119f-100f
 .hword 120f-100f
 .align 4
-.
-text
-        umull
-v14.4s, v28.4h, v0.h[0]
-umull2 v15
-.4s, v28.8h, v0.h[0]
+.text
+        umull       v14.4s, v28.4h, v0.h[0]
+umull2      v15.4s, v28.8h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-120:
-umlal v14
-.4s, v18.4h, v2.h[4]
-umlal2 v15
-.4s, v18.8h, v2.h[4]
-umlal v14
-.4s, v10.4h, v2.h[4]
-umlal2 v15
-.4s, v10.8h, v2.h[4]
-119:
-umlal2 v14
-.4s, v18.8h, v2.h[3]
-umlal v15
-.4s, v19.4h, v2.h[3]
-umlal2 v14
-.4s, v9.8h,  v2.h[3]
-umlal v15
-.4s, v10.4h, v2.h[3]
-118:
-umlal v14
-.4s, v19.4h, v2.h[2]
-umlal2 v15
-.4s, v19.8h, v2.h[2]
-umlal v14
-.4s, v9.4h,  v2.h[2]
-umlal2 v15
-.4s, v9.8h,  v2.h[2]
-117:
-umlal2 v14
-.4s, v19.8h, v2.h[1]
-umlal v15
-.4s, v20.4h, v2.h[1]
-umlal2 v14
-.4s, v8.8h,  v2.h[1]
-umlal v15
-.4s, v9.4h,  v2.h[1]
-116:
-umlal v14
-.4s, v20.4h, v2.h[0]
-umlal2 v15
-.4s, v20.8h, v2.h[0]
-umlal v14
-.4s, v8.4h,  v2.h[0]
-umlal2 v15
-.4s, v8.8h,  v2.h[0]
-115:
-umlal2 v14
-.4s, v20.8h, v1.h[7]
-umlal v15
-.4s, v21.4h, v1.h[7]
-umlal2 v14
-.4s, v7.8h,  v1.h[7]
-umlal v15
-.4s, v8.4h,  v1.h[7]
-114:
-umlal v14
-.4s, v21.4h, v1.h[6]
-umlal2 v15
-.4s, v21.8h, v1.h[6]
-umlal v14
-.4s, v7.4h,  v1.h[6]
-umlal2 v15
-.4s, v7.8h,  v1.h[6]
-113:
-umlal2 v14
-.4s, v21.8h, v1.h[5]
-umlal v15
-.4s, v22.4h, v1.h[5]
-umlal2 v14
-.4s, v6.8h,  v1.h[5]
-umlal v15
-.4s, v7.4h,  v1.h[5]
-112:
-umlal v14
-.4s, v22.4h, v1.h[4]
-umlal2 v15
-.4s, v22.8h, v1.h[4]
-umlal v14
-.4s, v6.4h,  v1.h[4]
-umlal2 v15
-.4s, v6.8h,  v1.h[4]
-111:
-umlal2 v14
-.4s, v22.8h, v1.h[3]
-umlal v15
-.4s, v23.4h, v1.h[3]
-umlal2 v14
-.4s, v5.8h,  v1.h[3]
-umlal v15
-.4s, v6.4h,  v1.h[3]
-110:
-umlal v14
-.4s, v23.4h, v1.h[2]
-umlal2 v15
-.4s, v23.8h, v1.h[2]
-umlal v14
-.4s, v5.4h,  v1.h[2]
-umlal2 v15
-.4s, v5.8h,  v1.h[2]
-109:
-umlal2 v14
-.4s, v23.8h, v1.h[1]
-umlal v15
-.4s, v24.4h, v1.h[1]
-umlal2 v14
-.4s, v4.8h,  v1.h[1]
-umlal v15
-.4s, v5.4h,  v1.h[1]
-108:
-umlal v14
-.4s, v24.4h, v1.h[0]
-umlal2 v15
-.4s, v24.8h, v1.h[0]
-umlal v14
-.4s, v4.4h,  v1.h[0]
-umlal2 v15
-.4s, v4.8h,  v1.h[0]
-107:
-umlal2 v14
-.4s, v24.8h, v0.h[7]
-umlal v15
-.4s, v25.4h, v0.h[7]
-umlal2 v14
-.4s, v31.8h, v0.h[7]
-umlal v15
-.4s, v4.4h,  v0.h[7]
-106:
-umlal v14
-.4s, v25.4h, v0.h[6]
-umlal2 v15
-.4s, v25.8h, v0.h[6]
-umlal v14
-.4s, v31.4h, v0.h[6]
-umlal2 v15
-.4s, v31.8h, v0.h[6]
-105:
-umlal2 v14
-.4s, v25.8h, v0.h[5]
-umlal v15
-.4s, v26.4h, v0.h[5]
-umlal2 v14
-.4s, v30.8h, v0.h[5]
-umlal v15
-.4s, v31.4h, v0.h[5]
-104:
-umlal v14
-.4s, v26.4h, v0.h[4]
-umlal2 v15
-.4s, v26.8h, v0.h[4]
-umlal v14
-.4s, v30.4h, v0.h[4]
-umlal2 v15
-.4s, v30.8h, v0.h[4]
-103:
-umlal2 v14
-.4s, v26.8h, v0.h[3]
-umlal v15
-.4s, v27.4h, v0.h[3]
-umlal2 v14
-.4s, v29.8h, v0.h[3]
-umlal v15
-.4s, v30.4h, v0.h[3]
-102:
-umlal v14
-.4s, v27.4h, v0.h[2]
-umlal2 v15
-.4s, v27.8h, v0.h[2]
-umlal v14
-.4s, v29.4h, v0.h[2]
-umlal2 v15
-.4s, v29.8h, v0.h[2]
-101:
-umlal2 v14
-.4s, v27.8h, v0.h[1]
-umlal v15
-.4s, v28.4h, v0.h[1]
-umlal2 v14
-.4s, v28.8h, v0.h[1]
-umlal v15
-.4s, v29.4h, v0.h[1]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+120:    umlal       v14.4s, v18.4h, v2.h[4]
+umlal2      v15.4s, v18.8h, v2.h[4]
+umlal       v14.4s, v10.4h, v2.h[4]
+umlal2      v15.4s, v10.8h, v2.h[4]
+119:    umlal2      v14.4s, v18.8h, v2.h[3]
+umlal       v15.4s, v19.4h, v2.h[3]
+umlal2      v14.4s, v9.8h,  v2.h[3]
+umlal       v15.4s, v10.4h, v2.h[3]
+118:    umlal       v14.4s, v19.4h, v2.h[2]
+umlal2      v15.4s, v19.8h, v2.h[2]
+umlal       v14.4s, v9.4h,  v2.h[2]
+umlal2      v15.4s, v9.8h,  v2.h[2]
+117:    umlal2      v14.4s, v19.8h, v2.h[1]
+umlal       v15.4s, v20.4h, v2.h[1]
+umlal2      v14.4s, v8.8h,  v2.h[1]
+umlal       v15.4s, v9.4h,  v2.h[1]
+116:    umlal       v14.4s, v20.4h, v2.h[0]
+umlal2      v15.4s, v20.8h, v2.h[0]
+umlal       v14.4s, v8.4h,  v2.h[0]
+umlal2      v15.4s, v8.8h,  v2.h[0]
+115:    umlal2      v14.4s, v20.8h, v1.h[7]
+umlal       v15.4s, v21.4h, v1.h[7]
+umlal2      v14.4s, v7.8h,  v1.h[7]
+umlal       v15.4s, v8.4h,  v1.h[7]
+114:    umlal       v14.4s, v21.4h, v1.h[6]
+umlal2      v15.4s, v21.8h, v1.h[6]
+umlal       v14.4s, v7.4h,  v1.h[6]
+umlal2      v15.4s, v7.8h,  v1.h[6]
+113:    umlal2      v14.4s, v21.8h, v1.h[5]
+umlal       v15.4s, v22.4h, v1.h[5]
+umlal2      v14.4s, v6.8h,  v1.h[5]
+umlal       v15.4s, v7.4h,  v1.h[5]
+112:    umlal       v14.4s, v22.4h, v1.h[4]
+umlal2      v15.4s, v22.8h, v1.h[4]
+umlal       v14.4s, v6.4h,  v1.h[4]
+umlal2      v15.4s, v6.8h,  v1.h[4]
+111:    umlal2      v14.4s, v22.8h, v1.h[3]
+umlal       v15.4s, v23.4h, v1.h[3]
+umlal2      v14.4s, v5.8h,  v1.h[3]
+umlal       v15.4s, v6.4h,  v1.h[3]
+110:    umlal       v14.4s, v23.4h, v1.h[2]
+umlal2      v15.4s, v23.8h, v1.h[2]
+umlal       v14.4s, v5.4h,  v1.h[2]
+umlal2      v15.4s, v5.8h,  v1.h[2]
+109:    umlal2      v14.4s, v23.8h, v1.h[1]
+umlal       v15.4s, v24.4h, v1.h[1]
+umlal2      v14.4s, v4.8h,  v1.h[1]
+umlal       v15.4s, v5.4h,  v1.h[1]
+108:    umlal       v14.4s, v24.4h, v1.h[0]
+umlal2      v15.4s, v24.8h, v1.h[0]
+umlal       v14.4s, v4.4h,  v1.h[0]
+umlal2      v15.4s, v4.8h,  v1.h[0]
+107:    umlal2      v14.4s, v24.8h, v0.h[7]
+umlal       v15.4s, v25.4h, v0.h[7]
+umlal2      v14.4s, v31.8h, v0.h[7]
+umlal       v15.4s, v4.4h,  v0.h[7]
+106:    umlal       v14.4s, v25.4h, v0.h[6]
+umlal2      v15.4s, v25.8h, v0.h[6]
+umlal       v14.4s, v31.4h, v0.h[6]
+umlal2      v15.4s, v31.8h, v0.h[6]
+105:    umlal2      v14.4s, v25.8h, v0.h[5]
+umlal       v15.4s, v26.4h, v0.h[5]
+umlal2      v14.4s, v30.8h, v0.h[5]
+umlal       v15.4s, v31.4h, v0.h[5]
+104:    umlal       v14.4s, v26.4h, v0.h[4]
+umlal2      v15.4s, v26.8h, v0.h[4]
+umlal       v14.4s, v30.4h, v0.h[4]
+umlal2      v15.4s, v30.8h, v0.h[4]
+103:    umlal2      v14.4s, v26.8h, v0.h[3]
+umlal       v15.4s, v27.4h, v0.h[3]
+umlal2      v14.4s, v29.8h, v0.h[3]
+umlal       v15.4s, v30.4h, v0.h[3]
+102:    umlal       v14.4s, v27.4h, v0.h[2]
+umlal2      v15.4s, v27.8h, v0.h[2]
+umlal       v14.4s, v29.4h, v0.h[2]
+umlal2      v15.4s, v29.8h, v0.h[2]
+101:    umlal2      v14.4s, v27.8h, v0.h[1]
+umlal       v15.4s, v28.4h, v0.h[1]
+umlal2      v14.4s, v28.8h, v0.h[1]
+umlal       v15.4s, v29.4h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        mov
-v18.16b, v19.16b
-mov v19
-.16b, v20.16b
-mov v20
-.16b, v21.16b
-mov v21
-.16b, v22.16b
-mov v22
-.16b, v23.16b
-mov v23
-.16b, v24.16b
-mov v24
-.16b, v25.16b
-mov v25
-.16b, v26.16b
-mov v26
-.16b, v27.16b
-mov v27
-.16b, v28.16b
-mov v28
-.16b, v29.16b
-mov v29
-.16b, v30.16b
-mov v30
-.16b, v31.16b
-mov v31
-.16b, v4.16b
-mov v4
-.16b, v5.16b
-mov v5
-.16b, v6.16b
-mov v6
-.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        mov         v18.16b, v19.16b
+mov         v19.16b, v20.16b
+mov         v20.16b, v21.16b
+mov         v21.16b, v22.16b
+mov         v22.16b, v23.16b
+mov         v23.16b, v24.16b
+mov         v24.16b, v25.16b
+mov         v25.16b, v26.16b
+mov         v26.16b, v27.16b
+mov         v27.16b, v28.16b
+mov         v28.16b, v29.16b
+mov         v29.16b, v30.16b
+mov         v30.16b, v31.16b
+mov         v31.16b, v4.16b
+mov         v4.16b, v5.16b
+mov         v5.16b, v6.16b
+mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
-.
-macro hconv4_25/*{{{*/
+.macro hconv4_25/*{{{*/
 .rodata
 200:     .hword -4
 .hword 101f-100f
@@ -1744,372 +1008,182 @@ macro hconv4_25/*{{{*/
 .hword 124f-100f
 .hword 125f-100f
 .align 4
-.
-text
-        umull2
-v14.4s, v25.8h, v0.h[0]
-umull v15
-.4s, v26.4h, v0.h[0]
+.text
+        umull2      v14.4s, v25.8h, v0.h[0]
+umull       v15.4s, v26.4h, v0.h[0]
 
-adrp x16,
-200b
-add x16, x16,
-:lo12:200b
-ldrsh x12,
-[x16, x5, LSL #1]
-adr x16,
-100f
-add x12, x12, x16
-100:
-br x12
-125:    ld1         {
-v12.8h}, [x9]
-umlal v14
-.4s, v12.4h, v3.h[1]
-umlal2 v15
-.4s, v12.8h, v3.h[1]
-umlal v14
-.4s, v10.4h, v3.h[1]
-umlal2 v15
-.4s, v10.8h, v3.h[1]
-124:
-add x12, x9,
-#0x08
-bic x12, x12,
-#0x40
-ld1         {
-v12.4h}, [x12], #8
-bic x12, x12,
-#0x40
-ld1         {
-v13.4h}, [x12]
-umlal v14
-.4s, v12.4h, v3.h[0]
-umlal v15
-.4s, v13.4h, v3.h[0]
-umlal2 v14
-.4s, v9.8h,  v3.h[0]
-umlal v15
-.4s, v10.4h, v3.h[0]
-123:
-add x12, x9,
-#0x10
-bic x12, x12,
-#0x40
-ld1         {
-v12.8h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[7]
-umlal2 v15
-.4s, v12.8h, v2.h[7]
-umlal v14
-.4s, v9.4h,  v2.h[7]
-umlal2 v15
-.4s, v9.8h,  v2.h[7]
-122:
-add x12, x9,
-#0x18
-bic x12, x12,
-#0x40
-ld1         {
-v12.4h}, [x12], #8
-bic x12, x12,
-#0x40
-ld1         {
-v13.4h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[6]
-umlal v15
-.4s, v13.4h, v2.h[6]
-umlal2 v14
-.4s, v8.8h,  v2.h[6]
-umlal v15
-.4s, v9.4h,  v2.h[6]
-121:
-add x12, x9,
-#0x20
-bic x12, x12,
-#0x40
-ld1         {
-v12.8h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[5]
-umlal2 v15
-.4s, v12.8h, v2.h[5]
-umlal v14
-.4s, v8.4h,  v2.h[5]
-umlal2 v15
-.4s, v8.8h,  v2.h[5]
-120:
-add x12, x9,
-#0x28
-bic x12, x12,
-#0x40
-ld1         {
-v12.4h}, [x12], #8
-bic x12, x12,
-#0x40
-ld1         {
-v13.4h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[4]
-umlal v15
-.4s, v13.4h, v2.h[4]
-umlal2 v14
-.4s, v7.8h,  v2.h[4]
-umlal v15
-.4s, v8.4h,  v2.h[4]
-119:
-add x12, x9,
-#0x30
-bic x12, x12,
-#0x40
-ld1         {
-v12.8h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[3]
-umlal2 v15
-.4s, v12.8h, v2.h[3]
-umlal v14
-.4s, v7.4h,  v2.h[3]
-umlal2 v15
-.4s, v7.8h,  v2.h[3]
-118:
-add x12, x9,
-#0x38
-bic x12, x12,
-#0x40
-ld1         {
-v12.4h}, [x12]
-umlal v14
-.4s, v12.4h, v2.h[2]
-umlal v15
-.4s, v17.4h, v2.h[2]
-umlal2 v14
-.4s, v6.8h,  v2.h[2]
-umlal v15
-.4s, v7.4h,  v2.h[2]
-117:
-umlal v14
-.4s, v17.4h, v2.h[1]
-umlal2 v15
-.4s, v17.8h, v2.h[1]
-umlal v14
-.4s, v6.4h,  v2.h[1]
-umlal2 v15
-.4s, v6.8h,  v2.h[1]
-116:
-umlal2 v14
-.4s, v17.8h, v2.h[0]
-umlal v15
-.4s, v18.4h, v2.h[0]
-umlal2 v14
-.4s, v5.8h,  v2.h[0]
-umlal v15
-.4s, v6.4h,  v2.h[0]
-115:
-umlal v14
-.4s, v18.4h, v1.h[7]
-umlal2 v15
-.4s, v18.8h, v1.h[7]
-umlal v14
-.4s, v5.4h,  v1.h[7]
-umlal2 v15
-.4s, v5.8h,  v1.h[7]
-114:
-umlal2 v14
-.4s, v18.8h, v1.h[6]
-umlal v15
-.4s, v19.4h, v1.h[6]
-umlal2 v14
-.4s, v4.8h,  v1.h[6]
-umlal v15
-.4s, v5.4h,  v1.h[6]
-113:
-umlal v14
-.4s, v19.4h, v1.h[5]
-umlal2 v15
-.4s, v19.8h, v1.h[5]
-umlal v14
-.4s, v4.4h,  v1.h[5]
-umlal2 v15
-.4s, v4.8h,  v1.h[5]
-112:
-umlal2 v14
-.4s, v19.8h, v1.h[4]
-umlal v15
-.4s, v20.4h, v1.h[4]
-umlal2 v14
-.4s, v31.8h, v1.h[4]
-umlal v15
-.4s, v4.4h,  v1.h[4]
-111:
-umlal v14
-.4s, v20.4h, v1.h[3]
-umlal2 v15
-.4s, v20.8h, v1.h[3]
-umlal v14
-.4s, v31.4h, v1.h[3]
-umlal2 v15
-.4s, v31.8h, v1.h[3]
-110:
-umlal2 v14
-.4s, v20.8h, v1.h[2]
-umlal v15
-.4s, v21.4h, v1.h[2]
-umlal2 v14
-.4s, v30.8h, v1.h[2]
-umlal v15
-.4s, v31.4h, v1.h[2]
-109:
-umlal v14
-.4s, v21.4h, v1.h[1]
-umlal2 v15
-.4s, v21.8h, v1.h[1]
-umlal v14
-.4s, v30.4h, v1.h[1]
-umlal2 v15
-.4s, v30.8h, v1.h[1]
-108:
-umlal2 v14
-.4s, v21.8h, v1.h[0]
-umlal v15
-.4s, v22.4h, v1.h[0]
-umlal2 v14
-.4s, v29.8h, v1.h[0]
-umlal v15
-.4s, v30.4h, v1.h[0]
-107:
-umlal v14
-.4s, v22.4h, v0.h[7]
-umlal2 v15
-.4s, v22.8h, v0.h[7]
-umlal v14
-.4s, v29.4h, v0.h[7]
-umlal2 v15
-.4s, v29.8h, v0.h[7]
-106:
-umlal2 v14
-.4s, v22.8h, v0.h[6]
-umlal v15
-.4s, v23.4h, v0.h[6]
-umlal2 v14
-.4s, v28.8h, v0.h[6]
-umlal v15
-.4s, v29.4h, v0.h[6]
-105:
-umlal v14
-.4s, v23.4h, v0.h[5]
-umlal2 v15
-.4s, v23.8h, v0.h[5]
-umlal v14
-.4s, v28.4h, v0.h[5]
-umlal2 v15
-.4s, v28.8h, v0.h[5]
-104:
-umlal2 v14
-.4s, v23.8h, v0.h[4]
-umlal v15
-.4s, v24.4h, v0.h[4]
-umlal2 v14
-.4s, v27.8h, v0.h[4]
-umlal v15
-.4s, v28.4h, v0.h[4]
-103:
-umlal v14
-.4s, v24.4h, v0.h[3]
-umlal2 v15
-.4s, v24.8h, v0.h[3]
-umlal v14
-.4s, v27.4h, v0.h[3]
-umlal2 v15
-.4s, v27.8h, v0.h[3]
-102:
-umlal2 v14
-.4s, v24.8h, v0.h[2]
-umlal v15
-.4s, v25.4h, v0.h[2]
-umlal2 v14
-.4s, v26.8h, v0.h[2]
-umlal v15
-.4s, v27.4h, v0.h[2]
-101:
-umlal v14
-.4s, v25.4h, v0.h[1]
-umlal2 v15
-.4s, v25.8h, v0.h[1]
-umlal v14
-.4s, v26.4h, v0.h[1]
-umlal2 v15
-.4s, v26.8h, v0.h[1]
+adrp        x16, 200b
+add         x16, x16, :lo12:200b
+ldrsh       x12, [x16, x5, LSL #1]
+adr         x16, 100f
+add         x12, x12, x16
+100:    br          x12
+125:    ld1         {v12.8h}, [x9]
+umlal       v14.4s, v12.4h, v3.h[1]
+umlal2      v15.4s, v12.8h, v3.h[1]
+umlal       v14.4s, v10.4h, v3.h[1]
+umlal2      v15.4s, v10.8h, v3.h[1]
+124:    add         x12, x9, #0x08
+bic         x12, x12, #0x40
+ld1         {v12.4h}, [x12], #8
+bic         x12, x12, #0x40
+ld1         {v13.4h}, [x12]
+umlal       v14.4s, v12.4h, v3.h[0]
+umlal       v15.4s, v13.4h, v3.h[0]
+umlal2      v14.4s, v9.8h,  v3.h[0]
+umlal       v15.4s, v10.4h, v3.h[0]
+123:    add         x12, x9, #0x10
+bic         x12, x12, #0x40
+ld1         {v12.8h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[7]
+umlal2      v15.4s, v12.8h, v2.h[7]
+umlal       v14.4s, v9.4h,  v2.h[7]
+umlal2      v15.4s, v9.8h,  v2.h[7]
+122:    add         x12, x9, #0x18
+bic         x12, x12, #0x40
+ld1         {v12.4h}, [x12], #8
+bic         x12, x12, #0x40
+ld1         {v13.4h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[6]
+umlal       v15.4s, v13.4h, v2.h[6]
+umlal2      v14.4s, v8.8h,  v2.h[6]
+umlal       v15.4s, v9.4h,  v2.h[6]
+121:    add         x12, x9, #0x20
+bic         x12, x12, #0x40
+ld1         {v12.8h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[5]
+umlal2      v15.4s, v12.8h, v2.h[5]
+umlal       v14.4s, v8.4h,  v2.h[5]
+umlal2      v15.4s, v8.8h,  v2.h[5]
+120:    add         x12, x9, #0x28
+bic         x12, x12, #0x40
+ld1         {v12.4h}, [x12], #8
+bic         x12, x12, #0x40
+ld1         {v13.4h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[4]
+umlal       v15.4s, v13.4h, v2.h[4]
+umlal2      v14.4s, v7.8h,  v2.h[4]
+umlal       v15.4s, v8.4h,  v2.h[4]
+119:    add         x12, x9, #0x30
+bic         x12, x12, #0x40
+ld1         {v12.8h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[3]
+umlal2      v15.4s, v12.8h, v2.h[3]
+umlal       v14.4s, v7.4h,  v2.h[3]
+umlal2      v15.4s, v7.8h,  v2.h[3]
+118:    add         x12, x9, #0x38
+bic         x12, x12, #0x40
+ld1         {v12.4h}, [x12]
+umlal       v14.4s, v12.4h, v2.h[2]
+umlal       v15.4s, v17.4h, v2.h[2]
+umlal2      v14.4s, v6.8h,  v2.h[2]
+umlal       v15.4s, v7.4h,  v2.h[2]
+117:    umlal       v14.4s, v17.4h, v2.h[1]
+umlal2      v15.4s, v17.8h, v2.h[1]
+umlal       v14.4s, v6.4h,  v2.h[1]
+umlal2      v15.4s, v6.8h,  v2.h[1]
+116:    umlal2      v14.4s, v17.8h, v2.h[0]
+umlal       v15.4s, v18.4h, v2.h[0]
+umlal2      v14.4s, v5.8h,  v2.h[0]
+umlal       v15.4s, v6.4h,  v2.h[0]
+115:    umlal       v14.4s, v18.4h, v1.h[7]
+umlal2      v15.4s, v18.8h, v1.h[7]
+umlal       v14.4s, v5.4h,  v1.h[7]
+umlal2      v15.4s, v5.8h,  v1.h[7]
+114:    umlal2      v14.4s, v18.8h, v1.h[6]
+umlal       v15.4s, v19.4h, v1.h[6]
+umlal2      v14.4s, v4.8h,  v1.h[6]
+umlal       v15.4s, v5.4h,  v1.h[6]
+113:    umlal       v14.4s, v19.4h, v1.h[5]
+umlal2      v15.4s, v19.8h, v1.h[5]
+umlal       v14.4s, v4.4h,  v1.h[5]
+umlal2      v15.4s, v4.8h,  v1.h[5]
+112:    umlal2      v14.4s, v19.8h, v1.h[4]
+umlal       v15.4s, v20.4h, v1.h[4]
+umlal2      v14.4s, v31.8h, v1.h[4]
+umlal       v15.4s, v4.4h,  v1.h[4]
+111:    umlal       v14.4s, v20.4h, v1.h[3]
+umlal2      v15.4s, v20.8h, v1.h[3]
+umlal       v14.4s, v31.4h, v1.h[3]
+umlal2      v15.4s, v31.8h, v1.h[3]
+110:    umlal2      v14.4s, v20.8h, v1.h[2]
+umlal       v15.4s, v21.4h, v1.h[2]
+umlal2      v14.4s, v30.8h, v1.h[2]
+umlal       v15.4s, v31.4h, v1.h[2]
+109:    umlal       v14.4s, v21.4h, v1.h[1]
+umlal2      v15.4s, v21.8h, v1.h[1]
+umlal       v14.4s, v30.4h, v1.h[1]
+umlal2      v15.4s, v30.8h, v1.h[1]
+108:    umlal2      v14.4s, v21.8h, v1.h[0]
+umlal       v15.4s, v22.4h, v1.h[0]
+umlal2      v14.4s, v29.8h, v1.h[0]
+umlal       v15.4s, v30.4h, v1.h[0]
+107:    umlal       v14.4s, v22.4h, v0.h[7]
+umlal2      v15.4s, v22.8h, v0.h[7]
+umlal       v14.4s, v29.4h, v0.h[7]
+umlal2      v15.4s, v29.8h, v0.h[7]
+106:    umlal2      v14.4s, v22.8h, v0.h[6]
+umlal       v15.4s, v23.4h, v0.h[6]
+umlal2      v14.4s, v28.8h, v0.h[6]
+umlal       v15.4s, v29.4h, v0.h[6]
+105:    umlal       v14.4s, v23.4h, v0.h[5]
+umlal2      v15.4s, v23.8h, v0.h[5]
+umlal       v14.4s, v28.4h, v0.h[5]
+umlal2      v15.4s, v28.8h, v0.h[5]
+104:    umlal2      v14.4s, v23.8h, v0.h[4]
+umlal       v15.4s, v24.4h, v0.h[4]
+umlal2      v14.4s, v27.8h, v0.h[4]
+umlal       v15.4s, v28.4h, v0.h[4]
+103:    umlal       v14.4s, v24.4h, v0.h[3]
+umlal2      v15.4s, v24.8h, v0.h[3]
+umlal       v14.4s, v27.4h, v0.h[3]
+umlal2      v15.4s, v27.8h, v0.h[3]
+102:    umlal2      v14.4s, v24.8h, v0.h[2]
+umlal       v15.4s, v25.4h, v0.h[2]
+umlal2      v14.4s, v26.8h, v0.h[2]
+umlal       v15.4s, v27.4h, v0.h[2]
+101:    umlal       v14.4s, v25.4h, v0.h[1]
+umlal2      v15.4s, v25.8h, v0.h[1]
+umlal       v14.4s, v26.4h, v0.h[1]
+umlal2      v15.4s, v26.8h, v0.h[1]
 
-uqrshrn v14
-.4h, v14.4s, #16
-uqrshrn2 v14
-.8h, v15.4s, #16
-uqrshrn v15
-.8b, v14.8h, #
-FRACTION_BITS
+uqrshrn     v14.4h, v14.4s, #16
+uqrshrn2    v14.8h, v15.4s, #16
+uqrshrn     v15.8b, v14.8h, #FRACTION_BITS
 
-        st1{v17.16b},
-[x9], #16
-bic x9, x9,
-#0x40
-mov v17
-.16b, v18.16b
-mov v18
-.16b, v19.16b
-mov v19
-.16b, v20.16b
-mov v20
-.16b, v21.16b
-mov v21
-.16b, v22.16b
-mov v22
-.16b, v23.16b
-mov v23
-.16b, v24.16b
-mov v24
-.16b, v25.16b
-mov v25
-.16b, v26.16b
-mov v26
-.16b, v27.16b
-mov v27
-.16b, v28.16b
-mov v28
-.16b, v29.16b
-mov v29
-.16b, v30.16b
-mov v30
-.16b, v31.16b
-mov v31
-.16b, v4.16b
-mov v4
-.16b, v5.16b
-mov v5
-.16b, v6.16b
-mov v6
-.16b, v7.16b
-mov v7
-.16b, v8.16b
-mov v8
-.16b, v9.16b
-mov v9
-.16b, v10.16b
-mov v10
-.16b, v11.16b
+        st1         {v17.16b}, [x9], #16
+bic         x9, x9, #0x40
+mov         v17.16b, v18.16b
+mov         v18.16b, v19.16b
+mov         v19.16b, v20.16b
+mov         v20.16b, v21.16b
+mov         v21.16b, v22.16b
+mov         v22.16b, v23.16b
+mov         v23.16b, v24.16b
+mov         v24.16b, v25.16b
+mov         v25.16b, v26.16b
+mov         v26.16b, v27.16b
+mov         v27.16b, v28.16b
+mov         v28.16b, v29.16b
+mov         v29.16b, v30.16b
+mov         v30.16b, v31.16b
+mov         v31.16b, v4.16b
+mov         v4.16b, v5.16b
+mov         v5.16b, v6.16b
+mov         v6.16b, v7.16b
+mov         v7.16b, v8.16b
+mov         v8.16b, v9.16b
+mov         v9.16b, v10.16b
+mov         v10.16b, v11.16b
 .endm/*}}}*/
 
 /* Dedicated function wrapper for the fetch macro, for the cases where
  * performance isn't that important, to keep code size down.
  */
 PRIVATE(fetch_generic_asm)
-stp x10, x11,
-[sp, #-16]!
+stp         x10, x11, [sp, #-16]!
 fetch
-        ldp
-x10, x11, [sp], #16
+        ldp         x10, x11, [sp], #16
 ret
 END(fetch_generic_asm)
 
@@ -2122,68 +1196,44 @@ END(fetch_generic_asm)
  * narrower than 16 bytes.
  */
 PRIVATE(fetch_clampleft1)
-stp x29, x30,
-[sp, #-16]!
-bl fetch_generic_asm
-dup v8
-.8h, v10.h[0]
-dup v9
-.8h, v10.h[0]
-ands x12, x10,
-#15
+stp         x29, x30, [sp, #-16]!
+bl          fetch_generic_asm
+dup         v8.8h, v10.h[0]
+dup         v9.8h, v10.h[0]
+ands        x12, x10, #15
 beq         1f
-sub x1, x1, x12
-sub x15, x15, x12
-sub x19, x19, x12
-sub x10, x10, x12
-sub x12, sp, x12, LSL
-#1
-sub sp, sp,
-#64
-sub x12, x12,
-#32
-st1         {
-v8.8h, v9.8h, v10.8h,v11.8h}, [sp]
-ld1         {
-v10.8h,v11.8h}, [x12]
-add sp, sp,
-#64
-1:
-ldp x29, x30,
-[sp], #16
+sub         x1, x1, x12
+sub         x15, x15, x12
+sub         x19, x19, x12
+sub         x10, x10, x12
+sub         x12, sp, x12, LSL #1
+sub         sp, sp, #64
+sub         x12, x12, #32
+st1         {v8.8h, v9.8h, v10.8h,v11.8h}, [sp]
+ld1         {v10.8h,v11.8h}, [x12]
+add         sp, sp, #64
+1:          ldp         x29, x30, [sp], #16
 ret
 END(fetch_clampleft1)
 
 PRIVATE(fetch_clampleft4)
-stp x29, x30,
-[sp, #-16]!
-bl fetch_generic_asm
-dup v8
-.2d, v10.d[0]
-dup v9
-.2d, v10.d[0]
-ands x12, x10,
-#15
+stp         x29, x30, [sp, #-16]!
+bl          fetch_generic_asm
+dup         v8.2d, v10.d[0]
+dup         v9.2d, v10.d[0]
+ands        x12, x10, #15
 beq         1f
-sub x1, x1, x12
-sub x15, x15, x12
-sub x19, x19, x12
-sub x10, x10, x12
-sub x12, sp, x12, LSL
-#1
-sub sp, sp,
-#64
-sub x12, x12,
-#32
-st1         {
-v8.8h, v9.8h, v10.8h,v11.8h}, [sp]
-ld1         {
-v10.8h,v11.8h}, [x12]
-add sp, sp,
-#64
-1:
-ldp x29, x30,
-[sp], #16
+sub         x1, x1, x12
+sub         x15, x15, x12
+sub         x19, x19, x12
+sub         x10, x10, x12
+sub         x12, sp, x12, LSL #1
+sub         sp, sp, #64
+sub         x12, x12, #32
+st1         {v8.8h, v9.8h, v10.8h,v11.8h}, [sp]
+ld1         {v10.8h,v11.8h}, [x12]
+add         sp, sp, #64
+1:          ldp         x29, x30, [sp], #16
 ret
 END(fetch_clampleft4)
 
@@ -2195,84 +1245,56 @@ END(fetch_clampleft4)
  * narrower than 16 bytes.
  */
 PRIVATE(fetch_clampright1)
-stp x29, x30,
-[sp, #-16]!
-sub x12, xzr, x11
-ands x12, x12,
-#15
+stp         x29, x30, [sp, #-16]!
+sub         x12, xzr, x11
+ands        x12, x12, #15
 beq         1f
-sub x1, x1, x12
-sub x15, x15, x12
-sub x19, x19, x12
-bl fetch_generic_asm
-dup v12
-.8h, v11.h[7]
-dup v13
-.8h, v11.h[7]
-sub x12, xzr, x11
+sub         x1, x1, x12
+sub         x15, x15, x12
+sub         x19, x19, x12
+bl          fetch_generic_asm
+dup         v12.8h, v11.h[7]
+dup         v13.8h, v11.h[7]
+sub         x12, xzr, x11
 and         x12, x12, #15
-sub sp, sp,
-#64
-add x12, sp, x12, LSL
-#1
-st1         {
-v10.8h,v11.8h,v12.8h,v13.8h}, [sp]
-ld1         {
-v10.8h,v11.8h}, [x12]
-add sp, sp,
-#64
-ldp x29, x30,
-[sp], #16
+sub         sp, sp, #64
+add         x12, sp, x12, LSL #1
+st1         {v10.8h,v11.8h,v12.8h,v13.8h}, [sp]
+ld1         {v10.8h,v11.8h}, [x12]
+add         sp, sp, #64
+ldp         x29, x30, [sp], #16
 ret
-1:
-bl fetch_generic_asm
-dup v12
-.8h, v11.h[7]
-dup v13
-.8h, v11.h[7]
-ldp x29, x30,
-[sp], #16
+1:          bl          fetch_generic_asm
+dup         v12.8h, v11.h[7]
+dup         v13.8h, v11.h[7]
+ldp         x29, x30, [sp], #16
 ret
 END(fetch_clampright1)
 
 PRIVATE(fetch_clampright4)
-stp x29, x30,
-[sp, #-16]!
-sub x12, xzr, x11
-ands x12, x12,
-#15
+stp         x29, x30, [sp, #-16]!
+sub         x12, xzr, x11
+ands        x12, x12, #15
 beq         1f
-sub x1, x1, x12
-sub x15, x15, x12
-sub x19, x19, x12
-bl fetch_generic_asm
-dup v12
-.2d, v11.d[1]
-dup v13
-.2d, v11.d[1]
-sub x12, xzr, x11
+sub         x1, x1, x12
+sub         x15, x15, x12
+sub         x19, x19, x12
+bl          fetch_generic_asm
+dup         v12.2d, v11.d[1]
+dup         v13.2d, v11.d[1]
+sub         x12, xzr, x11
 and         x12, x12, #15
-sub sp, sp,
-#64
-add x12, sp, x12, LSL
-#1
-st1         {
-v10.8h,v11.8h,v12.8h,v13.8h}, [sp]
-ld1         {
-v10.8h,v11.8h}, [x12]
-add sp, sp,
-#64
-ldp x29, x30,
-[sp], #16
+sub         sp, sp, #64
+add         x12, sp, x12, LSL #1
+st1         {v10.8h,v11.8h,v12.8h,v13.8h}, [sp]
+ld1         {v10.8h,v11.8h}, [x12]
+add         sp, sp, #64
+ldp         x29, x30, [sp], #16
 ret
-1:
-bl fetch_generic_asm
-dup v12
-.2d, v11.d[1]
-dup v13
-.2d, v11.d[1]
-ldp x29, x30,
-[sp], #16
+1:          bl          fetch_generic_asm
+dup         v12.2d, v11.d[1]
+dup         v13.2d, v11.d[1]
+ldp         x29, x30, [sp], #16
 ret
 END(fetch_clampright4)
 
@@ -2285,62 +1307,37 @@ END(fetch_clampright4)
  * deliberately in the fast-out path).
  */
 PRIVATE(prefill_sweepright1)
-ands x12, x11,
-#15
+ands        x12, x11, #15
 beq         1f
-sub x12, x12,
-#1
-sub sp, sp,
-#64
-st1         {
-v10.8h,v11.8h}, [sp]
-add x12, sp, x12, LSL
-#1
-ld1r        {
-v12.8h}, [x12]
-ld1r        {
-v13.8h}, [x12]
-st1         {
-v12.8h,v13.8h}, [x12]
-ld1         {
-v10.8h,v11.8h}, [sp]
-add sp, sp,
-#64
+sub         x12, x12, #1
+sub         sp, sp, #64
+st1         {v10.8h,v11.8h}, [sp]
+add         x12, sp, x12, LSL #1
+ld1r        {v12.8h}, [x12]
+ld1r        {v13.8h}, [x12]
+st1         {v12.8h,v13.8h}, [x12]
+ld1         {v10.8h,v11.8h}, [sp]
+add         sp, sp, #64
 ret
-1:
-dup v12
-.8h, v11.h[7]
-dup v13
-.8h, v11.h[7]
+1:          dup         v12.8h, v11.h[7]
+dup         v13.8h, v11.h[7]
 ret
 END(prefill_sweepright1)
 
 PRIVATE(prefill_sweepright4)
-ands x12, x11,
-#15
+ands        x12, x11, #15
 beq         1f
-sub x12, x12,
-#4
-sub sp, sp,
-#64
-st1         {
-v10.8h,v11.8h}, [sp]
-add x12, sp, x12, LSL
-#1
-ld1r        {
-v12.2d}, [x12]
-st1         {
-v13.8h}, [x12]
-ld1         {
-v10.8h,v11.8h}, [sp]
-add sp, sp,
-#64
+sub         x12, x12, #4
+sub         sp, sp, #64
+st1         {v10.8h,v11.8h}, [sp]
+add         x12, sp, x12, LSL #1
+ld1r        {v12.2d}, [x12]
+st1         {v13.8h}, [x12]
+ld1         {v10.8h,v11.8h}, [sp]
+add         sp, sp, #64
 ret
-1:
-dup v12
-.2d, v11.d[1]
-dup v13
-.2d, v11.d[1]
+1:          dup         v12.2d, v11.d[1]
+dup         v13.2d, v11.d[1]
 ret
 END(prefill_sweepright4)
 
@@ -2358,31 +1355,21 @@ END(prefill_sweepright4)
  * register file and writes to the spill buffer (indicated by a destination
  * register named xx).
  */
-.
-macro prefill_out
-ra, rb, sra, srb
+.macro prefill_out ra, rb, sra, srb
 .ifc \ra,xx
-.ifc \rb,
-xx
-        st1{\sra, \srb},
-[x9], #32
+.ifc \rb,xx
+        st1         {\sra,\srb}, [x9], #32
 .else
-bic x9, x9,
-#0x40
-st1         {
-\sra}, [x9], #16
+bic         x9, x9, #0x40
+st1         {\sra}, [x9], #16
 mov         \rb, \srb
 .endif
 .else
-.ifnc \ra,\
-sra
-        mov
-\ra, \sra
+.ifnc \ra,\sra
+        mov         \ra, \sra
 .endif
-.ifnc \rb,\
-srb
-        mov
-\rb, \srb
+.ifnc \rb,\srb
+        mov         \rb, \srb
 .endif
 .endif
 .endm
@@ -2394,62 +1381,30 @@ srb
  * culls superfluous iterations, and sets the variable `i` for subsequent
  * macros indicating the current index into the window.
  */
-.
-macro prefill_list, macro, nextmacro, max_r, step, label
-.
-macro ifneeded
-macro, nextmacro, line, nextline, ra, rb, step, label
+.macro prefill_list, macro, nextmacro, max_r, step, label
+.macro ifneeded macro, nextmacro, line, nextline, ra, rb, step, label
 .if windowsize >= (\line * 16)
-.
-set i, windowsize
-- (\line * 16)
+.set i, windowsize - (\line * 16)
 \label\macro\line:
 prefill_\macro \label\nextmacro\line, \label\nextmacro\nextline, \ra, \rb, \step
 .endif
-.
-endm
-        ifneeded
-\macro \nextmacro, 13, 12, xx,      xx,      \step, \
-label
-        ifneeded
-\macro \nextmacro, 12, 11, xx,      xx,      \step, \
-label
-        ifneeded
-\macro \nextmacro, 11, 10, xx,      v17.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro, 10,  9, v18.16b, v19.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  9,  8, v20.16b, v21.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  8,  7, v22.16b, v23.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  7,  6, v24.16b, v25.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  6,  5, v26.16b, v27.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  5,  4, v28.16b, v29.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  4,  3, v30.16b, v31.16b, \step, \
-label
-        ifneeded
-\macro \nextmacro,  3,  2, v4.16b,  v5.16b,  \step, \
-label
-        ifneeded
-\macro \nextmacro,  2,  1, v6.16b,  v7.16b,  \step, \
-label
-        ifneeded
-\macro \nextmacro,  1,  0, v8.16b,  v9.16b,  \step, \label
+.endm
+        ifneeded \macro \nextmacro, 13, 12, xx,      xx,      \step, \label
+        ifneeded \macro \nextmacro, 12, 11, xx,      xx,      \step, \label
+        ifneeded \macro \nextmacro, 11, 10, xx,      v17.16b, \step, \label
+        ifneeded \macro \nextmacro, 10,  9, v18.16b, v19.16b, \step, \label
+        ifneeded \macro \nextmacro,  9,  8, v20.16b, v21.16b, \step, \label
+        ifneeded \macro \nextmacro,  8,  7, v22.16b, v23.16b, \step, \label
+        ifneeded \macro \nextmacro,  7,  6, v24.16b, v25.16b, \step, \label
+        ifneeded \macro \nextmacro,  6,  5, v26.16b, v27.16b, \step, \label
+        ifneeded \macro \nextmacro,  5,  4, v28.16b, v29.16b, \step, \label
+        ifneeded \macro \nextmacro,  4,  3, v30.16b, v31.16b, \step, \label
+        ifneeded \macro \nextmacro,  3,  2, v4.16b,  v5.16b,  \step, \label
+        ifneeded \macro \nextmacro,  2,  1, v6.16b,  v7.16b,  \step, \label
+        ifneeded \macro \nextmacro,  1,  0, v8.16b,  v9.16b,  \step, \label
 \label\macro\()0:
 b           \label\()_end
-.
-purgem ifneeded
+.purgem ifneeded
 .endm
 
 /* These macros represent the possible stages of filling the window.
@@ -2465,14 +1420,10 @@ purgem ifneeded
  * padding values are needed in the window, store v8 and v9 into the window.
  * Otherwise skip forward to storing image data.
  */
-.
-macro prefill_leftfill, next, after, ra, rb, step
-cmp x10,
-#i+16
-blo         \
-next
-        prefill_out
-\ra, \rb, v8.16b, v9.16b
+.macro prefill_leftfill, next, after, ra, rb, step
+cmp         x10, #i+16
+blo         \next
+        prefill_out \ra, \rb, v8.16b, v9.16b
 .endm
 
 /* leftedge: The very first non-fill or partial-fill chunk from the image is
@@ -2480,8 +1431,7 @@ next
  * store it here, and then drop into the regular load/store cycle in the next
  * macro.
  */
-.
-macro prefill_leftedge, next, after, ra, rb, step
+.macro prefill_leftedge, next, after, ra, rb, step
 1:          prefill_out \ra, \rb, v10.16b, v11.16b
 b           \after
 .endm
@@ -2489,16 +1439,11 @@ b           \after
 /* dofetch: Copy chunks of the image into the window without any complications
  * from edge conditions.
  */
-.
-macro prefill_dofetch, next, after, ra, rb, step
-cmp x11,
-#i+16
-bls         \
-next
-        bl
-fetch_generic_asm
-        prefill_out
-\ra, \rb, v10.16b, v11.16b
+.macro prefill_dofetch, next, after, ra, rb, step
+cmp         x11, #i+16
+bls         \next
+        bl          fetch_generic_asm
+        prefill_out \ra, \rb, v10.16b, v11.16b
 .endm
 
 /* rightedge: The last fetch (currently in v10 and v11) may have gone beyond
@@ -2509,48 +1454,29 @@ fetch_generic_asm
  * Sometimes leftedge also covers the rightedge case, in which case this has
  * to be skipped altogether.
  */
-.
-macro prefill_rightedge, next, after, ra, rb, step
-cmp x11,
-#
-i
-        bls
-\
-next
-        bl
-fetch_clampright\
-step
-        prefill_out
-\ra, \rb, v10.16b, v11.16b
+.macro prefill_rightedge, next, after, ra, rb, step
+cmp         x11, #i
+        bls         \next
+        bl          fetch_clampright\step
+        prefill_out \ra, \rb, v10.16b, v11.16b
 b           \after
 .endm
 
 /* rightfill: The rest of the window is simply filled with right padding from
  * v12 and v13.
  */
-.
-macro prefill_rightfill, next, after, ra, rb, step
+.macro prefill_rightfill, next, after, ra, rb, step
 prefill_out \ra, \rb, v12.16b, v13.16b
 .endm
 
 /* Here all of the macros above are unrolled and laid out in the proper order.
  */
-.
-macro prefill_body, max_r, step, label
-prefill_list leftfill, leftedge,
-\max_r, \step, \
-label
-        prefill_list
-leftedge,  dofetch,    \max_r, \step, \
-label
-        prefill_list
-dofetch,   rightedge,  \max_r, \step, \
-label
-        prefill_list
-rightedge, rightfill,  \max_r, \step, \
-label
-        prefill_list
-rightfill, oops,       \max_r, \step, \label
+.macro prefill_body, max_r, step, label
+prefill_list leftfill,  leftedge,   \max_r, \step, \label
+        prefill_list leftedge,  dofetch,    \max_r, \step, \label
+        prefill_list dofetch,   rightedge,  \max_r, \step, \label
+        prefill_list rightedge, rightfill,  \max_r, \step, \label
+        prefill_list rightfill, oops,       \max_r, \step, \label
 \label\()_end:
 .endm
 
@@ -2585,32 +1511,16 @@ rightfill, oops,       \max_r, \step, \label
  *      x11 -- fill stop index in the window
  *      x12 -- scratch
  */
-.
-macro prefill
-step = 1, max_r = 25, label = xx
-        .set
-windowsize, (((\max_r + \max_r) * \step + 15) & ~15)
-.
-set centertap, (windowsize
-- \max_r * \step)
-mov x10,
-#
-centertap
-        subs
-x10, x10,
-x8
-        csel
-x10, xzr, x10,
-lo
+.macro prefill step=1, max_r=25, label=xx
+        .set windowsize, (((\max_r + \max_r) * \step + 15) & ~15)
+.set centertap, (windowsize - \max_r * \step)
+mov         x10, #centertap
+        subs        x10, x10, x8
+        csel        x10, xzr, x10, lo
 
-        subs
-x11, x4, #windowsize -
-centertap
-        csel
-x11, xzr, x11,
-hs
-        add
-x11, x11, #windowsize
+        subs        x11, x4, #windowsize - centertap
+        csel        x11, xzr, x11, hs
+        add         x11, x11, #windowsize
 
 /* x10 indicates where in the window legal image data begins.
  * x11 indicates where in the window legal image date ends.
@@ -2627,56 +1537,34 @@ x11, x11, #windowsize
  * consume (windowsize - x10) data, but only the data from
  * centertap to windowsize comes out of x4's budget.
  */
-1:
-subs x4, x4,
-#windowsize -
-centertap
-        csel
-x4, xzr, x4,
-lo
+1:          subs        x4, x4, #windowsize - centertap
+        csel        x4, xzr, x4, lo
 
 /* And the pointers need to rewind to the start of the window.
  */
-sub
-x1, x1, #
-centertap
-        sub
-x15, x15, #
-centertap
-        sub
-x19, x19, #
-centertap
+sub         x1, x1, #centertap
+        sub         x15, x15, #centertap
+        sub         x19, x19, #centertap
 
 /* Unless x8 indicated that there wasn't that much data available.
  */
-add
-x1, x1,
-x10
-        add
-x15, x15,
-x10
-        add
-x19, x19,
-x10
+add         x1, x1, x10
+        add         x15, x15, x10
+        add         x19, x19, x10
 
 /* Get the first chunk, and add padding to align it to the window
  * if necessary.
  */
-bl
-fetch_clampleft\
-step
+bl          fetch_clampleft\step
 
 /* Sometimes the start and the end of the window are in the same
  * chunk.  In that case both ends need filler at the outset.
  */
-sub
-x12, x11, #1
-eor x12, x10, x12
-cmp x12,
-#16
+sub         x12, x11, #1
+eor         x12,  x10, x12
+cmp         x12, #16
 bhs         1f
-bl prefill_sweepright
-\step
+bl          prefill_sweepright\step
 
 /* Iterate through all the points in the window and fill them in
  * with padding or image data as needed.
@@ -2714,10 +1602,7 @@ bl prefill_sweepright
  * Modifies
  *      x8 = fetch code pointer
  */
-.
-macro conv_body
-core,
-step = 1, max_r = 25, labelc = "", labelnc = ""
+.macro conv_body core, step=1, max_r=25, labelc="", labelnc=""
 
 /* If x4 >= x3 then there's no need for clipping.  The main loop
  * needs to exit when either x3 or x4 runs out, so clamp x4 to be
@@ -2728,47 +1613,30 @@ step = 1, max_r = 25, labelc = "", labelnc = ""
  * multiple of 16, which is still sufficient to force it out of the
  * loop but doesn't imply a rewind.
  */
-add x12, x3,
-#15
-bic x12, x12,
-#15
-cmp x4, x12
-csel x4, x12, x4, hi
+add         x12, x3, #15
+bic         x12, x12, #15
+cmp         x4, x12
+csel        x4, x12, x4, hi
 
 /* First calculate the entry-point into the internal fetch logic.
  * This is done so the same function can service several kernel
  * sizes.
  */
-adrp x8,
-\
-labelnc
-        add
-x8, x8, #:lo12:\
-labelnc
-        sub
-x8, x8, x5, LSL #5
-sub x8, x8, x5, LSL
-#3
-cmp x5, x6
-ccmp x5, x7,
-#0,
-eq
-        beq
-5f
+adrp        x8, \labelnc
+        add         x8, x8, #:lo12:\labelnc
+        sub         x8, x8, x5, LSL #5
+sub         x8, x8, x5, LSL #3
+cmp         x5, x6
+ccmp        x5, x7, #0, eq
+        beq         5f
 
 /* if (r != rup || r != rdn) then the address-clamping table should
  * be used rather than the short-cut version.
  */
-adrp x8,
-\
-labelc
-        add
-x8, x8, #:lo12:\
-labelc
-        sub
-x8, x8, x5, LSL #6
-add x8, x8, x5, LSL
-#3
+adrp        x8, \labelc
+        add         x8, x8, #:lo12:\labelc
+        sub         x8, x8, x5, LSL #6
+add         x8, x8, x5, LSL #3
 b           5f
 
 /* Main loop: ... */
@@ -2776,13 +1644,7 @@ b           5f
 3:          /* first perform a vertical convolution from memory to get the next
              * 16 taps of the horizontal window into the register file...
              */
-fetch max_r =
-\max_r,
-labelc =
-\labelc,
-labelnc =
-\labelnc,
-reg = x8
+fetch max_r=\max_r, labelc=\labelc, labelnc=\labelnc, reg=x8
 
 /* ...then perform a horizontal convolution on that window to
  * produce eight output bytes, and slide the window along.
@@ -2791,20 +1653,13 @@ reg = x8
  * that would demand yet another variant on those macros and would
  * perturb the register allocation severely.
  */
-\
-core
-        st1{v15.8b},
-[x0], #8
-\
-core
-        st1{v15.8b},
-[x0], #8
+\core
+        st1         {v15.8b}, [x0], #8
+\core
+        st1         {v15.8b}, [x0], #8
 
-sub x3, x3,
-#16
-5:
-subs x4, x4,
-#16
+sub         x3, x3, #16
+5:          subs        x4, x4, #16
 bhi         3b
 /* Here there's 16 or fewer bytes available before the edge of the
  * source image.  x4 holds that count minus 16 (because it was
@@ -2814,149 +1669,86 @@ bhi         3b
  * Of course, none of that matters if there's no more output to
  * produce...
  */
-cbz x3,
-5f
+cbz         x3, 5f
 
 /* Oh well. */
-adds x4, x4,
-#16
+adds        x4, x4, #16
 bne         1f
 .if \step==1
-dup v10
-.8h, v9.h[7]
-dup v11
-.8h, v9.h[7]
+dup         v10.8h, v9.h[7]
+dup         v11.8h, v9.h[7]
 .else
-dup v10
-.2d, v9.d[1]
-dup v11
-.2d, v9.d[1]
-.
-endif
-        b
-3f
+dup         v10.2d, v9.d[1]
+dup         v11.2d, v9.d[1]
+.endif
+        b           3f
 
 /* To avoid reading past end of input, rewind pointers by (16-x4)
  * to ensure that they're exactly 16 bytes from the edge.
  */
-1:
-mov x11, x4
-bl fetch_clampright
-\step
+1:          mov         x11, x4
+bl          fetch_clampright\step
 /* Now to put this padding to use, perform any remaining
  * iterations.  This is done at half the rate of the main loop,
  * because there's no longer pressure from a 16-lane window filler.
  */
 3:          \core
 .if \step==1
-dup v11
-.8h, v11.h[7]
+dup         v11.8h, v11.h[7]
 .else
-dup v11
-.2d, v11.d[1]
-.
-endif
-        subs
-x3, x3, #8
+dup         v11.2d, v11.d[1]
+.endif
+        subs        x3, x3, #8
 blo         4f
-st1         {
-v15.8b}, [x0], #8
+st1         {v15.8b}, [x0], #8
 bne         3b
 b           5f
 
 /* If the final iteration contained 0 < l < 8 values, then perform
  * a piecewise store of the final vector.
  */
-4:
-tbz x3,
-#2, 1f
-st1         {
-v15.s}[0], [x0], #4
-ext v15
-.8b, v15.8b, v15.8b, #4
-1:
-tbz x3,
-#1, 1f
-st1         {
-v15.h}[0], [x0], #2
-ext v15
-.8b, v15.8b, v15.8b, #2
-1:
-tbz x3,
-#0, 5f
-st1         {
-v15.b}[0], [x0], #1
-ext v15
-.8b, v15.8b, v15.8b, #1
-5:
-mov x0,
-#0
+4:          tbz         x3, #2, 1f
+st1         {v15.s}[0], [x0], #4
+ext         v15.8b, v15.8b, v15.8b, #4
+1:          tbz         x3, #1, 1f
+st1         {v15.h}[0], [x0], #2
+ext         v15.8b, v15.8b, v15.8b, #2
+1:          tbz         x3, #0, 5f
+st1         {v15.b}[0], [x0], #1
+ext         v15.8b, v15.8b, v15.8b, #1
+5:          mov         x0, #0
 .endm
 
 
-.
-irp r, TUNED_LIST1, 25
+.irp r, TUNED_LIST1, 25
 PRIVATE(convolve1_\r)
-stp x29, x30,
-[sp, #-16]!
+stp         x29,x30, [sp, #-16]!
 
-prefill step = 1, max_r =
-\r,
-label =
-.Lcnv1_\
-r
+prefill     step=1, max_r=\r, label=.Lcnv1_\r
 
-        conv_body
-core = hconv1_
-\r,
-step = 1, max_r =
-\r,
-labelc =
-.Lcnv1_\r,
-labelnc =
-.Lcnvnc1_\
-r
+        conv_body   core=hconv1_\r, step=1, max_r=\r, labelc=.Lcnv1_\r, labelnc=.Lcnvnc1_\r
 
-        ldp
-x29,x30, [sp], #16
+        ldp         x29,x30, [sp], #16
 ret
 END(convolve1_\r)
 .endr
 
-.
-irp r, TUNED_LIST4, 25
+.irp r, TUNED_LIST4, 25
 PRIVATE(convolve4_\r)
-sub x9, sp,
-#0x40
-stp x29, x30,
-[sp, #-(16 + 0x40 + 0x80)]!
-bic x9, x9,
-#0x7f
+sub         x9, sp, #0x40
+stp         x29,x30, [sp, #-(16 + 0x40 + 0x80)]!
+bic         x9, x9, #0x7f
 
 /* x9 now points to a 0x40 byte buffer on the stack whose address
  * has the low 7 bits clear.  This allows easy address calculation
  * in the wrap-around cases.
  */
 
-prefill step = 4, max_r =
-\r,
-label =
-.Lcnv4_\
-r
+prefill     step=4, max_r=\r, label=.Lcnv4_\r
 
-        conv_body
-core = hconv4_
-\r,
-step = 4, max_r =
-\r,
-labelc =
-.Lcnv4_\r,
-labelnc =
-.Lcnvnc4_\
-r
+        conv_body   core=hconv4_\r, step=4, max_r=\r, labelc=.Lcnv4_\r, labelnc=.Lcnvnc4_\r
 
-        ldp
-x29,x30, [sp], #(16 + 0x40 + 0x80)
+        ldp         x29,x30, [sp], #(16 + 0x40 + 0x80)
 ret
 END(convolve4_\r)
 .endr
@@ -2974,66 +1766,46 @@ END(convolve4_\r)
  *                  uint16_t *tab); // [sp,#8]
  */
 ENTRY(rsdIntrinsicBlurU1_K)
-stp x19, x30,
-[sp, #-16]!
-sub x8, sp,
-#32
-sub sp, sp,
-#64
-st1         {
-v8.1d - v11.1d}, [sp]
-st1         {
-v12.1d - v15.1d}, [x8]
-mov x8, x5          // x
-ldr w5,
-[sp,#80]    // r
-sub x9, x2, x8      // w - x
-sub x10, x3, x6     // h - y
-mov x2, x4          // pitch
-mov x3, x7          // count
-sub x7, x10,
-#1     // h - y - 1
-mov x4, x9          // inlen = (w - x)
+stp         x19,x30, [sp, #-16]!
+sub         x8, sp, #32
+sub         sp, sp, #64
+st1         {v8.1d - v11.1d}, [sp]
+st1         {v12.1d - v15.1d}, [x8]
+mov         x8, x5          // x
+ldr         w5, [sp,#80]    // r
+sub         x9, x2, x8      // w - x
+sub         x10, x3, x6     // h - y
+mov         x2, x4          // pitch
+mov         x3, x7          // count
+sub         x7, x10, #1     // h - y - 1
+mov         x4, x9          // inlen = (w - x)
 
-ldr x12,
-[sp, #88] // tab
+ldr         x12, [sp, #88] // tab
 
-add x1, x1, x8      // src += x
+add         x1, x1, x8      // src += x
 
-cmp x6, x5
-csel x6, x5, x6, hs  // rup = min(r, y)
-cmp x7, x5
-csel x7, x5, x7, hs  // rdn = min(r, h - y - 1)
+cmp         x6, x5
+csel        x6, x5, x6, hs  // rup = min(r, y)
+cmp         x7, x5
+csel        x7, x5, x7, hs  // rdn = min(r, h - y - 1)
 
-sub x13, xzr, x2    // -pitch
-msub x15, x2, x6, x1
-madd x19, x2, x7, x1
+sub         x13, xzr, x2    // -pitch
+msub        x15, x2, x6, x1
+madd        x19, x2, x7, x1
 
-ld1         {
-v0.8h,v1.8h}, [x12], #32
-ld1         {
-v2.8h,v3.8h}, [x12], #32
+ld1         {v0.8h,v1.8h}, [x12], #32
+ld1         {v2.8h,v3.8h}, [x12], #32
 
-adr x30,
-1f
-.
-irp r, TUNED_LIST1
-cmp x5,
-#\
-r
-        bls
-convolve1_\r
-.
-endr
-        b
-convolve1_25
+adr         x30, 1f
+.irp r, TUNED_LIST1
+cmp         x5, #\r
+        bls         convolve1_\r
+.endr
+        b           convolve1_25
 
-1:          ld1         {
-v8.1d - v11.1d}, [sp], #32
-ld1         {
-v12.1d - v15.1d}, [sp], #32
-ldp x19, x30,
-[sp], #16
+1:          ld1         {v8.1d - v11.1d}, [sp], #32
+ld1         {v12.1d - v15.1d}, [sp], #32
+ldp         x19,x30, [sp], #16
 ret
 END(rsdIntrinsicBlurU1_K)
 
@@ -3050,70 +1822,47 @@ END(rsdIntrinsicBlurU1_K)
  *                  uint16_t *tab); // [sp,#8]
  */
 ENTRY(rsdIntrinsicBlurU4_K)
-stp x19, x30,
-[sp, #-16]!
-sub x8, sp,
-#32
-sub sp, sp,
-#64
-st1         {
-v8.1d - v11.1d}, [sp]
-st1         {
-v12.1d - v15.1d}, [x8]
-lsl x8, x5,
-#2      // x
-lsl x2, x2,
-#2
-ldr w5,
-[sp,#80]    // r
-sub x9, x2, x8      // w - x
-sub x10, x3, x6     // h - y
-mov x2, x4          // pitch
-lsl x3, x7,
-#2      // count
-sub x7, x10,
-#1     // h - y - 1
-mov x4, x9          // inlen = (w - x)
+stp         x19,x30, [sp, #-16]!
+sub         x8, sp, #32
+sub         sp, sp, #64
+st1         {v8.1d - v11.1d}, [sp]
+st1         {v12.1d - v15.1d}, [x8]
+lsl         x8, x5, #2      // x
+lsl         x2, x2, #2
+ldr         w5, [sp,#80]    // r
+sub         x9, x2, x8      // w - x
+sub         x10, x3, x6     // h - y
+mov         x2, x4          // pitch
+lsl         x3, x7, #2      // count
+sub         x7, x10, #1     // h - y - 1
+mov         x4, x9          // inlen = (w - x)
 
-ldr x12,
-[sp, #88]
+ldr         x12, [sp, #88]
 
-add x1, x1, x8      // in += x
+add         x1, x1, x8      // in += x
 
-cmp x6, x5
-csel x6, x5, x6, hs  // rup = min(r, y)
-cmp x7, x5
-csel x7, x5, x7, hs  // rdn = min(r, h - y - 1)
+cmp         x6, x5
+csel        x6, x5, x6, hs  // rup = min(r, y)
+cmp         x7, x5
+csel        x7, x5, x7, hs  // rdn = min(r, h - y - 1)
 
 
-sub x13, xzr, x2
-msub x15, x2, x6, x1
-madd x19, x2, x7, x1
+sub         x13, xzr, x2
+msub        x15, x2, x6, x1
+madd        x19, x2, x7, x1
 
-ld1         {
-v0.8h,v1.8h}, [x12], #32
-ld1         {
-v2.8h,v3.8h}, [x12], #32
+ld1         {v0.8h,v1.8h}, [x12], #32
+ld1         {v2.8h,v3.8h}, [x12], #32
 
-adr x30,
-1f
-.
-irp r, TUNED_LIST4
-cmp x5,
-#\
-r
-        bls
-convolve4_\r
-.
-endr
-        b
-convolve4_25
+adr         x30, 1f
+.irp r, TUNED_LIST4
+cmp         x5, #\r
+        bls         convolve4_\r
+.endr
+        b           convolve4_25
 
-1:          ld1         {
-v8.1d - v11.1d}, [sp], #32
-ld1         {
-v12.1d - v15.1d}, [sp], #32
-ldp x19, x30,
-[sp], #16
+1:          ld1         {v8.1d - v11.1d}, [sp], #32
+ld1         {v12.1d - v15.1d}, [sp], #32
+ldp         x19,x30, [sp], #16
 ret
 END(rsdIntrinsicBlurU4_K)
