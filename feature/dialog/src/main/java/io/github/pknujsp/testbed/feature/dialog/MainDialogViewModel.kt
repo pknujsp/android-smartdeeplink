@@ -2,8 +2,8 @@ package io.github.pknujsp.testbed.feature.dialog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.pknujsp.testbed.core.ui.dialog.DragDirection
-import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
+import io.github.pknujsp.simpledialog.SimpleDialogBuilder
+import io.github.pknujsp.simpledialog.attrs.DragDirection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

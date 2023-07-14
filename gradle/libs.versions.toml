@@ -43,6 +43,7 @@ nexus_publish_plugin = "1.3.0"
 dokka = "1.8.20"
 
 smart_deeplink = "1.0.0-rc02"
+simple_dialog = "1.0.1"
 
 [libraries]
 
@@ -99,6 +100,7 @@ lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
 
 smartdeeplink-core = { module = "io.github.pknujsp:smartdeeplink.core", version.ref = "smart_deeplink" }
 smartdeeplink-annotation = { module = "io.github.pknujsp:smartdeeplink.annotation", version.ref = "smart_deeplink" }
+simpledialog = { module = "io.github.pknujsp:simpledialog", version.ref = "simple_dialog" }
 
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle_android_plugin_version" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin_version" }

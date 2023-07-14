@@ -1,15 +1,15 @@
 package io.github.pknujsp.simpledialog.dialogs
 
-import android.app.Dialog
+import android.content.Context
 import io.github.pknujsp.simpledialog.attrs.SimpleDialogGeneralAttributes
 import io.github.pknujsp.simpledialog.attrs.SimpleDialogStyleAttributes
 import io.github.pknujsp.simpledialog.blur.view.IGLSurfaceView
 
 class FullScreenDialog(
-  dialog: Dialog, attributes: SimpleDialogGeneralAttributes,
+  context: Context, attributes: SimpleDialogGeneralAttributes,
   styleAttributes: SimpleDialogStyleAttributes,
   blurringViewLifeCycleListener: IGLSurfaceView? = null,
-) : SimpleDialog(dialog, attributes, styleAttributes, blurringViewLifeCycleListener) {
+) : SimpleDialog(context, attributes, styleAttributes, blurringViewLifeCycleListener) {
 
 
   override fun initTouchEvent() {}

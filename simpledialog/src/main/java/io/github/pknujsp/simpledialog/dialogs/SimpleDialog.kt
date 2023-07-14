@@ -2,6 +2,7 @@ package io.github.pknujsp.simpledialog.dialogs
 
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.Context
 import android.content.DialogInterface
 import android.content.DialogInterface.OnCancelListener
 import android.graphics.RectF
@@ -22,12 +23,11 @@ import io.github.pknujsp.simpledialog.blur.view.IGLSurfaceView
 import io.github.pknujsp.simpledialog.interfaces.IDialogMover
 
 abstract class SimpleDialog(
-  protected val dialog: Dialog,
+  context: Context,
   protected val attributes: SimpleDialogGeneralAttributes,
   protected val styleAttributes: SimpleDialogStyleAttributes,
-  protected var blurringViewLifeCycleListener: IGLSurfaceView? = null,
-) : DialogInterface by dialog, IDialogMover {
-
+  private var blurringViewLifeCycleListener: IGLSurfaceView? = null,
+) : Dialog(context), IDialogMover {
 
   private var _draggablePixelsRangeRect: RectF? = null
   private val draggablePixelsRangeRect: RectF get() = _draggablePixelsRangeRect!!
@@ -38,9 +38,9 @@ abstract class SimpleDialog(
   private var _dialogView: View? = null
   private val dialogView: View get() = _dialogView!!
 
-  private var onShowListener: MutableList<DialogInterface.OnShowListener> = mutableListOf()
-  private var onCancelListener: MutableList<OnCancelListener> = mutableListOf()
-  private var onDismissListener: MutableList<DialogInterface.OnDismissListener> = mutableListOf()
+  private val onShowListener: MutableList<DialogInterface.OnShowListener> = mutableListOf()
+  private val onCancelListener: MutableList<OnCancelListener> = mutableListOf()
+  private val onDismissListener: MutableList<DialogInterface.OnDismissListener> = mutableListOf()
 
   init {
     init()
@@ -49,47 +49,32 @@ abstract class SimpleDialog(
   private fun init() {
     initTouchEvent()
 
-    dialog.setOnShowListener {
-      onShowListener.forEach { it.onShow(dialog) }
-    }
-    dialog.setOnCancelListener {
-      onCancelListener.forEach { it.onCancel(dialog) }
-    }
-    dialog.setOnDismissListener {
+    super.setOnShowListener { onShowListener.forEach { action -> action.onShow(it) } }
+    super.setOnCancelListener { onCancelListener.forEach { action -> action.onCancel(it) } }
+    super.setOnDismissListener {
+      onDismissListener.forEach { action -> action.onDismiss(it) }
       blurringViewLifeCycleListener?.onPause()
-      onDismissListener.forEach { it.onDismiss(dialog) }
       _dialogView = null
       _draggablePixelsRangeRect = null
       _dialogViewFirstPixels = null
     }
   }
 
-  override fun cancel() {
-    dialog.cancel()
+  override fun setOnShowListener(listener: DialogInterface.OnShowListener?) {
+    if (listener != null) onShowListener.add(listener)
   }
 
-  override fun dismiss() {
-    dialog.dismiss()
+  override fun setOnCancelListener(listener: OnCancelListener?) {
+    if (listener != null) onCancelListener.add(listener)
   }
 
-  fun setOnShowListener(listener: DialogInterface.OnShowListener) {
-    onShowListener.add(listener)
+  override fun setOnDismissListener(listener: DialogInterface.OnDismissListener?) {
+    if (listener != null) onDismissListener.add(listener)
   }
-
-  fun setOnCancelListener(listener: OnCancelListener) {
-    onCancelListener.add(listener)
-  }
-
-  fun setOnDismissListener(listener: DialogInterface.OnDismissListener) {
-    onDismissListener.add(listener)
-  }
-
-
-  fun isShowing(): Boolean = dialog.isShowing
 
   @SuppressLint("ClickableViewAccessibility")
   protected open fun initTouchEvent() {
-    (dialog.window?.decorView as? ViewGroup)?.let { decorView ->
+    (window?.decorView as? ViewGroup)?.let { decorView ->
       decorView.doOnPreDraw {
         _dialogView = decorView.allViews.firstOrNull { it.id == R.id.dialog_base_content }
         _draggablePixelsRangeRect = RectF().apply {
@@ -106,8 +91,8 @@ abstract class SimpleDialog(
         var firstDialogViewX = 0f
         var firstDialogViewY = 0f
 
-        dialog.setCancelable(attributes.isCancelable)
-        dialog.setCanceledOnTouchOutside(attributes.isCanceledOnTouchOutside)
+        setCancelable(attributes.isCancelable)
+        setCanceledOnTouchOutside(attributes.isCanceledOnTouchOutside)
 
         if (attributes.isDraggable) dialogView.setOnTouchListener(
           fun(view: View, event: MotionEvent): Boolean {

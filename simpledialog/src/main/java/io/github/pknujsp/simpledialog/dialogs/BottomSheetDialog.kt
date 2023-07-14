@@ -1,6 +1,6 @@
 package io.github.pknujsp.simpledialog.dialogs
 
-import android.app.Dialog
+import android.content.Context
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -20,10 +20,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class BottomSheetDialog(
-  dialog: Dialog, attributes: SimpleDialogGeneralAttributes,
+  context: Context, attributes: SimpleDialogGeneralAttributes,
   styleAttributes: SimpleDialogStyleAttributes,
   blurringViewLifeCycleListener: IGLSurfaceView? = null,
-) : SimpleDialog(dialog, attributes, styleAttributes, blurringViewLifeCycleListener) {
+) : SimpleDialog(context, attributes, styleAttributes, blurringViewLifeCycleListener) {
 
   private val foldHistoryMap = mutableSetOf<FoldHistory>()
 

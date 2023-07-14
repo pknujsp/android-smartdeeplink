@@ -8,13 +8,13 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import io.github.pknujsp.simpledialog.SimpleDialogBuilder
+import io.github.pknujsp.simpledialog.attrs.DragDirection
+import io.github.pknujsp.simpledialog.constants.DialogType
+import io.github.pknujsp.simpledialog.dialogs.SimpleDialog
 import io.github.pknujsp.testbed.core.ui.databinding.BottomsheetTestBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewFullLoadingBinding
 import io.github.pknujsp.testbed.core.ui.databinding.ViewLoadingBinding
-import io.github.pknujsp.testbed.core.ui.dialog.DialogType
-import io.github.pknujsp.testbed.core.ui.dialog.DragDirection
-import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialog
-import io.github.pknujsp.testbed.core.ui.dialog.SimpleDialogBuilder
 import io.github.pknujsp.testbed.feature.dialog.databinding.FragmentMainDialogBinding
 import kotlinx.coroutines.launch
 
