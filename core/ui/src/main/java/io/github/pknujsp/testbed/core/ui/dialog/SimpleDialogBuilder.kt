@@ -10,6 +10,7 @@ import androidx.annotation.Dimension
 import androidx.annotation.DrawableRes
 import androidx.annotation.IntRange
 import androidx.annotation.StyleRes
+import androidx.core.view.updateLayoutParams
 import io.github.pknujsp.testbed.core.ui.R
 import java.lang.ref.WeakReference
 
@@ -275,9 +276,12 @@ class SimpleDialogBuilder private constructor(
   /**
    * Set viewId interact with.(상호작용할 뷰 id를 설정합니다.)
    */
-  fun setViewInteractWith(view: View): SimpleDialogBuilder {
+  private fun setViewInteractWith(view: View): SimpleDialogBuilder {
     generalAttributes.viewMethodsInteractWith = InteractController(
       setBottom = view::setBottom,
+      updateLayoutParams = view::updateLayoutParams,
+      setTranslationY = view::setTranslationY,
+      scrollBy = view::scrollBy,
       originalWidth = view.width,
       originalHeight = view.height,
       originalX = view.x,

@@ -7,9 +7,22 @@ plugins {
 android {
   namespace = "io.github.pknujsp.simpledialog"
 
+  defaultConfig {
+    renderscriptTargetApi = 24
+    renderscriptNdkModeEnabled = false
+    renderscriptSupportModeEnabled = true
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path("src/main/cpp/CMakeLists.txt")
+      version = "3.22.1"
     }
   }
 
@@ -23,7 +36,7 @@ android {
 
 rootProject.extra.apply {
   set("PUBLISH_ARTIFACT_ID", "simpledialog")
-  set("PUBLISH_VERSION", "1.0.0")
+  set("PUBLISH_VERSION", "1.0.1")
   set("PUBLISH_DESCRIPTION", "Android Simple Dialog Library")
   set("PUBLISH_URL", "https://github.com/pknujsp/android-simpledialog")
   set("PUBLISH_SCM_CONNECTION", "scm:git:github.com/pknujsp/android-simpledialog")

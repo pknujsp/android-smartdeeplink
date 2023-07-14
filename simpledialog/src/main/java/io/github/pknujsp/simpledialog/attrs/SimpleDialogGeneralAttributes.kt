@@ -1,4 +1,4 @@
-package io.github.pknujsp.testbed.core.ui.dialog
+package io.github.pknujsp.simpledialog.attrs
 
 import android.view.ViewGroup.LayoutParams
 import kotlin.reflect.KFunction1

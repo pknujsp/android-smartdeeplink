@@ -1,6 +1,5 @@
-package io.github.pknujsp.testbed.core.ui.dialog
+package io.github.pknujsp.simpledialog.dialogs
 
-import IGLSurfaceView
 import android.app.Dialog
 import android.view.MotionEvent
 import android.view.View
@@ -11,7 +10,10 @@ import androidx.annotation.IdRes
 import androidx.annotation.IntRange
 import androidx.core.view.children
 import androidx.core.view.doOnPreDraw
-import io.github.pknujsp.testbed.core.ui.R
+import io.github.pknujsp.simpledialog.R
+import io.github.pknujsp.simpledialog.attrs.SimpleDialogGeneralAttributes
+import io.github.pknujsp.simpledialog.attrs.SimpleDialogStyleAttributes
+import io.github.pknujsp.simpledialog.blur.view.IGLSurfaceView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
