@@ -146,7 +146,6 @@ obj/
 .idea/navEditor.xml
 
 keys/
-scripts/
 
 # Legacy Eclipse project files
 .classpath

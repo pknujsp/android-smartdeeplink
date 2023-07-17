@@ -1,11 +1,9 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-  id("plugin.release.android.library")
-  alias(libs.plugins.dokka)
+  alias(libs.plugins.android.library)
+  alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kapt)
+  alias(libs.plugins.dokka)
 }
-
 
 android {
   namespace = "io.github.pknujsp.smartdeeplink.core"
@@ -31,6 +29,7 @@ android {
     suppressWarnings = false
   }
 
+
   publishing {
     singleVariant("release") {
       withSourcesJar()
@@ -41,7 +40,7 @@ android {
 
 rootProject.extra.apply {
   set("PUBLISH_ARTIFACT_ID", "smartdeeplink-core")
-  set("PUBLISH_VERSION", "1.0.0-rc03")
+  set("PUBLISH_VERSION", "1.0.0-rc04")
   set("PUBLISH_DESCRIPTION", "core of SmartDeepLink Library")
   set("PUBLISH_URL", "https://github.com/pknujsp/android-smartdeeplink")
   set("PUBLISH_SCM_CONNECTION", "scm:git:github.com/pknujsp/android-smartdeeplink.git")
