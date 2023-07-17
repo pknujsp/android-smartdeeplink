@@ -1,5 +1,6 @@
 package io.github.pknujsp.testbed.feature.result
 
+import PersonInfoArgs
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.repeatOnLifecycle
+import io.github.pknujsp.deeplink.navArguments
 import io.github.pknujsp.testbed.feature.result.databinding.FragmentResultBinding
 import kotlinx.coroutines.launch
 
@@ -18,6 +20,8 @@ class ResultFragment : Fragment() {
 
   private val viewModel: ResultViewModel by viewModels()
 
+  private val args by navArguments<PersonInfoArgs>()
+
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
     _binding = FragmentResultBinding.inflate(inflater, container, false)
     return binding.root
@@ -26,7 +30,7 @@ class ResultFragment : Fragment() {
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
     binding.apply {
-
+      argumentsTextview.text = args.toString()
     }
 
     viewLifecycleOwner.lifecycle.coroutineScope.launch {

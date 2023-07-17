@@ -1,12 +1,13 @@
 package io.github.pknujsp.testbed.feature.search
 
+import PersonInfoArgs
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import io.github.pknujsp.deeplink.deepNavigate
 import io.github.pknujsp.testbed.feature.search.databinding.FragmentSearchBinding
 
 class SearchFragment : Fragment() {
@@ -21,7 +22,15 @@ class SearchFragment : Fragment() {
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
     binding.btnSearchToResult.setOnClickListener {
-      findNavController().navigate("app://result".toUri())
+      findNavController().deepNavigate(
+        "app://result",
+        PersonInfoArgs(
+          name = binding.nameEdit.text.toString(),
+          age = binding.ageEdit.text.toString().toInt(),
+          height = binding.heightEdit.text.toString().toFloat(),
+          isMale = binding.maleCheck.isChecked,
+        ),
+      )
     }
   }
 
