@@ -20,7 +20,7 @@ java {
 }
 
 apply {
-  from("${rootProject.projectDir}/scripts/publish-module.gradle")
+  from("${rootProject.projectDir}/scripts/publish-jvm-module.gradle")
 }
 
 dependencies {

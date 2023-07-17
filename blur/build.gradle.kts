@@ -60,5 +60,5 @@ dependencies {
 }
 
 apply {
-  from("${rootProject.projectDir}/scripts/publish-module.gradle")
+  from("${rootProject.projectDir}/scripts/publish-android-module.gradle")
 }
