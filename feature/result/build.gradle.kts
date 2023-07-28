@@ -18,6 +18,6 @@ dependencies {
   implementation(project(":core:model"))
   implementation(project(":core:ui"))
   implementation(project(":coroutineext"))
-  implementation(project(":deeplink"))
+//  implementation(project(":deeplink"))
 
 }

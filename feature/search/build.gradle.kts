@@ -17,5 +17,5 @@ kapt {
 dependencies {
   implementation(project(":core:model"))
   implementation(project(":core:ui"))
-  implementation(project(":deeplink"))
+//  implementation(project(":deeplink"))
 }

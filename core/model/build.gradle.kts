@@ -15,6 +15,7 @@ kapt {
 }
 
 dependencies {
+  implementation(libs.smartdeeplink.annotation)
   implementation(project(":deeplink"))
   //implementation(project(":annotation"))
   //"kapt"(project(":annotation"))
