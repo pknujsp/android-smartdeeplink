@@ -26,6 +26,8 @@ kapt {
 }
 
 dependencies {
+  kapt(project(":core:compiler"))
+  implementation(project(":core:annotation"))
   implementation(libs.bundles.retrofit)
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.bundles.compose.hilt)

@@ -17,8 +17,7 @@ android {
     }
   }
 
-  @Suppress("UnstableApiUsage")
-  buildFeatures {
+  @Suppress("UnstableApiUsage") buildFeatures {
     compose = true
   }
 
@@ -35,6 +34,11 @@ android {
 
   hilt {
     enableAggregatingTask = true
+  }
+
+  packaging.resources.excludes.run {
+    add("/META-INF/{AL2.0,LGPL2.1}")
+
   }
 }
 

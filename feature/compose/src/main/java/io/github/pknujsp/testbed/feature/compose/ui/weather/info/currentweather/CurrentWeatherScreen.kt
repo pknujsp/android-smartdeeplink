@@ -19,6 +19,9 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import io.github.pknujsp.testbed.feature.compose.R
 import io.github.pknujsp.testbed.feature.compose.core.model.weather.common.WeatherDataCategory
 import io.github.pknujsp.testbed.feature.compose.ui.state.UiState
+import io.github.pknujsp.testbed.feature.compose.ui.state.onError
+import io.github.pknujsp.testbed.feature.compose.ui.state.onLoading
+import io.github.pknujsp.testbed.feature.compose.ui.state.onSuccess
 import io.github.pknujsp.testbed.feature.compose.ui.weather.info.WeatherInfoViewModel
 import io.github.pknujsp.testbed.feature.compose.ui.weather.info.WeatherItemSurface
 import io.github.pknujsp.testbed.feature.compose.util.AStyle
@@ -28,6 +31,13 @@ import io.github.pknujsp.testbed.feature.compose.util.toAnnotated
 @Composable
 fun CurrentWeatherScreen(weatherInfoViewModel: WeatherInfoViewModel) {
   val weatherInfo = weatherInfoViewModel.weatherInfo.collectAsState()
+  weatherInfo.value.onSuccess {
+
+  }.onError { t, i ->
+    
+  }.onLoading {
+
+  }
 
   when (weatherInfo.value) {
     is UiState.Success -> {

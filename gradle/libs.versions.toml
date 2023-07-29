@@ -3,6 +3,9 @@ gradle_android_plugin_version = "8.0.2"
 gradle_version = "8.2.1"
 kotlin_version = "1.8.22"
 
+
+shadow = "8.1.1"
+
 coroutines = "1.7.3"
 androidx_compose_kotlin_compiler = "1.4.8"
 desugar_jdk_libs = "2.0.3"
@@ -21,14 +24,14 @@ androidx_lifecycle = "2.6.1"
 androidx_appcompat = "1.6.1"
 androidx_paging_compose = "3.2.0-beta01"
 androidx_constraint_layout_compose = "1.0.1"
-androidx_hilt = "2.45"
+androidx_hilt = "2.47"
 androidx_hilt_navigation_compose = "1.0.0"
 androidx_hilt_navigation_fragment = "1.0.0"
 material = "1.9.0"
 constraintlayout = "2.1.4"
 
 lottie = "6.0.0"
-kotlin_poet = "1.13.2"
+kotlin_poet = "1.14.2"
 google_auto_service = "1.0.1"
 google_auto_service_annotation = "1.0.1"
 google_auto_common = "1.2.1"
@@ -174,3 +177,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "androidx_hilt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint_gradle_plugin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin_version" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

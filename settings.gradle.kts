@@ -27,6 +27,8 @@ include(":core")
 
 include(":core:model")
 include(":core:ui")
+include(":core:annotation")
+include(":core:compiler")
 
 include(":feature:home")
 include(":feature:search")
