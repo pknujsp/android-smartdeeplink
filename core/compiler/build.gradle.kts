@@ -1,6 +1,6 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
-  alias(libs.plugins.kapt)
+  alias(libs.plugins.ksp)
 }
 
 java {
@@ -14,4 +14,5 @@ dependencies {
   implementation("com.squareup:kotlinpoet-metadata:1.14.2")
   implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.22")
   implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.8.22")
+  implementation(libs.ksp)
 }

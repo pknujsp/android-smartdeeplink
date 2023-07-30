@@ -1,4 +1,5 @@
 plugins {
+  alias(libs.plugins.ksp)
   id("plugin.view")
   alias(libs.plugins.kotlin.serialization)
 }
@@ -21,12 +22,8 @@ android {
   }
 }
 
-kapt {
-  correctErrorTypes = true
-}
-
 dependencies {
-  kapt(project(":core:compiler"))
+  ksp(project(":core:compiler"))
   implementation(project(":core:annotation"))
   implementation(libs.bundles.retrofit)
   implementation(platform(libs.androidx.compose.bom))

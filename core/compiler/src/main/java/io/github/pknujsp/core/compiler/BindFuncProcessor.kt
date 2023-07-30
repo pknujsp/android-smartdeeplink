@@ -51,7 +51,7 @@ internal class BindFuncProcessor : AbstractProcessor() {
     val bindEntities = roundEnv.getElementsAnnotatedWith(BindFunc::class.java).filter {
       it.kind.isClass or it.kind.isInterface
     }.map { annotated ->
-      val impls = annotated.enclosedElements.filterIsInstance<Element>()
+      val impls = annotated.enclosedElements.filterIsInstance<Element>().filter { it.kind.isClass or it.kind.isInterface }
       print("annotated: $annotated")
       impls.forEach { print("impl: $it") }
       BindFileEntity(processingEnv.elementUtils.getPackageOf(annotated), annotated, impls)
@@ -90,9 +90,11 @@ internal class BindFuncProcessor : AbstractProcessor() {
     val annotatedType = annotated.asType()
     val implName = annotatedType.asTypeName().toString().split(".").last()
     val isGeneric = implName.contains("<")
-    val typeVariableName = if (isGeneric) implName.split("<").last().split(">").first()
+    val typeVariableName = if (isGeneric) implName.substringAfter("<").substringBefore(">")
     else ""
 
+    print("implName: ${annotated.javaToKotlinType()}")
+    print("typeVariableName: $typeVariableName")
     print("enclosedElements: ${element.enclosedElements}")
     val fields = element.enclosedElements?.filter {
       it.kind.isField and (Modifier.STATIC !in it.modifiers)
@@ -158,7 +160,7 @@ internal class BindFuncProcessor : AbstractProcessor() {
 
 /**
  * @BindFunc
- * sealed interface UiState<out T> {
+ * to interface UiState<out T> {
  *   data class Success<out T>(val data: T) : UiState<T>
  *   data class Error(val exception: Throwable) : UiState<Nothing>
  *   object Loading : UiState<Nothing>

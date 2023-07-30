@@ -128,6 +128,7 @@ sealed class PressureUnit(override val symbol: String) : WeatherDataUnit(symbol)
   }
 }
 
+
 sealed class WindDirectionUnit(override val symbol: String) : WeatherDataUnit(symbol) {
   object Degree : WindDirectionUnit("°") {
     override fun convert(value: WeatherValueType, to: WeatherDataUnit): WeatherValueType = when (to) {

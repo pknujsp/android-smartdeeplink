@@ -19,8 +19,8 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import io.github.pknujsp.testbed.feature.compose.R
 import io.github.pknujsp.testbed.feature.compose.core.model.weather.common.WeatherDataCategory
 import io.github.pknujsp.testbed.feature.compose.ui.state.UiState
+import io.github.pknujsp.testbed.feature.compose.ui.state.ValueState
 import io.github.pknujsp.testbed.feature.compose.ui.state.onError
-import io.github.pknujsp.testbed.feature.compose.ui.state.onLoading
 import io.github.pknujsp.testbed.feature.compose.ui.state.onSuccess
 import io.github.pknujsp.testbed.feature.compose.ui.weather.info.WeatherInfoViewModel
 import io.github.pknujsp.testbed.feature.compose.ui.weather.info.WeatherItemSurface
@@ -31,14 +31,10 @@ import io.github.pknujsp.testbed.feature.compose.util.toAnnotated
 @Composable
 fun CurrentWeatherScreen(weatherInfoViewModel: WeatherInfoViewModel) {
   val weatherInfo = weatherInfoViewModel.weatherInfo.collectAsState()
-  weatherInfo.value.onSuccess {
 
-  }.onError { t, i ->
-    
-  }.onLoading {
 
-  }
-
+  val va = ValueState.Success<String>("")
+  va.onError { }.onSuccess { }
   when (weatherInfo.value) {
     is UiState.Success -> {
       val currentWeather = (weatherInfo.value as UiState.Success).data.currentWeather
