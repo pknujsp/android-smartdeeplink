@@ -30,7 +30,7 @@ afterEvaluate {
         artifactId PUBLISH_ARTIFACT_ID
         version PUBLISH_VERSION
 
-        artifact("$buildDir/libs/${project.getName()}-${version}.jar")
+        from(components.getByName("java"))
         artifact androidSourcesJar
         artifact androidJavadocJar
 
