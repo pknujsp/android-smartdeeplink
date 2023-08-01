@@ -14,10 +14,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.github.pknujsp.testbed.feature.compose.ui.state.onError
 import io.github.pknujsp.testbed.feature.compose.ui.state.onLoading
 import io.github.pknujsp.testbed.feature.compose.ui.state.onSuccess
 import io.github.pknujsp.testbed.feature.compose.ui.weather.info.currentweather.CurrentWeatherScreen
@@ -41,7 +44,11 @@ fun WeatherInfoScreen() {
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-      weatherInfo.value.onSuccess {
+      weatherInfo.value.onLoading {
+        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = "날씨 정보를 불러오는 중입니다", style = TextStyle(color = Color.Black))
+      }.onSuccess { weatherInfo ->
         HeadInfoScreen(weatherInfoViewModel)
         ItemSpacer(60.dp)
         CurrentWeatherScreen(weatherInfoViewModel)
@@ -50,10 +57,8 @@ fun WeatherInfoScreen() {
         ItemSpacer()
         DailyForecastScreen(weatherInfoViewModel)
         ItemSpacer()
-      }.onLoading {
-        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "날씨 정보를 불러오는 중입니다")
+      }.onError { throwable ->
+        Text(text = throwable.message ?: "Error")
       }
     }
   }

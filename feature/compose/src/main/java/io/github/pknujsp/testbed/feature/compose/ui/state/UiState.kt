@@ -5,20 +5,13 @@ import io.github.pknujsp.core.annotation.KBindFunc
 @KBindFunc
 sealed interface UiState<out T> {
   data class Success<out T>(val data: T) : UiState<T>
-  data class Error(val exception: Throwable, val size: Int) : UiState<Nothing>
+  data class Error(val exception: Throwable) : UiState<Nothing>
   object Loading : UiState<Nothing>
 }
 
-
-sealed class DataState(val value: String) {
-  object Success : DataState("Success")
-  object Error : DataState("Error")
-  object Loading : DataState("Loading")
-}
-
-
-sealed class ValueState<T : Int>(val value: T) {
-  data class Success<T : Int>(val data: T) : ValueState<T>(data)
-
-  data class Error(val exception: Throwable) : ValueState<Int>(3)
+@KBindFunc
+sealed class DataState<out T : Number, R>(val value: Int, var size: Int = 1) {
+  data class Success(val result: Int) : DataState<Int, String>(result)
+  class Error(value: Int) : DataState<Int, String>(value)
+  object Loading : DataState<Int, String>(2)
 }

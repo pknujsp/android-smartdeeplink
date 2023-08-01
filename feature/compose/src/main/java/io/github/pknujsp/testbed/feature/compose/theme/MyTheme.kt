@@ -8,8 +8,9 @@ import androidx.compose.ui.graphics.Color
 
 val myColorScheme = lightColorScheme(
   primary = Color.Blue,
-  onSurface = Color.White,
+  onSurface = Color.Black,
   background = Color.White,
+  surface = Color.White,
 )
 
 
