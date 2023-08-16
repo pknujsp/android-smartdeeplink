@@ -4,15 +4,8 @@ apply plugin: 'signing'
 
 task androidSourcesJar(type: Jar) {
   archiveClassifier.set('sources')
-  if (project.plugins.findPlugin("com.android.library")) {
-    // For Android libraries
-    from android.sourceSets.main.java.srcDirs
-    from android.sourceSets.main.kotlin.srcDirs
-  } else {
-    // For pure Kotlin libraries, in case you have them
-    from sourceSets.main.java.srcDirs
-    from sourceSets.main.kotlin.srcDirs
-  }
+  from android.sourceSets.main.java.srcDirs
+  from android.sourceSets.main.kotlin.srcDirs
 }
 
 task androidJavadocJar(type: Jar) {
@@ -21,7 +14,7 @@ task androidJavadocJar(type: Jar) {
 }
 
 artifacts {
-  archives androidSourcesJar
+
   archives androidJavadocJar
 }
 
@@ -37,13 +30,8 @@ afterEvaluate {
         artifactId PUBLISH_ARTIFACT_ID
         version PUBLISH_VERSION
 
-        if (project.plugins.hasPlugin("com.android.library")) {
-          from(components.getByName("release"))
-        } else {
-          from(components.getByName("java"))
-        }
+        from(components.getByName("release"))
 
-        artifact androidSourcesJar
         artifact androidJavadocJar
 
         pom {

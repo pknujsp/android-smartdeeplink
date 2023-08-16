@@ -26,17 +26,11 @@ android {
     }
   }
 
-  publishing {
-    singleVariant("release") {
-      withSourcesJar()
-      withJavadocJar()
-    }
-  }
 }
 
 rootProject.extra.apply {
   set("PUBLISH_ARTIFACT_ID", "simpledialog")
-  set("PUBLISH_VERSION", "1.0.1")
+  set("PUBLISH_VERSION", "1.0.2")
   set("PUBLISH_DESCRIPTION", "Android Simple Dialog Library")
   set("PUBLISH_URL", "https://github.com/pknujsp/android-simpledialog")
   set("PUBLISH_SCM_CONNECTION", "scm:git:github.com/pknujsp/android-simpledialog")
@@ -48,12 +42,12 @@ tasks.withType(GenerateModuleMetadata::class).configureEach {
   dependsOn("androidSourcesJar")
 }
 
+apply {
+  from("${rootProject.projectDir}/scripts/publish-android-module.gradle")
+}
+
 dependencies {
   implementation(libs.androidx.annotation)
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
-}
-
-apply {
-  from("${rootProject.projectDir}/scripts/publish-android-module.gradle")
 }

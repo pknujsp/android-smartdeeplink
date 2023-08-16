@@ -9,6 +9,7 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.StyleRes
 import androidx.core.view.allViews
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.marginBottom
@@ -22,12 +23,13 @@ import io.github.pknujsp.simpledialog.attrs.SimpleDialogStyleAttributes
 import io.github.pknujsp.simpledialog.blur.view.IGLSurfaceView
 import io.github.pknujsp.simpledialog.interfaces.IDialogMover
 
-abstract class SimpleDialog(
+open class SimpleDialog(
   context: Context,
-  protected val attributes: SimpleDialogGeneralAttributes,
-  protected val styleAttributes: SimpleDialogStyleAttributes,
+  @StyleRes themeResId: Int,
+  private val attributes: SimpleDialogGeneralAttributes,
+  private val styleAttributes: SimpleDialogStyleAttributes,
   private var blurringViewLifeCycleListener: IGLSurfaceView? = null,
-) : Dialog(context), IDialogMover {
+) : Dialog(context, themeResId), IDialogMover {
 
   private var _draggablePixelsRangeRect: RectF? = null
   private val draggablePixelsRangeRect: RectF get() = _draggablePixelsRangeRect!!
@@ -60,6 +62,14 @@ abstract class SimpleDialog(
     }
   }
 
+  override fun create() {
+    super.create()
+  }
+
+  override fun show() {
+    super.show()
+  }
+
   override fun setOnShowListener(listener: DialogInterface.OnShowListener?) {
     if (listener != null) onShowListener.add(listener)
   }
@@ -73,7 +83,7 @@ abstract class SimpleDialog(
   }
 
   @SuppressLint("ClickableViewAccessibility")
-  protected open fun initTouchEvent() {
+  private fun initTouchEvent() {
     (window?.decorView as? ViewGroup)?.let { decorView ->
       decorView.doOnPreDraw {
         _dialogView = decorView.allViews.firstOrNull { it.id == R.id.dialog_base_content }

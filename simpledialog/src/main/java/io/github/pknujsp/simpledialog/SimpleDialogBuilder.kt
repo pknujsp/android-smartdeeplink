@@ -1,6 +1,5 @@
 package io.github.pknujsp.simpledialog
 
-import android.app.Dialog
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -16,9 +15,6 @@ import io.github.pknujsp.simpledialog.attrs.InteractController
 import io.github.pknujsp.simpledialog.attrs.SimpleDialogGeneralAttributes
 import io.github.pknujsp.simpledialog.attrs.SimpleDialogStyleAttributes
 import io.github.pknujsp.simpledialog.constants.DialogType
-import io.github.pknujsp.simpledialog.dialogs.BottomSheetDialog
-import io.github.pknujsp.simpledialog.dialogs.FullScreenDialog
-import io.github.pknujsp.simpledialog.dialogs.NormalDialog
 import io.github.pknujsp.simpledialog.dialogs.SimpleDialog
 import java.lang.ref.WeakReference
 
@@ -28,13 +24,14 @@ class SimpleDialogBuilder private constructor(
   dialogType: DialogType,
 ) {
 
-  val dialogStyleAttributes = SimpleDialogStyleAttributes(dialogType = dialogType)
-
-  private val dialogStyler: SimpleDialogStyler = WeakReference(SimpleDialogStyler(dialogStyleAttributes, context)).get()!!
+  private val dialogStyler: SimpleDialogStyler =
+    WeakReference(SimpleDialogStyler(SimpleDialogStyleAttributes(dialogType = dialogType), context)).get()!!
 
   private val generalAttributes: SimpleDialogGeneralAttributes = WeakReference(SimpleDialogGeneralAttributes()).get()!!
 
-  private val dialogBuilder = Dialog(context, theme(dialogType))
+  private val dialog: SimpleDialog =
+    SimpleDialog(context, theme(dialogType), generalAttributes, dialogStyler.simpleDialogStyleAttributes, dialogStyler.blurringViewLifeCycleListener)
+
 
   companion object {
     /**
@@ -313,7 +310,7 @@ class SimpleDialogBuilder private constructor(
    * Set content view.(컨텐츠 뷰를 설정합니다.)
    */
   fun setContentView(view: View): SimpleDialogBuilder {
-    dialogBuilder.setContentView(
+    dialog.setContentView(
       FrameLayout(view.context).apply {
         id = R.id.dialog_base_content
         addView(view)
@@ -323,38 +320,22 @@ class SimpleDialogBuilder private constructor(
   }
 
   /**
+  /**
    * Set foldable.(접을 수 있는지 설정합니다.)
-   */
+  */
   fun setFoldable(isFoldable: Boolean): SimpleDialogBuilder {
-    generalAttributes.isFoldable = isFoldable
-    return this
+  generalAttributes.isFoldable = isFoldable
+  return this
   }
+   */
 
   /**
    * Build and show dialog.(다이얼로그를 생성하고 보여줍니다.)
    */
-  fun buildAndShow(): SimpleDialog = dialogBuilder.run {
+  fun buildAndShow(): SimpleDialog = dialog.apply {
     create()
     dialogStyler.applyStyle(this)
     show()
-
-    when (dialogStyler.simpleDialogStyleAttributes.dialogType) {
-      DialogType.BottomSheet -> BottomSheetDialog(
-        this,
-        generalAttributes,
-        dialogStyler.simpleDialogStyleAttributes,
-        dialogStyler.blurringViewLifeCycleListener,
-      )
-
-      DialogType.Normal -> NormalDialog(this, generalAttributes, dialogStyler.simpleDialogStyleAttributes, dialogStyler.blurringViewLifeCycleListener)
-      DialogType.Fullscreen -> FullScreenDialog(
-        this,
-        generalAttributes,
-        dialogStyler.simpleDialogStyleAttributes,
-        dialogStyler.blurringViewLifeCycleListener,
-      )
-    }
-
   }
 
   @StyleRes
