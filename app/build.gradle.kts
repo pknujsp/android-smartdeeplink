@@ -67,6 +67,7 @@ dependencies {
   implementation(project(":feature:result"))
   implementation(project(":feature:search"))
   implementation(project(":feature:holographic"))
+  implementation(project(":feature:card"))
   implementation(project(":feature:dialog"))
   implementation(project(":core:ui"))
   debugImplementation(libs.ui.test.manifest)

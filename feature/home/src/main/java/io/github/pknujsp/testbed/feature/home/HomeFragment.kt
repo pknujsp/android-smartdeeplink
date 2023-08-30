@@ -35,6 +35,9 @@ class HomeFragment : Fragment() {
       btnHomeToCompose.setOnClickListener {
         startActivity(Intent(requireContext(), ComposeActivity::class.java))
       }
+      btnHomeToCard.setOnClickListener {
+        navigate("app://card")
+      }
     }
   }
 

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@android:color/white"
+  android:clipChildren="false"
+  android:clipToPadding="false"
+  tools:context=".CreditCardFragment">
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/card_view"
+    android:layout_width="325dp"
+    android:layout_height="210dp"
+    android:layout_gravity="center"
+    android:background="@drawable/card_background"
+    android:clipChildren="false"
+    android:elevation="8dp"
+    android:rotation="-15"
+    android:rotationX="5">
+
+    <ImageView
+      android:id="@+id/logo"
+      android:layout_width="80dp"
+      android:layout_height="30dp"
+      android:scaleX="2.2"
+      android:scaleY="2.2"
+      android:src="@drawable/hyundaicardci"
+      app:layout_constraintLeft_toLeftOf="parent"
+      app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+      android:id="@+id/number"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginBottom="4dp"
+      android:fontFamily="monospace"
+      android:letterSpacing="-0.02"
+      android:text="1234 5678 9012 3456"
+      android:textColor="@android:color/black"
+      android:textSize="16sp"
+      app:layout_constraintBottom_toTopOf="@id/name"
+      app:layout_constraintLeft_toLeftOf="parent" />
+
+    <TextView
+      android:id="@+id/name"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="monospace"
+      android:text="Hyundai Card"
+      android:textColor="@android:color/black"
+      android:textSize="16sp"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintLeft_toLeftOf="parent" />
+
+    <TextView
+      android:id="@+id/expiry_date"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="16dp"
+      android:text="01/23"
+      android:textColor="@android:color/black"
+      android:textSize="16sp"
+      app:layout_constraintBottom_toBottomOf="@id/name"
+      app:layout_constraintLeft_toRightOf="@id/name" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>

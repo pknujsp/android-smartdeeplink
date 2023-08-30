@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:id="@+id/card_nav"
+  app:startDestination="@id/creditCardFragment">
+
+  <fragment
+    android:id="@+id/creditCardFragment"
+    android:name="io.github.pknujsp.testbed.feature.card.CreditCardFragment"
+    android:label="fragment_credit_card"
+    tools:layout="@layout/fragment_credit_card" />
+
+  <deepLink app:uri="app://card" />
+
+</navigation>
