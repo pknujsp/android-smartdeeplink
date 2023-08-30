@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.pknujsp.testbed.feature.result"
+  namespace = "io.github.pknujsp.testbed.feature.result"
 }
 
 hilt {
@@ -15,10 +15,9 @@ kapt {
 }
 
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:ui"))
-    //implementation(project(":deeplink"))
-    implementation("io.github.pknujsp:smartdeeplink.core:1.0.0-rc02")
-    //implementation("io.github.pknujsp:smartdeeplink.annotation:1.0.0-rc02")
+  implementation(project(":core:model"))
+  implementation(project(":core:ui"))
+  implementation(project(":coroutineext"))
+//  implementation(project(":deeplink"))
 
 }

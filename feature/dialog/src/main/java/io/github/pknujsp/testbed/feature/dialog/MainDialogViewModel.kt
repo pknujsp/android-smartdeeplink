@@ -1,10 +1,9 @@
 package io.github.pknujsp.testbed.feature.dialog
 
-import android.view.View
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.pknujsp.testbed.core.ui.DialogType
-import io.github.pknujsp.testbed.core.ui.SimpleDialogBuilder
+import io.github.pknujsp.simpledialog.SimpleDialogBuilder
+import io.github.pknujsp.simpledialog.attrs.DragDirection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,10 +19,14 @@ class MainDialogViewModel : ViewModel() {
     }
   }
 
-  fun blur(blur: Int) {
+  fun behindBlur(blur: Int) {
     viewModelScope.launch {
       _dialogBuilder.update {
-        it?.setBlur(blur = blur > 0, blurIndensity = blur)
+        it?.dialogStyleAttributes?.run {
+          behindBlurIndensity = blur
+          behindBlur = blur > 0
+        }
+        it
       }
     }
   }
@@ -39,35 +42,11 @@ class MainDialogViewModel : ViewModel() {
   fun bottomMargin(margin: Int) {
     viewModelScope.launch {
       _dialogBuilder.update {
-        it?.setMarginBottom(margin)
+        it?.setBottomMargin(margin)
       }
     }
   }
 
-  fun horizontalMargin(margin: Int) {
-    viewModelScope.launch {
-      _dialogBuilder.update {
-        it?.setMarginHorizontal(margin)
-      }
-    }
-  }
-
-  fun cornerRadius(radius: Int) {
-    viewModelScope.launch {
-      _dialogBuilder.update {
-        it?.setCornerRadius(radius)
-      }
-    }
-  }
-
-  fun dialogType(dialogType: DialogType, view: View) {
-    viewModelScope.launch {
-      _dialogBuilder.update {
-        it?.dialogType = dialogType
-        it
-      }
-    }
-  }
 
   fun size(width: Int, height: Int) {
     viewModelScope.launch {
@@ -84,4 +63,140 @@ class MainDialogViewModel : ViewModel() {
       }
     }
   }
+
+  fun draggable(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setDraggable(checked)
+      }
+    }
+  }
+
+  fun cancelable(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setCancelable(checked)
+      }
+    }
+  }
+
+  fun canceledOnTouchOutside(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setCanceledOnTouchOutside(checked)
+      }
+    }
+  }
+
+  fun restrictViewsFromOffWindow(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setRestrictViewsFromOffWindow(checked)
+      }
+    }
+  }
+
+  fun showModalPoint(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setIsShowModalPoint(checked)
+      }
+    }
+  }
+
+
+  fun draggleDirections(direction: DragDirection) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setDragDirection(direction)
+      }
+    }
+  }
+
+  fun topMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setTopMargin(toInt)
+      }
+    }
+  }
+
+  fun startMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setStartMargin(toInt)
+      }
+    }
+  }
+
+  fun endMargin(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setEndMargin(toInt)
+      }
+    }
+  }
+
+  fun applyForceBlur(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.behindBlurForce = checked
+        it
+      }
+    }
+  }
+
+  fun topStartCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.topStartCornerRadius = toInt
+        it
+      }
+    }
+  }
+
+  fun topEndCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.topEndCornerRadius = toInt
+
+        it
+      }
+    }
+  }
+
+  fun bottomStartCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.bottomStartCornerRadius = toInt
+        it
+      }
+    }
+  }
+
+  fun bottomEndCornerRadius(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.dialogStyleAttributes?.bottomEndCornerRadius = toInt
+        it
+      }
+    }
+  }
+
+  fun backgroundBlur(toInt: Int) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setBackgroundBlur(toInt > 0, false, toInt)
+      }
+    }
+  }
+
+  fun foldable(checked: Boolean) {
+    viewModelScope.launch {
+      _dialogBuilder.update {
+        it?.setFoldable(checked)
+      }
+    }
+  }
+
 }

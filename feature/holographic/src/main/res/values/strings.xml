@@ -1,6 +1,4 @@
 <resources>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="imageview">이미지 뷰</string>
     <string name="looking_for_surfaces">Status</string>
 </resources>

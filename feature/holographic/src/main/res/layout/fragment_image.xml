@@ -1,41 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:clipChildren="false"
+  android:clipToPadding="false"
+  android:paddingHorizontal="76dp"
+  tools:targetApi="s">
+
+  <TextView
+    android:id="@+id/status_textview"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:clipChildren="false"
-    android:clipToPadding="false"
-    tools:context=".ImageFragment">
+    android:layout_height="wrap_content"
+    android:layout_marginTop="48dp"
+    android:gravity="center"
+    android:text="@string/looking_for_surfaces"
+    android:textSize="15sp"
+    app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/status_textview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="48dp"
-        android:gravity="center"
-        android:text="@string/looking_for_surfaces"
-        android:textSize="15sp" />
+  <com.google.android.material.card.MaterialCardView
+    android:id="@+id/background_cardview"
+    android:layout_width="0dp"
+    android:layout_height="0dp"
+    android:alpha="1.0"
+    android:clipToOutline="true"
+    android:outlineAmbientShadowColor="@color/card_shadow_color_ambient"
+    android:outlineProvider="background"
+    android:outlineSpotShadowColor="@color/card_shadow_color_ambient"
+    android:scaleX="1.02"
+    android:scaleY="0.85"
+    app:cardBackgroundColor="@color/card_shadow_color_ambient"
+    app:cardCornerRadius="50dp"
+    app:cardElevation="24dp"
+    app:layout_constraintBottom_toBottomOf="@id/imageview"
+    app:layout_constraintEnd_toEndOf="@id/imageview"
+    app:layout_constraintStart_toStartOf="@id/imageview"
+    app:layout_constraintTop_toTopOf="@id/imageview" />
+
+  <FrameLayout
+    android:id="@+id/imageview"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:elevation="24dp"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent">
+
+    <Button
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:outlineAmbientShadowColor="@android:color/white"
+      android:outlineSpotShadowColor="@android:color/white"
+      android:text="Hello World!"
+      android:textColor="@android:color/white"
+      android:textSize="20sp"
+      tools:targetApi="s" />
+
+  </FrameLayout>
 
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/imageview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="64dp"
-        android:adjustViewBounds="true"
-        android:alpha="1.0"
-        android:clipToOutline="true"
-        android:cropToPadding="false"
-        android:elevation="28dp"
-        android:layerType="hardware"
-        android:outlineAmbientShadowColor="@color/card_shadow_color_ambient"
-        android:outlineProvider="background"
-        android:outlineSpotShadowColor="@color/card_shadow_color_ambient"
-        android:src="@drawable/applecard1_anti"
-        tools:ignore="PxUsage"
-        tools:targetApi="s" />
-
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

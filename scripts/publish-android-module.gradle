@@ -1,0 +1,68 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+
+task androidSourcesJar(type: Jar) {
+  archiveClassifier.set('sources')
+  from android.sourceSets.main.java.srcDirs
+  from android.sourceSets.main.kotlin.srcDirs
+}
+
+task androidJavadocJar(type: Jar) {
+  archiveClassifier.set('javadoc')
+  from "$buildDir/dokka/javadoc"
+}
+
+artifacts {
+
+  archives androidJavadocJar
+}
+
+group = PUBLISH_GROUP_ID
+version = PUBLISH_VERSION
+
+afterEvaluate {
+  publishing {
+    publications {
+      release(MavenPublication) {
+
+        groupId PUBLISH_GROUP_ID
+        artifactId PUBLISH_ARTIFACT_ID
+        version PUBLISH_VERSION
+
+        from(components.getByName("release"))
+
+        artifact androidJavadocJar
+
+        pom {
+          name = PUBLISH_ARTIFACT_ID
+          description = PUBLISH_DESCRIPTION
+          url = PUBLISH_URL
+          licenses {
+            license {
+              name = PUBLISH_LICENSE_NAME
+              url = PUBLISH_LICENSE_URL
+            }
+          }
+          developers {
+            developer {
+              id = PUBLISH_DEVELOPER_ID
+              name = PUBLISH_DEVELOPER_NAME
+              email = PUBLISH_DEVELOPER_EMAIL
+            }
+          }
+
+          scm {
+            connection = PUBLISH_SCM_CONNECTION
+            developerConnection = PUBLISH_SCM_DEVELOPER_CONNECTION
+            url = PUBLISH_SCM_URL
+          }
+        }
+      }
+    }
+  }
+}
+
+signing {
+  sign publishing.publications
+}

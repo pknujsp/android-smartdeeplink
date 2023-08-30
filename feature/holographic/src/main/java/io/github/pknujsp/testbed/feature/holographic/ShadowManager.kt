@@ -13,57 +13,87 @@ import kotlin.math.abs
 import kotlin.math.floor
 
 internal class ShadowManager(
-    context: Context, lifecycle: Lifecycle,
-    supervisor: Job,
+  context: Context, lifecycle: Lifecycle,
+  supervisor: Job,
 ) {
 
+  private val sensorHelper = SensorHelper(context, lifecycle, supervisor)
+  private val displayDensity = Resources.getSystem().displayMetrics.density
 
-    private val gravitySensorHelper = GravitySensorHelper(context, lifecycle, supervisor)
-    private val displayDensity = Resources.getSystem().displayMetrics.density
+  private var firstSensorValue: SensorHelper.SensorValue? = null
+  private var lastValue: ChangedValue? = null
 
-    private var firstGravity: GravitySensorHelper.Gravity? = null
-    private var lastGravity: ChangedGravity? = null
+  private val bufferCapacity = 4
+  private val buffers = ArrayDeque<SensorHelper.SensorValue>(bufferCapacity)
 
-    val gravityChannel = channelFlow {
-        gravitySensorHelper.gravityChannel.receiveAsFlow().collect { gravity ->
-            firstGravity?.also { firstGravity ->
-                val diffX = ((firstGravity.x + gravity.x.times(1000f)) % 3f).floor()
-                val diffY = ((firstGravity.y + gravity.y.times(1000f)) % 3f).floor()
+  private val shadowShiftMinDp = -10.0 * displayDensity
+  private val shadowShiftMaxDp = 10.0 * displayDensity
 
-                val shiftX = diffX * displayDensity * 3f
-                val shiftY = -diffY * displayDensity * 3f
+  private val imageShiftMaxDp = 2.0 * displayDensity
 
-                val newGravity = ChangedGravity(diffY, diffX, shiftX.toInt(), shiftY.toInt())
+  val sensorValueChannel = channelFlow {
+    sensorHelper.sensorValueChannel.receiveAsFlow().collect { newSensorValue ->
+      buffers.add(newSensorValue)
+      if (buffers.size < bufferCapacity) return@collect
 
-                // compare with last gravity
-                if (lastGravity != newGravity) {
-                    Log.d("Sensor", "onSensorChanged: $newGravity")
-                    lastGravity = newGravity
-                    trySend(newGravity)
-                } else {
-                    //Log.d("Sensor", "onSensorChanged SAME: $newGravity = $lastGravity")
-                }
-            } ?: run {
-                firstGravity = gravity.copy(x = gravity.x.times(1000f).floor(), y = gravity.y.times(1000f).floor())
-            }
-        }
-    }.flowOn(Dispatchers.Default)
+      // average
+      val averageSensorValue = SensorHelper.SensorValue(
+        buffers.sumOf { it.roll } / buffers.size,
+        buffers.sumOf { it.pitch } / buffers.size,
+      )
 
-    data class ChangedGravity(
-        val rotationVerticalDegree: Float,
-        val rotationHorizontalDegree: Float,
-        val shiftX: Int = 0,
-        val shiftY: Int = 0,
-    ) {
-        override fun equals(other: Any?): Boolean {
-            return if (other is ChangedGravity) {
-                abs(other.rotationVerticalDegree - rotationVerticalDegree) <= 0.2 ||
-                        abs(other.rotationHorizontalDegree - rotationHorizontalDegree) <= 0.2
-            } else {
-                false
-            }
-        }
+      buffers.clear()
+
+      val diffRoll = averageSensorValue.roll.floor() / 1.5
+      val diffPitch = averageSensorValue.pitch.floor() / 1.5
+
+      val shiftX = normalize(-diffRoll)
+      val shiftY = normalize(diffPitch)
+
+      val newValue = ChangedValue(
+        diffPitch, diffRoll, shiftX.toInt(), shiftY.toInt(),
+        (shiftX / shadowShiftMaxDp * imageShiftMaxDp).toInt(), (shiftY / shadowShiftMaxDp * imageShiftMaxDp).toInt(),
+      )
+
+      if (lastValue != newValue) {
+        lastValue = newValue
+        Log.d("newValue", "$newValue")
+        trySend(newValue)
+      }
+
     }
+  }.flowOn(Dispatchers.Default)
+
+  private fun normalize(value: Double): Double {
+    val dp = value * displayDensity
+    return if (dp >= shadowShiftMaxDp) shadowShiftMaxDp
+    else if (dp <= shadowShiftMinDp) shadowShiftMinDp
+    else {
+      dp
+    }
+  }
+
+  data class ChangedValue(
+    val rotationVerticalDegree: Double,
+    val rotationHorizontalDegree: Double,
+    val shadowShiftX: Int = 0,
+    val shadowShiftY: Int = 0,
+    val imageShiftX: Int = 0,
+    val imageShiftY: Int = 0,
+  ) {
+    override fun equals(other: Any?): Boolean =
+      if (other is ChangedValue) (abs(other.rotationVerticalDegree - rotationVerticalDegree) <= 0.3) && (abs(other.rotationHorizontalDegree - rotationHorizontalDegree) <= 0.3)
+      else false
+
+
+    override fun hashCode(): Int {
+      var result = rotationVerticalDegree.hashCode()
+      result = 31 * result + rotationHorizontalDegree.hashCode()
+      result = 31 * result + shadowShiftX
+      result = 31 * result + shadowShiftY
+      return result
+    }
+  }
 }
 
-private fun Float.floor() = floor(this * 10) / 10
+private fun Double.floor() = floor(this * 100.0) / 100.0

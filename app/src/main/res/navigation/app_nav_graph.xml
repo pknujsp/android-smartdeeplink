@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/app_nav_graph"
-    app:startDestination="@id/home_nav">
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:id="@+id/app_nav_graph"
+  app:startDestination="@id/home_nav">
 
-    <include app:graph="@navigation/home_nav" />
-    <include app:graph="@navigation/result_nav" />
-    <include app:graph="@navigation/search_nav" />
-    <include app:graph="@navigation/holographic_nav" />
-    <include app:graph="@navigation/main_dialog_nav" />
+  <include app:graph="@navigation/home_nav" />
+  <include app:graph="@navigation/result_nav" />
+  <include app:graph="@navigation/search_nav" />
+  <include app:graph="@navigation/holographic_nav" />
+  <include app:graph="@navigation/main_dialog_nav" />
+  <include app:graph="@navigation/card_nav" />
 </navigation>

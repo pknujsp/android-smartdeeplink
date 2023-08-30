@@ -16,5 +16,5 @@ kapt {
 }
 
 dependencies {
-
+  //implementation(project(":blur"))
 }
